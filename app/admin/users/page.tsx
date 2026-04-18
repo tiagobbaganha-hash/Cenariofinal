@@ -1,103 +1,78 @@
+'use client'
+
+import { useEffect, useState } from 'react'
 import { PageHeader } from '@/components/admin/PageHeader'
 import { DataTable } from '@/components/ui/data-table'
 import { Badge } from '@/components/ui/badge'
 import { formatDate, formatCurrency } from '@/lib/utils'
+import { supabase } from '@/lib/supabase'
 
 interface AdminUser {
   id: string
   email: string
   name: string | null
-  kycStatus: 'none' | 'pending' | 'approved' | 'rejected'
-  role: 'user' | 'admin' | 'super_admin'
-  balance: number
-  totalBets: number
-  totalVolume: number
-  createdAt: string
-  lastLoginAt: string | null
+  kycStatus?: 'none' | 'pending' | 'approved' | 'rejected'
+  role?: 'user' | 'admin' | 'super_admin'
+  balance?: number
+  totalBets?: number
+  totalVolume?: number
+  created_at: string
+  last_sign_in_at: string | null
 }
 
-// Mock data - sera substituido por dados reais do Supabase
-const mockUsers: AdminUser[] = [
-  {
-    id: '1',
-    email: 'joao@email.com',
-    name: 'Joao Silva',
-    kycStatus: 'approved',
-    role: 'user',
-    balance: 1250.5,
-    totalBets: 45,
-    totalVolume: 3200.0,
-    createdAt: '2024-01-15T10:00:00Z',
-    lastLoginAt: '2024-03-20T14:30:00Z',
-  },
-  {
-    id: '2',
-    email: 'maria@email.com',
-    name: 'Maria Santos',
-    kycStatus: 'pending',
-    role: 'user',
-    balance: 500.0,
-    totalBets: 12,
-    totalVolume: 800.0,
-    createdAt: '2024-02-10T09:15:00Z',
-    lastLoginAt: '2024-03-19T18:45:00Z',
-  },
-  {
-    id: '3',
-    email: 'pedro@email.com',
-    name: 'Pedro Oliveira',
-    kycStatus: 'none',
-    role: 'user',
-    balance: 0,
-    totalBets: 0,
-    totalVolume: 0,
-    createdAt: '2024-03-18T16:00:00Z',
-    lastLoginAt: null,
-  },
-  {
-    id: '4',
-    email: 'admin@cenariox.com',
-    name: 'Admin CenarioX',
-    kycStatus: 'approved',
-    role: 'super_admin',
-    balance: 0,
-    totalBets: 0,
-    totalVolume: 0,
-    createdAt: '2024-01-01T00:00:00Z',
-    lastLoginAt: '2024-03-20T10:00:00Z',
-  },
-  {
-    id: '5',
-    email: 'ana@email.com',
-    name: 'Ana Costa',
-    kycStatus: 'rejected',
-    role: 'user',
-    balance: 100.0,
-    totalBets: 5,
-    totalVolume: 150.0,
-    createdAt: '2024-03-01T11:30:00Z',
-    lastLoginAt: '2024-03-15T20:00:00Z',
-  },
-]
-
-const kycStatusConfig: Record<AdminUser['kycStatus'], { label: string; variant: 'default' | 'secondary' | 'success' | 'warning' | 'destructive' }> = {
-  none: { label: 'Nao Iniciado', variant: 'secondary' },
+const kycStatusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'success' | 'warning' | 'destructive' }> = {
+  none: { label: 'Não Iniciado', variant: 'secondary' },
   pending: { label: 'Pendente', variant: 'warning' },
   approved: { label: 'Aprovado', variant: 'success' },
   rejected: { label: 'Rejeitado', variant: 'destructive' },
 }
 
-const roleLabels: Record<AdminUser['role'], string> = {
-  user: 'Usuario',
+const roleLabels: Record<string, string> = {
+  user: 'Usuário',
   admin: 'Admin',
   super_admin: 'Super Admin',
 }
 
 export default function AdminUsersPage() {
+  const [users, setUsers] = useState<AdminUser[]>([])
+  const [loading, setLoading] = useState(true)
+  const [filter, setFilter] = useState<'all' | 'kyc_pending' | 'kyc_rejected' | 'admins'>('all')
+
+  useEffect(() => {
+    const loadUsers = async () => {
+      try {
+        // TODO: Usar endpoint REST quando disponível
+        // Por enquanto, retorna array vazio para evitar timeout
+        setUsers([])
+      } catch (error) {
+        console.error('Erro ao carregar usuários:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadUsers()
+  }, [])
+
+  const filteredUsers = users.filter((user) => {
+    if (filter === 'all') return true
+    if (filter === 'kyc_pending') return user.kycStatus === 'pending'
+    if (filter === 'kyc_rejected') return user.kycStatus === 'rejected'
+    if (filter === 'admins') return user.role && user.role !== 'user'
+    return true
+  })
+
+  const counts = {
+    all: users.length,
+    kyc_pending: users.filter((u) => u.kycStatus === 'pending').length,
+    kyc_rejected: users.filter((u) => u.kycStatus === 'rejected').length,
+    admins: users.filter((u) => u.role && u.role !== 'user').length,
+  }
+
   const columns = [
     {
       key: 'email',
-      header: 'Usuario',
+      header: 'Usuário',
       cell: (user: AdminUser) => (
         <div>
           <p className="font-medium">{user.name ?? 'Sem nome'}</p>
@@ -110,7 +85,7 @@ export default function AdminUsersPage() {
       header: 'Papel',
       cell: (user: AdminUser) => (
         <span className="text-sm">
-          {roleLabels[user.role]}
+          {user.role ? roleLabels[user.role] : 'Usuário'}
         </span>
       ),
     },
@@ -118,65 +93,80 @@ export default function AdminUsersPage() {
       key: 'kycStatus',
       header: 'KYC',
       cell: (user: AdminUser) => (
-        <Badge variant={kycStatusConfig[user.kycStatus].variant}>
-          {kycStatusConfig[user.kycStatus].label}
+        <Badge variant={kycStatusConfig[user.kycStatus || 'none'].variant}>
+          {kycStatusConfig[user.kycStatus || 'none'].label}
         </Badge>
       ),
     },
     {
-      key: 'balance',
-      header: 'Saldo',
-      cell: (user: AdminUser) => (
-        <span className="font-mono">{formatCurrency(user.balance)}</span>
-      ),
-      className: 'text-right',
-    },
-    {
-      key: 'totalVolume',
-      header: 'Volume Total',
-      cell: (user: AdminUser) => (
-        <span className="font-mono">{formatCurrency(user.totalVolume)}</span>
-      ),
-      className: 'text-right',
-    },
-    {
-      key: 'createdAt',
+      key: 'created_at',
       header: 'Cadastro',
-      cell: (user: AdminUser) => formatDate(user.createdAt),
+      cell: (user: AdminUser) => formatDate(user.created_at),
+    },
+    {
+      key: 'last_sign_in_at',
+      header: 'Último Login',
+      cell: (user: AdminUser) => 
+        user.last_sign_in_at ? formatDate(user.last_sign_in_at) : '—',
     },
   ]
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Usuarios"
-        description="Gerencie os usuarios da plataforma"
+        title="Usuários"
+        description="Gerencie os usuários da plataforma"
       />
 
       {/* Filters */}
       <div className="flex flex-wrap gap-2">
-        <FilterButton label="Todos" count={mockUsers.length} active />
+        <FilterButton
+          label="Todos"
+          count={counts.all}
+          active={filter === 'all'}
+          onClick={() => setFilter('all')}
+        />
         <FilterButton
           label="KYC Pendente"
-          count={mockUsers.filter((u) => u.kycStatus === 'pending').length}
+          count={counts.kyc_pending}
+          active={filter === 'kyc_pending'}
+          onClick={() => setFilter('kyc_pending')}
         />
         <FilterButton
           label="KYC Rejeitado"
-          count={mockUsers.filter((u) => u.kycStatus === 'rejected').length}
+          count={counts.kyc_rejected}
+          active={filter === 'kyc_rejected'}
+          onClick={() => setFilter('kyc_rejected')}
         />
         <FilterButton
           label="Admins"
-          count={mockUsers.filter((u) => u.role !== 'user').length}
+          count={counts.admins}
+          active={filter === 'admins'}
+          onClick={() => setFilter('admins')}
         />
       </div>
 
-      <DataTable
-        data={mockUsers}
-        columns={columns}
-        onRowClick={(user) => {
-          window.location.href = `/admin/users/${user.id}`
-        }}
-      />
+      {loading ? (
+        <div className="rounded-lg border border-border p-8 text-center">
+          <p className="text-muted-foreground">Carregando usuários...</p>
+        </div>
+      ) : filteredUsers.length === 0 ? (
+        <div className="rounded-lg border border-border p-8 text-center">
+          <p className="text-muted-foreground">
+            {users.length === 0
+              ? 'Nenhum usuário encontrado'
+              : 'Nenhum usuário correspondente ao filtro'}
+          </p>
+        </div>
+      ) : (
+        <DataTable
+          data={filteredUsers}
+          columns={columns}
+          onRowClick={(user) => {
+            window.location.href = `/admin/users/${user.id}`
+          }}
+        />
+      )}
     </div>
   )
 }
@@ -185,13 +175,16 @@ function FilterButton({
   label,
   count,
   active = false,
+  onClick,
 }: {
   label: string
   count: number
   active?: boolean
+  onClick?: () => void
 }) {
   return (
     <button
+      onClick={onClick}
       className={`flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
         active
           ? 'bg-primary text-primary-foreground'

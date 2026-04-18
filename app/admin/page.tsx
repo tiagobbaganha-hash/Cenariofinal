@@ -1,55 +1,76 @@
+'use client'
+
+import { useEffect, useState } from 'react'
 import { StatsCard } from '@/components/admin/StatsCard'
 import { RecentActivity } from '@/components/admin/RecentActivity'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Users, TrendingUp, Wallet, Activity } from 'lucide-react'
-
-// Mock data - sera substituido por dados reais do Supabase
-const stats = {
-  totalUsers: 1247,
-  activeMarkets: 23,
-  totalVolume: 45780.5,
-  dailyBets: 342,
-}
+import { DashboardStats, fetchDashboardStats } from '@/lib/api/admin'
+import Link from 'next/link'
 
 export default function AdminDashboard() {
+  const [stats, setStats] = useState<DashboardStats>({
+    totalMarkets: 0,
+    activeMarkets: 0,
+    totalUsers: 0,
+    totalVolume: 0,
+  })
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const loadStats = async () => {
+      try {
+        const data = await fetchDashboardStats()
+        setStats(data)
+      } catch (error) {
+        console.error('Erro ao carregar stats:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadStats()
+  }, [])
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
       <div>
         <h1 className="text-2xl font-bold">Dashboard</h1>
         <p className="text-muted-foreground">
-          Visao geral da plataforma CenarioX
+          Visão geral da plataforma CenarioX
         </p>
       </div>
 
       {/* Stats Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatsCard
-          title="Total de Usuarios"
+          title="Total de Usuários"
           value={stats.totalUsers.toLocaleString('pt-BR')}
-          description="vs. mes anterior"
+          description="Usuários cadastrados"
           icon={Users}
-          trend={{ value: 12.5, isPositive: true }}
+          loading={loading}
         />
         <StatsCard
           title="Mercados Ativos"
           value={stats.activeMarkets.toString()}
-          description="3 fechando hoje"
+          description="Em andamento"
           icon={TrendingUp}
+          loading={loading}
+        />
+        <StatsCard
+          title="Total de Mercados"
+          value={stats.totalMarkets.toString()}
+          description="Criados"
+          icon={Wallet}
+          loading={loading}
         />
         <StatsCard
           title="Volume Total"
           value={`R$ ${stats.totalVolume.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
-          description="vs. mes anterior"
-          icon={Wallet}
-          trend={{ value: 8.2, isPositive: true }}
-        />
-        <StatsCard
-          title="Apostas Hoje"
-          value={stats.dailyBets.toString()}
-          description="vs. ontem"
+          description="Movimentado"
           icon={Activity}
-          trend={{ value: -3.1, isPositive: false }}
+          loading={loading}
         />
       </div>
 
@@ -61,7 +82,7 @@ export default function AdminDashboard() {
         {/* Quick Actions */}
         <Card>
           <CardHeader>
-            <CardTitle>Acoes Rapidas</CardTitle>
+            <CardTitle>Ações Rápidas</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid gap-3">
@@ -71,19 +92,19 @@ export default function AdminDashboard() {
                 href="/admin/markets/new"
               />
               <QuickActionItem
-                title="Aprovar KYC Pendente"
-                description="5 verificacoes aguardando revisao"
-                href="/admin/users?filter=kyc_pending"
+                title="Visualizar Mercados"
+                description={`${stats.totalMarkets} mercados no sistema`}
+                href="/admin/markets"
               />
               <QuickActionItem
-                title="Resolver Mercado"
-                description="2 mercados prontos para resolucao"
-                href="/admin/markets?filter=ready_to_resolve"
+                title="Gerenciar Usuários"
+                description={`${stats.totalUsers} usuários cadastrados`}
+                href="/admin/users"
               />
               <QuickActionItem
-                title="Saques Pendentes"
-                description="8 solicitacoes de saque"
-                href="/admin/finance?filter=pending_withdrawals"
+                title="Relatórios Financeiros"
+                description="Volume, taxas e movimentações"
+                href="/admin/finance"
               />
             </div>
           </CardContent>
@@ -103,15 +124,14 @@ function QuickActionItem({
   href: string
 }) {
   return (
-    <a
-      href={href}
-      className="flex items-center justify-between rounded-lg border border-border p-4 transition-colors hover:bg-accent no-underline"
-    >
-      <div>
-        <p className="font-medium">{title}</p>
-        <p className="text-sm text-muted-foreground">{description}</p>
+    <Link href={href} className="no-underline">
+      <div className="flex items-center justify-between rounded-lg border border-border p-4 transition-colors hover:bg-accent cursor-pointer">
+        <div>
+          <p className="font-medium">{title}</p>
+          <p className="text-sm text-muted-foreground">{description}</p>
+        </div>
+        <span className="text-muted-foreground">→</span>
       </div>
-      <span className="text-muted-foreground">→</span>
-    </a>
+    </Link>
   )
 }

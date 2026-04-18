@@ -11,9 +11,10 @@ interface StatsCardProps {
     value: number
     isPositive: boolean
   }
+  loading?: boolean
 }
 
-export function StatsCard({ title, value, description, icon: Icon, trend }: StatsCardProps) {
+export function StatsCard({ title, value, description, icon: Icon, trend, loading }: StatsCardProps) {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -23,7 +24,13 @@ export function StatsCard({ title, value, description, icon: Icon, trend }: Stat
         <Icon className="h-4 w-4 text-muted-foreground" />
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
+        <div className="text-2xl font-bold">
+          {loading ? (
+            <div className="h-8 w-24 animate-pulse rounded bg-muted" />
+          ) : (
+            value
+          )}
+        </div>
         {(description || trend) && (
           <p className="text-xs text-muted-foreground">
             {trend && (
