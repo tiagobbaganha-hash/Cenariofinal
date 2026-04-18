@@ -11,7 +11,7 @@ export default async function Page() {
     .select('*')
     .eq('status_text', 'open')
     .order('featured', { ascending: false })
-    .order('closes_at', { ascending: true, nullsLast: true })
+    .order('closes_at', { ascending: true, nullsFirst: false })
 
   const markets = (data ?? []) as unknown as FrontMarket[]
 
