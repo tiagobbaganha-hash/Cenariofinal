@@ -20,6 +20,7 @@ const navigation = [
   { name: 'Usuários', href: '/admin/users', icon: Users },
   { name: 'Finanças', href: '/admin/finance', icon: Wallet },
   { name: 'CMS', href: '/admin/cms', icon: FileText },
+  { name: 'Audit Log', href: '/admin/audit-logs', icon: FileText },
   { name: 'Configurações', href: '/admin/settings', icon: Settings },
 ]
 
