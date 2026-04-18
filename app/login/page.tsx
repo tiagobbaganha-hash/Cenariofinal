@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
@@ -28,6 +28,7 @@ export default function LoginPage() {
     e.preventDefault()
     setLoading(true)
     try {
+      const supabase = createClient()
       const { error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) throw error
       toast({ type: 'success', title: 'Bem-vindo de volta!' })
@@ -48,6 +49,7 @@ export default function LoginPage() {
     e.preventDefault()
     setLoading(true)
     try {
+      const supabase = createClient()
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: { shouldCreateUser: true },
@@ -66,6 +68,7 @@ export default function LoginPage() {
     e.preventDefault()
     setLoading(true)
     try {
+      const supabase = createClient()
       const { error } = await supabase.auth.verifyOtp({ email, token: otp, type: 'email' })
       if (error) throw error
       toast({ type: 'success', title: 'Entrou com sucesso!' })

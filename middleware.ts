@@ -1,28 +1,20 @@
-import { type NextRequest, NextResponse } from 'next/server'
-import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs'
+import { updateSession } from '@/lib/supabase/middleware'
+import { type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
-  const response = NextResponse.next()
-  const supabase = createMiddlewareClient({ req: request, res: response })
-
-  // Refresh session if needed
-  await supabase.auth.getSession()
-
-  // Proteger rotas /admin/*
-  if (request.nextUrl.pathname.startsWith('/admin')) {
-    const { data: { session } } = await supabase.auth.getSession()
-    
-    if (!session) {
-      return NextResponse.redirect(new URL('/login', request.url))
-    }
-
-    // TODO: Verificar role do usuario na tabela profiles
-    // Por enquanto, apenas requer estar logado
-  }
-
-  return response
+  return await updateSession(request)
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/api/admin/:path*'],
+  matcher: [
+    /*
+     * Match all request paths except:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - images - .svg, .png, .jpg, .jpeg, .gif, .webp
+     * Feel free to modify this pattern to include more paths.
+     */
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+  ],
 }
