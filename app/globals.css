@@ -2,12 +2,68 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  color-scheme: light;
+@layer base {
+  :root {
+    --background: 0 0% 4%;
+    --foreground: 0 0% 98%;
+    
+    --card: 0 0% 7%;
+    --card-foreground: 0 0% 98%;
+    
+    --popover: 0 0% 7%;
+    --popover-foreground: 0 0% 98%;
+    
+    --primary: 142 76% 45%;
+    --primary-foreground: 0 0% 2%;
+    
+    --secondary: 0 0% 14%;
+    --secondary-foreground: 0 0% 98%;
+    
+    --muted: 0 0% 14%;
+    --muted-foreground: 0 0% 64%;
+    
+    --accent: 0 0% 14%;
+    --accent-foreground: 0 0% 98%;
+    
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    
+    --success: 142 76% 45%;
+    --success-foreground: 0 0% 2%;
+    
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 2%;
+    
+    --border: 0 0% 18%;
+    --input: 0 0% 18%;
+    --ring: 142 76% 45%;
+    
+    --radius: 0.75rem;
+    
+    color-scheme: dark;
+  }
 }
 
-body {
-  @apply bg-neutral-950 text-neutral-100;
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+  
+  a {
+    @apply underline-offset-4;
+  }
 }
 
-a { @apply underline-offset-4; }
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  
+  .text-pretty {
+    text-wrap: pretty;
+  }
+}

@@ -3,6 +3,8 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { Button } from '@/components/ui/button'
+import { Shield } from 'lucide-react'
 
 export function Header() {
   const [email, setEmail] = useState<string | null>(null)
@@ -32,35 +34,39 @@ export function Header() {
   }
 
   return (
-    <header className="border-b border-neutral-800 bg-neutral-950/80 backdrop-blur">
+    <header className="border-b border-border bg-background/80 backdrop-blur">
       <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-4 py-4">
         <div className="flex items-center gap-4">
           <Link href="/" className="no-underline">
-            <div className="text-lg font-semibold">CenarioX</div>
+            <div className="text-lg font-semibold text-foreground">CenarioX</div>
           </Link>
-          <nav className="flex items-center gap-3 text-sm text-neutral-300">
-            <Link href="/" className="hover:text-white">Mercados</Link>
-            <Link href="/leaderboard" className="hover:text-white">Leaderboard</Link>
+          <nav className="flex items-center gap-3 text-sm text-muted-foreground">
+            <Link href="/" className="transition-colors hover:text-foreground">Mercados</Link>
+            <Link href="/leaderboard" className="transition-colors hover:text-foreground">Leaderboard</Link>
           </nav>
         </div>
 
         <div className="flex items-center gap-3 text-sm">
+          {/* Admin Link - TODO: verificar role do usuario */}
+          <Link href="/admin" className="no-underline">
+            <Button variant="ghost" size="sm" className="gap-1.5">
+              <Shield className="h-4 w-4" />
+              <span className="hidden sm:inline">Admin</span>
+            </Button>
+          </Link>
+
           {email ? (
             <>
-              <span className="hidden text-neutral-300 sm:inline">{email}</span>
-              <button
-                onClick={signOut}
-                className="rounded-xl border border-neutral-700 px-3 py-1.5 hover:bg-neutral-900"
-              >
+              <span className="hidden text-muted-foreground sm:inline">{email}</span>
+              <Button variant="outline" size="sm" onClick={signOut}>
                 Sair
-              </button>
+              </Button>
             </>
           ) : (
-            <Link
-              href="/login"
-              className="rounded-xl border border-neutral-700 px-3 py-1.5 no-underline hover:bg-neutral-900"
-            >
-              Entrar
+            <Link href="/login" className="no-underline">
+              <Button variant="outline" size="sm">
+                Entrar
+              </Button>
             </Link>
           )}
         </div>
