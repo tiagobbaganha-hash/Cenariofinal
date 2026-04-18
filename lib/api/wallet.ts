@@ -21,44 +21,52 @@ export interface Transaction {
 
 export async function getUserBalance(userId: string): Promise<UserBalance | null> {
   try {
-    // Buscar saldo atual via ledger
-    const { data, error } = await supabase
-      .from('ledger_entries')
-      .select('debit, credit')
+    // Buscar saldo atual via wallets table
+    const { data: wallet, error: walletError } = await supabase
+      .from('wallets')
+      .select('balance, total_deposited, total_withdrawn')
       .eq('user_id', userId)
+      .single()
 
-    if (error) throw error
-
-    const entries = data || []
-    const totalDebit = entries.reduce((sum, e) => sum + (e.debit || 0), 0)
-    const totalCredit = entries.reduce((sum, e) => sum + (e.credit || 0), 0)
-    const balance = totalCredit - totalDebit
+    if (walletError) {
+      console.error('Wallet not found, creating one:', walletError)
+      // Garantir que wallet existe
+      const { data: newWallet } = await supabase
+        .rpc('ensure_wallet_for', { p_user_id: userId })
+      
+      return {
+        userId,
+        balance: 0,
+        pendingDeposits: 0,
+        pendingWithdrawals: 0,
+        totalDeposited: 0,
+        totalWithdrawn: 0,
+      }
+    }
 
     // Buscar depósitos/saques pendentes
-    const { data: pending, error: pendingError } = await supabase
-      .from('ledger_entries')
-      .select('debit, credit, entry_type')
+    const { data: pending } = await supabase
+      .from('deposit_requests')
+      .select('amount')
       .eq('user_id', userId)
-      .in('entry_type', ['deposit', 'withdrawal'])
       .eq('status', 'pending')
 
-    if (pendingError) throw pendingError
+    const { data: withdrawals } = await supabase
+      .from('withdrawal_requests')
+      .select('amount')
+      .eq('user_id', userId)
+      .eq('status', 'pending')
 
-    const pendingEntries = pending || []
-    const pendingDeposits = pendingEntries
-      .filter((e) => e.entry_type === 'deposit')
-      .reduce((sum, e) => sum + (e.credit || 0), 0)
-    const pendingWithdrawals = pendingEntries
-      .filter((e) => e.entry_type === 'withdrawal')
-      .reduce((sum, e) => sum + (e.debit || 0), 0)
+    const pendingDeposits = (pending || []).reduce((sum, d) => sum + (d.amount || 0), 0)
+    const pendingWithdrawals = (withdrawals || []).reduce((sum, w) => sum + (w.amount || 0), 0)
 
     return {
       userId,
-      balance,
+      balance: wallet?.balance ?? 0,
       pendingDeposits,
       pendingWithdrawals,
-      totalDeposited: totalCredit,
-      totalWithdrawn: totalDebit,
+      totalDeposited: wallet?.total_deposited ?? 0,
+      totalWithdrawn: wallet?.total_withdrawn ?? 0,
     }
   } catch (error) {
     console.error('[getUserBalance]', error)
@@ -68,21 +76,22 @@ export async function getUserBalance(userId: string): Promise<UserBalance | null
 
 export async function getUserTransactions(userId: string, limit = 20): Promise<Transaction[]> {
   try {
+    // Usar wallet_ledger para histórico completo
     const { data, error } = await supabase
-      .from('ledger_entries')
-      .select('id, entry_type, debit, credit, created_at, reference_id, metadata')
+      .from('wallet_ledger')
+      .select('id, type, debit, credit, created_at, reference_id, metadata')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .limit(limit)
 
     if (error) throw error
 
-    return (data || []).map((entry) => ({
+    return (data || []).map((entry: any) => ({
       id: entry.id,
-      type: entry.entry_type as Transaction['type'],
+      type: entry.type as Transaction['type'],
       amount: entry.credit || entry.debit || 0,
       status: 'completed' as const,
-      description: getTransactionDescription(entry.entry_type, entry.metadata),
+      description: getTransactionDescription(entry.type, entry.metadata),
       createdAt: entry.created_at,
       reference: entry.reference_id,
     }))
@@ -115,17 +124,33 @@ export async function requestWithdrawal(userId: string, amount: number, pixKey: 
       throw new Error('Saldo insuficiente')
     }
 
-    // Criar registro de saque
+    // Usar RPC para request withdrawal
     const { data, error } = await supabase
-      .from('ledger_entries')
+      .rpc('request_withdrawal_v2', {
+        p_amount: amount,
+        p_pix_key: pixKey,
+      })
+
+    if (error) throw error
+
+    return { data, error: null }
+  } catch (error: any) {
+    return { data: null, error: error.message }
+  }
+}
+
+export async function requestDeposit(userId: string, amount: number) {
+  try {
+    if (amount <= 0) throw new Error('Valor deve ser positivo')
+
+    // Criar deposit_request
+    const { data, error } = await supabase
+      .from('deposit_requests')
       .insert([
         {
           user_id: userId,
-          entry_type: 'withdrawal',
-          debit: amount,
-          credit: 0,
-          reference_type: 'withdrawal_request',
-          metadata: { pix_key: pixKey },
+          amount,
+          status: 'pending',
         },
       ])
       .select()

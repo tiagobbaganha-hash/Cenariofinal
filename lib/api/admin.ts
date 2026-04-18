@@ -17,10 +17,11 @@ export interface Market {
   opens_at: string | null
   closes_at: string | null
   resolves_at: string | null
-  resolution_source?: string | null
   featured: boolean
   created_at: string
   created_by: string | null
+  total_volume?: number
+  bet_count?: number
 }
 
 export interface User {
@@ -40,28 +41,27 @@ export interface Activity {
 
 export async function fetchDashboardStats(): Promise<DashboardStats> {
   try {
-    // Buscar total de mercados
-    const { count: totalMarkets } = await supabase
-      .from('markets')
-      .select('*', { count: 'exact', head: true })
+    // Usar v_admin_kpis_final para dashboard stats
+    const { data: kpis, error } = await supabase
+      .from('v_admin_kpis_final')
+      .select('*')
+      .single()
 
-    // Buscar mercados ativos (status = 'open')
-    const { count: activeMarkets } = await supabase
-      .from('markets')
-      .select('*', { count: 'exact', head: true })
-      .eq('status', 'open')
-
-    // Buscar total de usuarios via auth
-    const { count: totalUsers } = await supabase.auth.admin.listUsers()
-
-    // TODO: Calcular volume total de apostas
-    const totalVolume = 0
+    if (error) {
+      console.error('Error fetching KPIs:', error)
+      return {
+        totalMarkets: 0,
+        activeMarkets: 0,
+        totalUsers: 0,
+        totalVolume: 0,
+      }
+    }
 
     return {
-      totalMarkets: totalMarkets ?? 0,
-      activeMarkets: activeMarkets ?? 0,
-      totalUsers: totalUsers ?? 0,
-      totalVolume,
+      totalMarkets: kpis?.total_markets ?? 0,
+      activeMarkets: kpis?.active_markets ?? 0,
+      totalUsers: kpis?.total_users ?? 0,
+      totalVolume: parseFloat(kpis?.total_volume ?? '0'),
     }
   } catch (error) {
     console.error('[fetchDashboardStats]', error)
@@ -74,16 +74,33 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
   }
 }
 
-export async function fetchMarkets(limit = 10): Promise<Market[]> {
+export async function fetchMarkets(limit = 50): Promise<Market[]> {
   try {
+    // Usar v_admin_markets_extended para listagem admin
     const { data, error } = await supabase
-      .from('markets')
+      .from('v_admin_markets_extended')
       .select('*')
       .order('created_at', { ascending: false })
       .limit(limit)
 
     if (error) throw error
-    return data || []
+    
+    return (data || []).map((m: any) => ({
+      id: m.id,
+      title: m.title,
+      slug: m.slug,
+      description: m.description,
+      category: m.category,
+      status: m.status,
+      opens_at: m.opens_at,
+      closes_at: m.closes_at,
+      resolves_at: m.resolves_at,
+      featured: m.featured,
+      created_at: m.created_at,
+      created_by: m.created_by,
+      total_volume: m.total_volume,
+      bet_count: m.bet_count,
+    }))
   } catch (error) {
     console.error('[fetchMarkets]', error)
     return []
@@ -93,7 +110,7 @@ export async function fetchMarkets(limit = 10): Promise<Market[]> {
 export async function fetchMarketById(id: string): Promise<Market | null> {
   try {
     const { data, error } = await supabase
-      .from('markets')
+      .from('v_admin_markets_extended')
       .select('*')
       .eq('id', id)
       .single()
@@ -106,11 +123,17 @@ export async function fetchMarketById(id: string): Promise<Market | null> {
   }
 }
 
-export async function fetchUsers(limit = 10): Promise<User[]> {
+export async function fetchUsers(limit = 50): Promise<User[]> {
   try {
-    // TODO: Implementar quando houver endpoint REST de usuarios
-    // Por enquanto, retorna array vazio
-    return []
+    // Usar v_admin_users para listagem de usuários
+    const { data, error } = await supabase
+      .from('v_admin_users')
+      .select('id, email, created_at, last_sign_in_at')
+      .order('created_at', { ascending: false })
+      .limit(limit)
+
+    if (error) throw error
+    return data || []
   } catch (error) {
     console.error('[fetchUsers]', error)
     return []
@@ -119,17 +142,22 @@ export async function fetchUsers(limit = 10): Promise<User[]> {
 
 export async function fetchRecentActivity(limit = 10): Promise<Activity[]> {
   try {
-    // Buscar trades recentes com informacoes de usuario e mercado
+    // Usar admin_audit_log para atividade recente
     const { data, error } = await supabase
-      .from('trades')
-      .select('id, created_at, orders(user_id), market_options(market_id)')
+      .from('admin_audit_log')
+      .select('*')
       .order('created_at', { ascending: false })
       .limit(limit)
 
     if (error) throw error
 
-    // TODO: Mapear para formato de Activity
-    return []
+    return (data || []).map((log: any) => ({
+      id: log.id,
+      type: log.action,
+      user_email: log.admin_email || 'Sistema',
+      market_title: log.resource_id || 'N/A',
+      created_at: log.created_at,
+    }))
   } catch (error) {
     console.error('[fetchRecentActivity]', error)
     return []
@@ -181,4 +209,19 @@ export async function deleteMarket(id: string) {
 
 export async function archiveMarket(id: string) {
   return updateMarket(id, { status: 'cancelled' })
+}
+
+export async function resolveMarket(id: string, winningOptionId: string) {
+  try {
+    const { data, error } = await supabase
+      .rpc('admin_resolve_market_v3', {
+        p_market_id: id,
+        p_winning_option_id: winningOptionId,
+      })
+
+    if (error) throw error
+    return { data, error: null }
+  } catch (error: any) {
+    return { data: null, error: error.message }
+  }
 }

@@ -76,9 +76,8 @@ export function MarketBetBox({ market }: { market: FrontMarket }) {
         return
       }
 
-      const { data, error } = await supabase.rpc('rpc_place_bet_as_v2', {
-        p_user_id: sessionUserId,
-        p_option_id: optionId,
+      const { data, error } = await supabase.rpc('place_order', {
+        p_market_option_id: optionId,
         p_stake: stakeNum,
       })
 
