@@ -1,4 +1,6 @@
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase/client'
+
+const supabase = createClient()
 import { recordAuditLog } from '@/lib/audit/auditLog'
 
 export interface ResolutionJob {

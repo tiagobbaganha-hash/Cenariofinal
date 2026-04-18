@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase/server'
 
 const VERIFF_API_KEY = process.env.VERIFF_API_KEY
 const VERIFF_BASE_URL = 'https://api.veriff.com'
@@ -20,6 +20,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Buscar usuário para obter email
+    const supabase = createClient()
     const { data: { user } } = await supabase.auth.admin.getUserById(userId)
 
     if (!user?.email) {

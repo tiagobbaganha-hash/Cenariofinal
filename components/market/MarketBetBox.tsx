@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase/client'
 import type { FrontMarket, MarketOption } from '@/lib/types'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -31,6 +31,7 @@ export function MarketBetBox({ market }: { market: FrontMarket }) {
   const [potentialReturn, setPotentialReturn] = useState<number>(0)
 
   useEffect(() => {
+    const supabase = createClient()
     supabase.auth.getSession().then(({ data }) => {
       setSessionUserId(data.session?.user?.id ?? null)
     })
@@ -76,6 +77,7 @@ export function MarketBetBox({ market }: { market: FrontMarket }) {
         return
       }
 
+      const supabase = createClient()
       const { data, error } = await supabase.rpc('place_order', {
         p_market_option_id: optionId,
         p_stake: stakeNum,

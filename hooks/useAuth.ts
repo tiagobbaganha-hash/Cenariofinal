@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase/client'
 import { type UserRole, type Permission, ROLE_PERMISSIONS } from '@/lib/auth/rbac'
 
 interface UserSession {
@@ -14,6 +14,7 @@ export function useAuth() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    const supabase = createClient()
     const getUser = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession()

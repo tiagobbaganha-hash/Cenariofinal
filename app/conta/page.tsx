@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase/client'
 import { SiteHeader } from '@/components/site-header'
 import { SiteFooter } from '@/components/site-footer'
 import { Card, CardContent } from '@/components/ui/card'
@@ -28,6 +28,7 @@ export default function AccountPage() {
 
   useEffect(() => {
     const load = async () => {
+      const supabase = createClient()
       const { data: auth } = await supabase.auth.getUser()
       if (!auth.user) {
         router.push('/login')
@@ -62,6 +63,7 @@ export default function AccountPage() {
   }, [router])
 
   async function handleSignOut() {
+    const supabase = createClient()
     await supabase.auth.signOut()
     toast({ type: 'success', title: 'Você saiu da sua conta' })
     router.push('/')

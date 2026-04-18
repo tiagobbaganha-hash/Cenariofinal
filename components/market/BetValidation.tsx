@@ -11,7 +11,7 @@ import {
   getUserLimitUsage,
   RiskLimitResult,
 } from '@/lib/compliance/riskLimits'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase/client'
 
 interface BetValidationProps {
   amount: number
@@ -30,6 +30,7 @@ export function BetValidation({ amount, userId, onValidationChange }: BetValidat
       try {
         let currentUserId = userId
         if (!currentUserId) {
+          const supabase = createClient()
           const { data } = await supabase.auth.getSession()
           currentUserId = data.session?.user?.id
         }

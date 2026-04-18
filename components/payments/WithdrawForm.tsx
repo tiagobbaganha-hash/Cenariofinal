@@ -8,7 +8,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { formatCurrency } from '@/lib/utils'
 import { Loader2, AlertCircle, CheckCircle2, ArrowLeft } from 'lucide-react'
 import { requestWithdrawal, getUserBalance } from '@/lib/api/wallet'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
@@ -27,6 +27,7 @@ export function WithdrawForm() {
 
   const handleGetBalance = async () => {
     try {
+      const supabase = createClient()
       const { data } = await supabase.auth.getSession()
       if (!data.session?.user) {
         router.push('/login')

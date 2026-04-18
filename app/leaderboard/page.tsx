@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase/client'
 import { SiteHeader } from '@/components/site-header'
 import { SiteFooter } from '@/components/site-footer'
 import { Card, CardContent } from '@/components/ui/card'
@@ -27,6 +27,7 @@ export default function LeaderboardPage() {
     const load = async () => {
       setLoading(true)
       try {
+        const supabase = createClient()
         const { data } = await supabase
           .from('v_front_leaderboard_v1')
           .select('*')

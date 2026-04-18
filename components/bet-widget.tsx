@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -31,6 +31,7 @@ export function BetWidget({ marketId, marketSlug, options, isOpen }: BetWidgetPr
 
   useEffect(() => {
     const load = async () => {
+      const supabase = createClient()
       const { data } = await supabase.auth.getUser()
       setAuthed(!!data.user)
       if (data.user) {
@@ -79,6 +80,7 @@ export function BetWidget({ marketId, marketSlug, options, isOpen }: BetWidgetPr
 
     setLoading(true)
     try {
+      const supabase = createClient()
       const { error } = await supabase.rpc('place_bet', {
         p_market_id: marketId,
         p_option_id: chosen.id,

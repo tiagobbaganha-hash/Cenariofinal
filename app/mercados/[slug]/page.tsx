@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase/server'
 import { SiteHeader } from '@/components/site-header'
 import { SiteFooter } from '@/components/site-footer'
 import { BetWidget } from '@/components/bet-widget'
@@ -15,6 +15,7 @@ export const revalidate = 10
 
 async function getMarket(slug: string): Promise<FrontMarket | null> {
   try {
+    const supabase = createClient()
     const { data, error } = await supabase
       .from('v_front_markets_v3')
       .select('*')

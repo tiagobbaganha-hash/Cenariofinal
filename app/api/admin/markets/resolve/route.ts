@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase/server'
 import { resolveMarket } from '@/lib/trading/resolution'
 
 export async function POST(req: NextRequest) {
@@ -14,6 +14,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Verificar autenticação e role de admin
+    const supabase = createClient()
     const { data: { session } } = await supabase.auth.getSession()
     if (!session?.user?.id) {
       return NextResponse.json(

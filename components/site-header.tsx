@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { Menu, X, TrendingUp } from 'lucide-react'
@@ -22,6 +22,7 @@ export function SiteHeader() {
 
   useEffect(() => {
     const load = async () => {
+      const supabase = createClient()
       const { data } = await supabase.auth.getUser()
       setUserEmail(data.user?.email ?? null)
 
@@ -38,6 +39,7 @@ export function SiteHeader() {
     }
     load()
 
+    const supabase = createClient()
     const { data: sub } = supabase.auth.onAuthStateChange(() => {
       load()
     })

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase/client'
 
 interface MarketUpdate {
   id: string
@@ -11,6 +11,7 @@ export function useRealtimeMarkets() {
   const [updates, setUpdates] = useState<MarketUpdate[]>([])
 
   useEffect(() => {
+    const supabase = createClient()
     const channel = supabase.channel('all_markets')
 
     channel
