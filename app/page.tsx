@@ -12,9 +12,9 @@ export default async function RootPage() {
     }
 
     // Caso contrário, ir para login
-    redirect('/(auth)/login')
+    redirect('/login')
   } catch (error) {
     // Em caso de erro, redirecionar para login
-    redirect('/(auth)/login')
+    redirect('/login')
   }
 }

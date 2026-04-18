@@ -1,12 +1,12 @@
 import { cn } from '@/lib/utils'
 import { X, CheckCircle, AlertCircle, Info, AlertTriangle } from 'lucide-react'
-import { Toast } from '@/lib/context/ToastContext'
+import type { Toast as ToastType } from '@/lib/context/ToastContext'
 
-interface ToastProps extends Toast {
+interface ToastProps extends ToastType {
   onClose: () => void
 }
 
-export function Toast({ id, title, description, type, onClose }: ToastProps) {
+export function ToastItem({ id, title, description, type, onClose }: ToastProps) {
   const typeConfig = {
     success: {
       bg: 'bg-success/10',
