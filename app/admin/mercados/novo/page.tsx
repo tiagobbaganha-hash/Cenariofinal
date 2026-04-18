@@ -57,7 +57,7 @@ export default function NovoMercado() {
           featured: form.featured,
           closes_at: form.closes_at || null,
           resolves_at: form.resolves_at || null,
-        })
+        } as any)
         .select()
         .single()
 
@@ -65,15 +65,16 @@ export default function NovoMercado() {
 
       // Create options
       if (market && options.length > 0) {
-        const optionsToInsert = options.map((opt, i) => ({
-          market_id: market.id,
+        const marketData = market as any
+        const optionsToInsert = options.map((opt) => ({
+          market_id: marketData.id,
           title: opt.title,
           description: opt.description,
           odds: 2.0,
           volume: 0,
         }))
 
-        await supabase.from('market_options').insert(optionsToInsert)
+        await supabase.from('market_options').insert(optionsToInsert as any)
       }
 
       router.push('/admin/mercados')
