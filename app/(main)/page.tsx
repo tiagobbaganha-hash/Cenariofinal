@@ -1,48 +1,31 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { getFrontMarkets, getFeaturedMarkets, FrontMarket } from '@/lib/api/markets'
 import { formatDate } from '@/lib/utils'
 import { TrendingUp, Clock, Users, Zap } from 'lucide-react'
 
-interface Market {
-  id: string
-  title: string
-  category: string
-  description?: string
-  status: string
-  featured: boolean
-  closes_at: string | null
-  options_count?: number
-}
-
 export default function HomePage() {
-  const [featuredMarkets, setFeaturedMarkets] = useState<Market[]>([])
-  const [allMarkets, setAllMarkets] = useState<Market[]>([])
+  const [featuredMarkets, setFeaturedMarkets] = useState<FrontMarket[]>([])
+  const [allMarkets, setAllMarkets] = useState<FrontMarket[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const loadMarkets = async () => {
       try {
-        const { data, error } = await supabase
-          .from('markets')
-          .select('id, title, category, description, status, featured, closes_at')
-          .eq('status', 'open')
-          .order('featured', { ascending: false })
-          .order('closes_at', { ascending: true })
-
-        if (error) throw error
-
-        const markets = data || []
-        const featured = markets.filter((m) => m.featured).slice(0, 3)
+        const [featured, all] = await Promise.all([
+          getFeaturedMarkets(3),
+          getFrontMarkets(50),
+        ])
+        
         setFeaturedMarkets(featured)
-        setAllMarkets(markets)
+        setAllMarkets(all)
       } catch (error) {
-        console.error('Erro ao carregar mercados:', error)
+        console.error('Error loading markets:', error)
       } finally {
         setLoading(false)
       }
@@ -193,7 +176,7 @@ function StatCard({
   )
 }
 
-function MarketCard({ market, featured = false }: { market: Market; featured?: boolean }) {
+function MarketCard({ market, featured = false }: { market: FrontMarket; featured?: boolean }) {
   const timeLeft = market.closes_at
     ? Math.floor((new Date(market.closes_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
     : null

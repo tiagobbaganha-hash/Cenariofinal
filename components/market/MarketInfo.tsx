@@ -1,10 +1,21 @@
 'use client'
 
-import type { FrontMarket } from '@/lib/types'
+import type { FrontMarket } from '@/lib/api/markets'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { formatDate } from '@/lib/utils'
 import { Calendar, Tag, FileText } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { getMarketOptions } from '@/lib/api/markets'
+
+interface MarketOption {
+  id: string
+  title: string
+  description?: string
+  volume: number
+  odds: number
+  is_winning?: boolean
+}
 
 const statusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'success' | 'warning' | 'destructive' }> = {
   open: { label: 'Aberto', variant: 'success' },
@@ -15,6 +26,24 @@ const statusConfig: Record<string, { label: string; variant: 'default' | 'second
 }
 
 export function MarketInfo({ market }: { market: FrontMarket }) {
+  const [options, setOptions] = useState<MarketOption[]>([])
+  const [loading, setLoading] = useState(true)
+  
+  useEffect(() => {
+    const loadOptions = async () => {
+      try {
+        const opts = await getMarketOptions(market.id)
+        setOptions(opts)
+      } catch (error) {
+        console.error('Error loading market options:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadOptions()
+  }, [market.id])
+
   const status = statusConfig[market.status] || { label: market.status, variant: 'default' as const }
 
   return (
@@ -75,27 +104,37 @@ export function MarketInfo({ market }: { market: FrontMarket }) {
           <CardTitle className="text-base">Opções de Resposta</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-2">
-            {market.options?.map((option) => (
-              <div
-                key={option.id}
-                className="flex items-center justify-between rounded-lg border border-border p-3 hover:bg-accent/50 transition-colors"
-              >
-                <div>
-                  <p className="font-medium">{option.label}</p>
-                  {option.probability && (
-                    <p className="text-xs text-muted-foreground">
-                      Probabilidade: {option.probability}
-                    </p>
-                  )}
+          {loading ? (
+            <div className="space-y-2">
+              {[1, 2].map((i) => (
+                <div key={i} className="h-16 bg-muted rounded-lg animate-pulse" />
+              ))}
+            </div>
+          ) : options.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Nenhuma opção disponível</p>
+          ) : (
+            <div className="space-y-2">
+              {options.map((option) => (
+                <div
+                  key={option.id}
+                  className="flex items-center justify-between rounded-lg border border-border p-3 hover:bg-accent/50 transition-colors"
+                >
+                  <div>
+                    <p className="font-medium">{option.title}</p>
+                    {option.volume && (
+                      <p className="text-xs text-muted-foreground">
+                        Volume: R$ {option.volume.toFixed(2)}
+                      </p>
+                    )}
+                  </div>
+                  <div className="text-right">
+                    <p className="font-semibold text-primary">{option.odds.toFixed(2)}x</p>
+                    <p className="text-xs text-muted-foreground">odds</p>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className="font-semibold text-primary">{option.odds}</p>
-                  <p className="text-xs text-muted-foreground">odds</p>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
