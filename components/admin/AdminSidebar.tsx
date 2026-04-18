@@ -17,10 +17,10 @@ import {
 const navigation = [
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
   { name: 'Mercados', href: '/admin/markets', icon: TrendingUp },
-  { name: 'Usuarios', href: '/admin/users', icon: Users },
-  { name: 'Financeiro', href: '/admin/finance', icon: Wallet },
+  { name: 'Usuários', href: '/admin/users', icon: Users },
+  { name: 'Finanças', href: '/admin/finance', icon: Wallet },
   { name: 'CMS', href: '/admin/cms', icon: FileText },
-  { name: 'Configuracoes', href: '/admin/settings', icon: Settings },
+  { name: 'Configurações', href: '/admin/settings', icon: Settings },
 ]
 
 export function AdminSidebar() {

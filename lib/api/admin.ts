@@ -17,6 +17,7 @@ export interface Market {
   opens_at: string | null
   closes_at: string | null
   resolves_at: string | null
+  resolution_source?: string | null
   featured: boolean
   created_at: string
   created_by: string | null
@@ -86,6 +87,22 @@ export async function fetchMarkets(limit = 10): Promise<Market[]> {
   } catch (error) {
     console.error('[fetchMarkets]', error)
     return []
+  }
+}
+
+export async function fetchMarketById(id: string): Promise<Market | null> {
+  try {
+    const { data, error } = await supabase
+      .from('markets')
+      .select('*')
+      .eq('id', id)
+      .single()
+
+    if (error) throw error
+    return data || null
+  } catch (error) {
+    console.error('[fetchMarketById]', error)
+    return null
   }
 }
 
@@ -160,4 +177,8 @@ export async function deleteMarket(id: string) {
   } catch (error: any) {
     return { error: error.message }
   }
+}
+
+export async function archiveMarket(id: string) {
+  return updateMarket(id, { status: 'cancelled' })
 }
