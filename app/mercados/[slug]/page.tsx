@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { BetWidget } from '@/components/bet-widget'
 import { PriceHistoryChart } from '@/components/market/PriceHistoryChart'
 import { MarketComments } from '@/components/market/MarketComments'
+import { AIAnalysis } from '@/components/market/AIAnalysis'
 import { RelatedMarkets } from '@/components/market/RelatedMarkets'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -240,6 +241,9 @@ export default async function MarketDetailPage({
 
             {/* Share */}
             <ShareButtons title={market.title} slug={market.slug} />
+
+            {/* AI Analysis — visível só para logados */}
+            <AIAnalysis marketId={market.id} />
 
             {/* Comments */}
             <MarketComments marketId={market.id} />

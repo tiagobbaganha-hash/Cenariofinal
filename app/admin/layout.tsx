@@ -12,7 +12,7 @@ import {
   Settings,
   ChevronLeft,
   Zap,
-
+  Brain,
   FileText,
 
   Menu,
@@ -23,6 +23,7 @@ import { Button } from '@/components/ui/button'
 
 const navItems = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/admin/ai-dashboard', label: 'IA Insights ✨', icon: Brain },
   { href: '/admin/mercados', label: 'Mercados', icon: TrendingUp },
   { href: '/admin/usuarios', label: 'Usuários', icon: Users },
   { href: '/admin/financeiro', label: 'Financeiro', icon: Wallet },
