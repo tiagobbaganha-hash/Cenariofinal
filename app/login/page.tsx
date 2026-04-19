@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { useToast } from '@/hooks/useToast'
-import { Loader2, Mail, Lock, TrendingUp, ArrowLeft } from 'lucide-react'
+import { Loader2, Mail, Lock } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 type Mode = 'password' | 'otp'
@@ -98,27 +98,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="relative flex min-h-dvh flex-col">
-      {/* Header minimalista */}
-      <header className="border-b border-border/60 bg-background/80 backdrop-blur-xl">
-        <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4 sm:px-6">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/15 text-primary ring-1 ring-primary/30">
-              <TrendingUp className="h-4 w-4" strokeWidth={2.5} />
-            </div>
-            <span className="text-base font-bold">
-              Cenario<span className="text-primary">X</span>
-            </span>
-          </Link>
-          <Link href="/">
-            <Button variant="ghost" size="sm" className="gap-2">
-              <ArrowLeft className="h-3.5 w-3.5" />
-              Voltar
-            </Button>
-          </Link>
-        </div>
-      </header>
-
+    <div className="relative flex min-h-[calc(100dvh-8rem)] flex-col">
       {/* Content */}
       <div className="relative flex flex-1 items-center justify-center px-4 py-12 sm:px-6">
         <div className="absolute inset-0 bg-grid opacity-40 [mask-image:radial-gradient(ellipse_at_center,black_0%,transparent_60%)]" />
