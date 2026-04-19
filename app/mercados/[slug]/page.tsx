@@ -5,11 +5,31 @@ import { BetWidget } from '@/components/bet-widget'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import type { FrontMarket } from '@/lib/types'
+import type { Metadata } from 'next'
 import { Calendar, Clock, TrendingUp, Users, ChevronLeft } from 'lucide-react'
 import { formatCurrency, formatDateTime } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 10
+
+export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+  const market = await getMarket(params.slug)
+  if (!market) return { title: 'Mercado não encontrado' }
+  
+  const options = Array.isArray(market.options) ? market.options : []
+  const yesOpt = options.find((o: any) => o.option_key === 'yes')
+  const prob = yesOpt?.probability ? `${(yesOpt.probability * 100).toFixed(0)}%` : ''
+  
+  return {
+    title: market.title,
+    description: `${market.description || market.title}${prob ? ` — ${prob} de chance` : ''}. Faça sua previsão no CenarioX.`,
+    openGraph: {
+      title: market.title,
+      description: market.description || 'Mercado preditivo no CenarioX',
+      type: 'website',
+    },
+  }
+}
 
 async function getMarket(slug: string): Promise<FrontMarket | null> {
   const supabase = createClient()

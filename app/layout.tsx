@@ -26,7 +26,16 @@ export const metadata: Metadata = {
   },
   description:
     'A plataforma brasileira de mercados preditivos. Aposte em eventos reais, negocie previsões e compita com outros traders.',
-  keywords: ['mercados preditivos', 'apostas', 'previsões', 'CenarioX', 'trading'],
+  keywords: ['mercados preditivos', 'apostas', 'previsões', 'CenarioX', 'trading', 'Brasil'],
+  manifest: '/manifest.json',
+  openGraph: {
+    type: 'website',
+    locale: 'pt_BR',
+    siteName: 'CenarioX',
+    title: 'CenarioX — Mercados Preditivos',
+    description: 'A plataforma brasileira de mercados preditivos.',
+  },
+  robots: { index: true, follow: true },
 }
 
 export const viewport: Viewport = {
