@@ -31,11 +31,25 @@ interface Market {
   created_at: string
 }
 
+interface MarketOption {
+  id: string
+  label: string
+  option_key: string
+}
+
 export default function AdminMercados() {
   const [markets, setMarkets] = useState<Market[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
+  
+  // Resolve modal
+  const [resolveMarket, setResolveMarket] = useState<Market | null>(null)
+  const [resolveOptions, setResolveOptions] = useState<MarketOption[]>([])
+  const [selectedOption, setSelectedOption] = useState('')
+  const [resolveNote, setResolveNote] = useState('')
+  const [resolving, setResolving] = useState(false)
+  const [resolveMsg, setResolveMsg] = useState<string | null>(null)
 
   useEffect(() => {
     loadMarkets()
@@ -58,6 +72,41 @@ export default function AdminMercados() {
     const { data } = await query
     setMarkets(data || [])
     setLoading(false)
+  }
+
+  async function openResolve(market: Market) {
+    setResolveMarket(market)
+    setSelectedOption('')
+    setResolveNote('')
+    setResolveMsg(null)
+    const supabase = createClient()
+    const { data } = await supabase
+      .from('market_options')
+      .select('id, label, option_key')
+      .eq('market_id', market.id)
+      .order('sort_order')
+    setResolveOptions((data || []) as MarketOption[])
+  }
+
+  async function handleResolve() {
+    if (!resolveMarket || !selectedOption) return
+    setResolving(true)
+    setResolveMsg(null)
+    try {
+      const supabase = createClient()
+      const { error } = await supabase.rpc('admin_settle_market', {
+        p_market_id: resolveMarket.id,
+        p_result_option_id: selectedOption,
+        p_note: resolveNote || 'Resolvido pelo admin',
+      })
+      if (error) throw error
+      setResolveMsg('Mercado resolvido e apostas liquidadas!')
+      setTimeout(() => { setResolveMarket(null); loadMarkets() }, 1500)
+    } catch (err: any) {
+      setResolveMsg('Erro: ' + (err?.message || 'Falha ao resolver'))
+    } finally {
+      setResolving(false)
+    }
   }
 
   const filteredMarkets = markets.filter(m => 
@@ -223,6 +272,11 @@ export default function AdminMercados() {
                               <Edit className="h-4 w-4" />
                             </Button>
                           </Link>
+                          {(market.status === 'open' || market.status === 'closed') && (
+                            <Button size="sm" variant="ghost" className="text-green-400 hover:text-green-300" onClick={() => openResolve(market)}>
+                              <CheckCircle className="h-4 w-4" />
+                            </Button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -233,6 +287,66 @@ export default function AdminMercados() {
           </table>
         </div>
       </div>
+
+      {/* Resolve Modal */}
+      {resolveMarket && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md rounded-2xl bg-card border border-border p-6 space-y-4">
+            <h2 className="text-lg font-bold">Resolver Mercado</h2>
+            <p className="text-sm text-muted-foreground line-clamp-2">{resolveMarket.title}</p>
+            
+            <div>
+              <label className="block text-sm font-medium mb-2">Opção vencedora</label>
+              <div className="space-y-2">
+                {resolveOptions.map(opt => (
+                  <button
+                    key={opt.id}
+                    onClick={() => setSelectedOption(opt.id)}
+                    className={`w-full p-3 rounded-xl border text-left transition-colors ${
+                      selectedOption === opt.id 
+                        ? 'border-green-500 bg-green-500/10 text-green-400' 
+                        : 'border-border hover:bg-accent/30'
+                    }`}
+                  >
+                    <span className="font-medium">{opt.label}</span>
+                    <span className="text-xs text-muted-foreground ml-2">({opt.option_key})</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1">Nota (opcional)</label>
+              <input
+                type="text"
+                value={resolveNote}
+                onChange={e => setResolveNote(e.target.value)}
+                placeholder="Ex: Fonte oficial confirmou resultado"
+                className="w-full h-10 px-4 rounded-lg bg-background border border-border focus:border-primary outline-none text-sm"
+              />
+            </div>
+
+            {resolveMsg && (
+              <div className={`p-3 rounded-lg text-sm ${resolveMsg.startsWith('Erro') ? 'bg-red-500/10 text-red-400' : 'bg-green-500/10 text-green-400'}`}>
+                {resolveMsg}
+              </div>
+            )}
+
+            <div className="flex gap-3">
+              <Button variant="outline" className="flex-1" onClick={() => setResolveMarket(null)}>
+                Cancelar
+              </Button>
+              <Button 
+                className="flex-1 bg-green-600 hover:bg-green-700" 
+                disabled={!selectedOption || resolving}
+                onClick={handleResolve}
+              >
+                {resolving ? 'Resolvendo...' : 'Confirmar resultado'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

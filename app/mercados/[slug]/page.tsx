@@ -49,6 +49,16 @@ export default async function MarketDetailPage({
   const market = await getMarket(params.slug)
   if (!market) return notFound()
 
+  // Load market stats
+  const supabase = createClient()
+  const { data: statsData } = await supabase
+    .from('orders')
+    .select('stake_amount')
+    .eq('market_id', market.id)
+  
+  const totalVolume = (statsData || []).reduce((sum: number, o: any) => sum + parseFloat(o.stake_amount || '0'), 0)
+  const betCount = (statsData || []).length
+
   const options = Array.isArray(market.options) ? market.options : []
   const isOpen = market.status_text === 'open'
 
@@ -93,12 +103,12 @@ export default async function MarketDetailPage({
               <MiniStat
                 icon={TrendingUp}
                 label="Volume total"
-                value={formatCurrency(0)}
+                value={formatCurrency(totalVolume)}
               />
               <MiniStat
                 icon={Users}
-                label="Opções"
-                value={String(market.options_count ?? 0)}
+                label="Apostas"
+                value={String(betCount)}
               />
               <MiniStat
                 icon={Calendar}

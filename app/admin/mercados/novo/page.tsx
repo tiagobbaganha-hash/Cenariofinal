@@ -66,11 +66,14 @@ export default function NovoMercado() {
       // Create options
       if (market && options.length > 0) {
         const marketData = market as any
-        const optionsToInsert = options.map((opt) => ({
+        const optionsToInsert = options.map((opt: any, idx: number) => ({
           market_id: marketData.id,
           label: opt.label,
-          option_key: opt.option_key,
-          odds: 1.90, probability: 0.50, sort_order: idx,
+          option_key: opt.option_key || 'yes',
+          odds: opt.odds ?? 1.90,
+          probability: opt.probability ?? 0.50,
+          sort_order: idx,
+          is_active: true,
         }))
 
         await supabase.from('market_options').insert(optionsToInsert as any)
@@ -227,23 +230,52 @@ export default function NovoMercado() {
                   value={option.label}
                   onChange={(e) => {
                     const newOpts = [...options]
-                    newOpts[index].title = e.target.value
+                    newOpts[index] = { ...newOpts[index], label: e.target.value }
                     setOptions(newOpts)
                   }}
-                  placeholder="Titulo da opcao"
+                  placeholder="Label (ex: SIM, NÃO)"
                   className="w-full h-10 px-4 rounded-lg bg-background border border-border focus:border-primary outline-none"
                 />
-                <input
-                  type="text"
-                  value={option.description}
-                  onChange={(e) => {
-                    const newOpts = [...options]
-                    newOpts[index].description = e.target.value
-                    setOptions(newOpts)
-                  }}
-                  placeholder="Descricao (opcional)"
-                  className="w-full h-10 px-4 rounded-lg bg-background border border-border focus:border-primary outline-none text-sm"
-                />
+                <div className="grid grid-cols-3 gap-2">
+                  <select
+                    value={option.option_key}
+                    onChange={(e) => {
+                      const newOpts = [...options]
+                      newOpts[index] = { ...newOpts[index], option_key: e.target.value }
+                      setOptions(newOpts)
+                    }}
+                    className="h-10 px-3 rounded-lg bg-background border border-border focus:border-primary outline-none text-sm"
+                  >
+                    <option value="yes">yes (SIM)</option>
+                    <option value="no">no (NÃO)</option>
+                  </select>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={(option as any).odds ?? 1.90}
+                    onChange={(e) => {
+                      const newOpts = [...options]
+                      newOpts[index] = { ...newOpts[index], odds: parseFloat(e.target.value) || 1.90 } as any
+                      setOptions(newOpts)
+                    }}
+                    placeholder="Odds (ex: 1.90)"
+                    className="h-10 px-3 rounded-lg bg-background border border-border focus:border-primary outline-none text-sm"
+                  />
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="1"
+                    value={(option as any).probability ?? 0.50}
+                    onChange={(e) => {
+                      const newOpts = [...options]
+                      newOpts[index] = { ...newOpts[index], probability: parseFloat(e.target.value) || 0.50 } as any
+                      setOptions(newOpts)
+                    }}
+                    placeholder="Prob (ex: 0.50)"
+                    className="h-10 px-3 rounded-lg bg-background border border-border focus:border-primary outline-none text-sm"
+                  />
+                </div>
               </div>
               {options.length > 2 && (
                 <Button type="button" variant="ghost" size="sm" onClick={() => removeOption(index)} className="text-red-400">
