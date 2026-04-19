@@ -40,7 +40,7 @@ async function getMarket(slug: string): Promise<FrontMarket | null> {
   
   // Try by slug first
   const { data, error } = await supabase
-    .from('v_front_markets_v4')
+    .from('v_front_markets_v5')
     .select('*')
     .eq('slug', slug)
     .maybeSingle()
@@ -53,7 +53,7 @@ async function getMarket(slug: string): Promise<FrontMarket | null> {
 
   // Fallback: try by id
   const { data: byId, error: idError } = await supabase
-    .from('v_front_markets_v4')
+    .from('v_front_markets_v5')
     .select('*')
     .eq('id', slug)
     .maybeSingle()
@@ -140,6 +140,21 @@ export default async function MarketDetailPage({
                 {market.featured && <Badge>Destaque</Badge>}
                 <StatusBadge status={market.status_text ?? 'open'} />
               </div>
+
+              {/* Badge do influencer */}
+              {(market as any).influencer_name && (
+                <div className="flex items-center gap-2 rounded-xl border border-border bg-card/60 px-3 py-2 w-fit">
+                  {(market as any).influencer_photo ? (
+                    <img src={(market as any).influencer_photo} className="h-6 w-6 rounded-full object-cover" />
+                  ) : (
+                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary">
+                      {(market as any).influencer_name.charAt(0)}
+                    </div>
+                  )}
+                  <span className="text-xs text-muted-foreground">Mercado de</span>
+                  <span className="text-xs font-semibold text-foreground">{(market as any).influencer_name}</span>
+                </div>
+              )}
 
               <h1 className="text-balance text-3xl font-bold tracking-tight sm:text-4xl">
                 {market.title}

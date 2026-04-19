@@ -289,6 +289,27 @@ export default function EditarMercado() {
           ))}
         </div>
 
+        {/* Influencer */}
+        <div className="rounded-xl bg-card border border-border p-5 space-y-3">
+          <h2 className="font-semibold text-sm">Influencer associado</h2>
+          <p className="text-xs text-muted-foreground">Selecione um influencer para rastrear apostas e pagar comissão</p>
+          <select
+            value={influencerId}
+            onChange={e => setInfluencerId(e.target.value)}
+            className="w-full h-10 px-3 rounded-lg bg-background border border-border outline-none text-sm text-foreground"
+          >
+            <option value="">Sem influencer</option>
+            {influencers.map((inf: any) => (
+              <option key={inf.id} value={inf.id}>{inf.name}</option>
+            ))}
+          </select>
+          {influencerId && (
+            <p className="text-xs text-green-400">
+              ✅ {influencers.find((i: any) => i.id === influencerId)?.name} vinculado — comissão ativa
+            </p>
+          )}
+        </div>
+
         <div className="flex gap-4">
           <Link href="/admin/mercados" className="flex-1">
             <Button type="button" variant="outline" className="w-full">Voltar</Button>
