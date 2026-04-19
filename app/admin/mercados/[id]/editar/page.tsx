@@ -49,14 +49,7 @@ export default function EditarMercado() {
 
       const { data: opts } = await supabase
         .from('market_options').select('*').eq('market_id', marketId).order('sort_order')
-      setOptions((opts || []).map((o: any) => ({
-        id: o.id,
-        label: o.label || o.name || o.option_key || '',
-        option_key: o.option_key || 'yes',
-        odds: parseFloat(o.odds || '2'),
-        probability: parseFloat(o.probability || '0.5'),
-        sort_order: o.sort_order || 0,
-      })))
+      setOptions(opts || [])
       // Carregar influencers
       const infRes = await supabase.from('influencers').select('id, name').eq('is_active', true)
       setInfluencers(infRes.data || [])
@@ -266,13 +259,28 @@ export default function EditarMercado() {
         <div className="rounded-xl bg-card border border-border p-6 space-y-4">
           <h2 className="font-semibold">Opções</h2>
           {options.map((opt, i) => (
-            <div key={opt.id} className="grid grid-cols-4 gap-2">
-              <input value={opt.label} onChange={e => { const n = [...options]; n[i] = { ...n[i], label: e.target.value }; setOptions(n) }}
-                placeholder="Label" className="h-10 px-3 rounded-lg bg-background border border-border outline-none" />
-              <select value={opt.option_key} onChange={e => { const n = [...options]; n[i] = { ...n[i], option_key: e.target.value }; setOptions(n) }}
-                className="h-10 px-3 rounded-lg bg-background border border-border outline-none text-sm">
-                <option value="yes">yes</option><option value="no">no</option>
-              </select>
+            <div key={opt.id || i} className="rounded-xl border border-border bg-background/50 p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-muted-foreground">Opção {i + 1}</span>
+              </div>
+              <input value={opt.label || ''} onChange={e => { const n = [...options]; n[i] = { ...n[i], label: e.target.value }; setOptions(n) }}
+                placeholder="Nome da opção" className="w-full h-10 px-3 rounded-lg bg-background border border-border outline-none text-sm text-foreground" />
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <label className="block text-[10px] text-muted-foreground mb-1">Odds</label>
+                  <input type="number" step="0.01" value={opt.odds || 2} onChange={e => { const n = [...options]; n[i] = { ...n[i], odds: e.target.value }; setOptions(n) }}
+                    className="w-full h-10 px-3 rounded-lg bg-background border border-border outline-none text-sm text-foreground" />
+                </div>
+                <div className="flex-1">
+                  <label className="block text-[10px] text-muted-foreground mb-1">Prob %</label>
+                  <input type="number" step="0.01" value={opt.probability || 0.5} onChange={e => { const n = [...options]; n[i] = { ...n[i], probability: e.target.value }; setOptions(n) }}
+                    className="w-full h-10 px-3 rounded-lg bg-background border border-border outline-none text-sm text-foreground" />
+                </div>
+                <div className="flex-1">
+                  <label className="block text-[10px] text-muted-foreground mb-1">Chave</label>
+                  <select value={opt.option_key || 'yes'} onChange={e => { const n = [...options]; n[i] = { ...n[i], option_key: e.target.value }; setOptions(n) }}
+                    className="w-full h-10 px-3 rounded-lg bg-background border border-border outline-none text-sm text-foreground">
+                    <option value="yes">yes</option><option value="no">no</option>
               <input type="number" step="0.01" value={opt.odds} onChange={e => { const n = [...options]; n[i] = { ...n[i], odds: e.target.value }; setOptions(n) }}
                 placeholder="Odds" className="h-10 px-3 rounded-lg bg-background border border-border outline-none" />
               <input type="number" step="0.01" value={opt.probability} onChange={e => { const n = [...options]; n[i] = { ...n[i], probability: e.target.value }; setOptions(n) }}

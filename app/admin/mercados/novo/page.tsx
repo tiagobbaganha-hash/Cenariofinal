@@ -30,6 +30,7 @@ export default function NovoMercado() {
     resolves_at: '',
     image_url: '',
     influencer_id: '',
+    platform_commission: '5',
   })
 
   const [influencers, setInfluencers] = useState<any[]>([])
@@ -138,7 +139,8 @@ export default function NovoMercado() {
         category: form.category, status: form.status, featured: form.featured,
         closes_at: form.closes_at || null, resolves_at: form.resolves_at || null,
         image_url: form.image_url || null,
-        ...(form.influencer_id ? { influencer_id: form.influencer_id } : {})
+        ...(form.influencer_id ? { influencer_id: form.influencer_id } : {}),
+        platform_commission: parseFloat(form.platform_commission) || 5,
       }).select().single()
       if (mErr) throw mErr
 
@@ -320,23 +322,51 @@ export default function NovoMercado() {
           </button>
         </div>
         {options.map((opt, i) => (
-          <div key={i} className="flex gap-2 items-center">
-            <input className={inputCls + ' flex-1'} placeholder="Label" value={opt.label}
+          <div key={i} className="rounded-xl border border-border bg-background/50 p-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-muted-foreground">Opção {i + 1}</span>
+              {options.length > 2 && (
+                <button onClick={() => setOptions(o => o.filter((_, j) => j !== i))} className="text-red-400 hover:text-red-300 p-1">
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+            <input className={inputCls} placeholder="Nome da opção (ex: SIM, Lula, São Paulo)" value={opt.label}
               onChange={e => setOptions(o => o.map((x, j) => j === i ? { ...x, label: e.target.value } : x))} />
-            <input className={inputCls + ' w-20'} placeholder="%" type="number" min="0" max="100" step="1"
-              value={Math.round(opt.probability * 100)}
-              onChange={e => {
-                const pct = Math.min(100, Math.max(0, Number(e.target.value))) / 100
-                setOptions(o => o.map((x, j) => j === i ? { ...x, probability: pct, odds: pct > 0 ? parseFloat((1/pct).toFixed(2)) : 0 } : x))
-              }} />
-            <span className="text-xs text-muted-foreground w-16 text-center">odds {opt.odds.toFixed(2)}</span>
-            {options.length > 2 && (
-              <button onClick={() => setOptions(o => o.filter((_, j) => j !== i))} className="text-red-400 hover:text-red-300">
-                <Trash2 className="h-4 w-4" />
-              </button>
-            )}
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <label className="block text-[10px] text-muted-foreground mb-1">Probabilidade %</label>
+                <input className={inputCls} type="number" min="0" max="100" step="1"
+                  value={Math.round(opt.probability * 100)}
+                  onChange={e => {
+                    const pct = Math.min(100, Math.max(0, Number(e.target.value))) / 100
+                    setOptions(o => o.map((x, j) => j === i ? { ...x, probability: pct, odds: pct > 0 ? parseFloat((1/pct).toFixed(2)) : 0 } : x))
+                  }} />
+              </div>
+              <div className="flex-1">
+                <label className="block text-[10px] text-muted-foreground mb-1">Odds</label>
+                <input className={inputCls} type="number" min="1" step="0.01" value={opt.odds}
+                  onChange={e => setOptions(o => o.map((x, j) => j === i ? { ...x, odds: parseFloat(e.target.value) || 2 } : x))} />
+              </div>
+            </div>
           </div>
         ))}
+      </div>
+
+      {/* Comissão da plataforma */}
+      <div className="rounded-2xl border border-border bg-card p-5 space-y-3">
+        <p className="text-sm font-semibold text-foreground">Comissão da plataforma</p>
+        <p className="text-xs text-muted-foreground">Percentual retido pela plataforma sobre cada aposta neste mercado</p>
+        <div className="relative">
+          <input
+            className={inputCls + ' pr-8'}
+            type="number" min="0" max="20" step="0.5"
+            value={form.platform_commission}
+            onChange={e => setForm({ ...form, platform_commission: e.target.value })}
+          />
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
+        </div>
+        <p className="text-xs text-muted-foreground/60">Padrão: 5% · Máximo recomendado: 10%</p>
       </div>
 
       {/* Influencer */}
