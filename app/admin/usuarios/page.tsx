@@ -57,7 +57,7 @@ export default function AdminUsuarios() {
         .select('user_id, balance')
         .in('user_id', userIds)
 
-      const walletMap = new Map(wallets?.map(w => [w.user_id, parseFloat(w.balance || '0')]))
+      const walletMap = new Map(wallets?.map(w => [w.user_id, parseFloat(w.available_balance || '0')]))
 
       setUsers(data.map((u: any) => ({
         id: u.id,
@@ -120,7 +120,7 @@ export default function AdminUsuarios() {
         </div>
         <div className="p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/20">
           <p className="text-2xl font-bold text-yellow-400">
-            R$ {(users.reduce((s, u) => s + (u.balance || 0), 0) / 1000).toFixed(1)}k
+            R$ {(users.reduce((s, u) => s + (u.available_balance || 0), 0) / 1000).toFixed(1)}k
           </p>
           <p className="text-sm text-muted-foreground">Saldo Total</p>
         </div>
@@ -178,7 +178,7 @@ export default function AdminUsuarios() {
                     <td className="p-4 tabular-nums">
                       <div className="flex items-center gap-1">
                         <Wallet className="h-4 w-4 text-muted-foreground" />
-                        R$ {(user.balance || 0).toFixed(2)}
+                        R$ {(user.available_balance || 0).toFixed(2)}
                       </div>
                     </td>
                     <td className="p-4">

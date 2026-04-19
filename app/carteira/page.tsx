@@ -228,7 +228,7 @@ export default function CarteiraPage() {
           <div className="relative">
             <p className="text-sm text-muted-foreground mb-1">Saldo Disponivel</p>
             <p className="text-4xl font-black text-gradient">
-              R$ {wallet?.balance.toFixed(2) || '0,00'}
+              R$ {wallet?.available_balance.toFixed(2) || '0,00'}
             </p>
             {(wallet?.pendingDeposits || 0) > 0 && (
               <p className="text-sm text-yellow-400 mt-2">

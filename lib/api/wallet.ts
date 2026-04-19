@@ -60,7 +60,7 @@ export async function getWalletData(): Promise<WalletData | null> {
     .eq('status', 'pending')
   
   return {
-    balance: parseFloat(wallet?.balance || '0'),
+    balance: parseFloat(wallet?.available_balance || '0'),
     pendingDeposits: (pendingDep || []).reduce((s, d) => s + parseFloat(d.amount || '0'), 0),
     pendingWithdrawals: (pendingWith || []).reduce((s, w) => s + parseFloat(w.amount || '0'), 0),
     totalDeposited: parseFloat(wallet?.total_deposited || '0'),
@@ -134,7 +134,7 @@ export async function requestWithdrawal(amount: number, pixKey: string): Promise
   if (amount < 20) return { success: false, error: 'Minimo R$ 20,00' }
   
   const wallet = await getWalletData()
-  if (!wallet || wallet.balance < amount) {
+  if (!wallet || wallet.available_balance < amount) {
     return { success: false, error: 'Saldo insuficiente' }
   }
   

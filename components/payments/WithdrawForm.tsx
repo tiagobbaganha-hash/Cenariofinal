@@ -37,7 +37,7 @@ export function WithdrawForm() {
       setUser(data.session.user)
       const userBalance = await getUserBalance(data.session.user.id)
       if (userBalance) {
-        setBalance(userBalance.balance)
+        setBalance(userBalance.available_balance)
       }
     } catch (error) {
       console.error('Erro ao carregar saldo:', error)

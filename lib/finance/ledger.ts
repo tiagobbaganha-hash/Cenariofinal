@@ -159,7 +159,7 @@ export async function getUserBalance(userId: string): Promise<number> {
       .eq('user_id', userId)
       .single()
 
-    return data?.balance ?? 0
+    return data?.available_balance ?? 0
   } catch (error) {
     console.error('[getUserBalance]', error)
     return 0

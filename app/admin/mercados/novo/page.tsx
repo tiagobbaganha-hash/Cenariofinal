@@ -24,8 +24,8 @@ export default function NovoMercado() {
   })
 
   const [options, setOptions] = useState([
-    { label: 'SIM', option_key: 'yes' as const },
-    { label: 'NÃO', option_key: 'no' as const },
+    { label: 'SIM', option_key: 'yes' },
+    { label: 'NÃO', option_key: 'no' },
   ])
 
   function generateSlug(title: string) {
@@ -66,14 +66,11 @@ export default function NovoMercado() {
       // Create options
       if (market && options.length > 0) {
         const marketData = market as any
-        const optionsToInsert = options.map((opt, idx) => ({
+        const optionsToInsert = options.map((opt) => ({
           market_id: marketData.id,
-          option_key: opt.option_key,
           label: opt.label,
-          odds: 1.90,
-          probability: 0.50,
-          sort_order: idx,
-          is_active: true,
+          option_key: opt.option_key,
+          odds: 1.90, probability: 0.50, sort_order: idx,
         }))
 
         await supabase.from('market_options').insert(optionsToInsert as any)
@@ -87,7 +84,7 @@ export default function NovoMercado() {
   }
 
   function addOption() {
-    setOptions([...options, { label: '', option_key: 'yes' as const }])
+    setOptions([...options, { label: '', option_key: 'yes' }])
   }
 
   function removeOption(index: number) {
@@ -230,24 +227,23 @@ export default function NovoMercado() {
                   value={option.label}
                   onChange={(e) => {
                     const newOpts = [...options]
-                    newOpts[index].label = e.target.value
+                    newOpts[index].title = e.target.value
                     setOptions(newOpts)
                   }}
-                  placeholder="Label (ex: SIM, NÃO)"
+                  placeholder="Titulo da opcao"
                   className="w-full h-10 px-4 rounded-lg bg-background border border-border focus:border-primary outline-none"
                 />
-                <select
-                  value={option.option_key}
+                <input
+                  type="text"
+                  value={option.description}
                   onChange={(e) => {
                     const newOpts = [...options]
-                    newOpts[index].option_key = e.target.value as 'yes' | 'no'
+                    newOpts[index].description = e.target.value
                     setOptions(newOpts)
                   }}
+                  placeholder="Descricao (opcional)"
                   className="w-full h-10 px-4 rounded-lg bg-background border border-border focus:border-primary outline-none text-sm"
-                >
-                  <option value="yes">yes (SIM)</option>
-                  <option value="no">no (NÃO)</option>
-                </select>
+                />
               </div>
               {options.length > 2 && (
                 <Button type="button" variant="ghost" size="sm" onClick={() => removeOption(index)} className="text-red-400">

@@ -129,5 +129,5 @@ export async function getUserBalance(): Promise<number> {
     .eq('user_id', user.id)
     .single()
   
-  return parseFloat(data?.balance || '0')
+  return parseFloat(data?.available_balance || '0')
 }
