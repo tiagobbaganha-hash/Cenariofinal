@@ -27,6 +27,8 @@ interface Market {
   status: string
   status_text?: string
   image_url?: string | null
+  influencer_name?: string | null
+  influencer_code?: string | null
   featured: boolean
   closes_at: string | null
   total_volume?: number
@@ -52,7 +54,7 @@ export default function MercadosPage() {
       setUser(user)
 
       const { data } = await supabase
-        .from('v_front_markets_v4')
+        .from('v_front_markets_v5')
         .select('*')
         .order('featured', { ascending: false })
         .order('created_at', { ascending: false })
@@ -269,6 +271,13 @@ function MarketCard({ market }: { market: Market }) {
           <div className={`absolute ${market.image_url ? 'top-2' : 'top-4'} right-4 z-10`}>
             <span className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
               <Star className="h-3 w-3" /> Destaque
+            </span>
+          </div>
+        )}
+        {market.influencer_name && (
+          <div className={`absolute ${market.image_url ? 'top-2' : 'top-4'} left-4 z-10 mt-8`}>
+            <span className="px-2 py-1 rounded-full text-xs font-medium bg-purple-500/30 text-purple-300 border border-purple-500/30 backdrop-blur-sm">
+              @{market.influencer_name}
             </span>
           </div>
         )}

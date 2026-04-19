@@ -33,6 +33,8 @@ interface Market {
   description: string
   category: string
   image_url: string | null
+  influencer_name?: string | null
+  influencer_code?: string | null
   status_text: string
   featured: boolean
   opens_at: string | null
@@ -104,7 +106,7 @@ export default async function HomePage() {
   
   // Fetch markets
   const { data: markets, error: marketsError } = await supabase
-    .from('v_front_markets_v4')
+    .from('v_front_markets_v5')
     .select('*')
     .in('status_text', ['open'])
     .order('featured', { ascending: false })
@@ -366,6 +368,11 @@ function MarketCard({ market }: { market: Market }) {
           {market.featured && (
             <span className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-amber-500/20 text-amber-400 border border-amber-500/30">
               <Star className="h-3 w-3" /> Destaque
+            </span>
+          )}
+          {market.influencer_name && (
+            <span className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-purple-500/20 text-purple-400 border border-purple-500/30">
+              @{market.influencer_name}
             </span>
           )}
         </div>

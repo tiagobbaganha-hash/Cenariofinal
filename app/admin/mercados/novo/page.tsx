@@ -12,6 +12,7 @@ export default function NovoMercado() {
   const router = useRouter()
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [influencers, setInfluencers] = useState<any[]>([])
   
   const [form, setForm] = useState({
     title: '',
@@ -23,6 +24,13 @@ export default function NovoMercado() {
     closes_at: '',
     resolves_at: '',
     image_url: '',
+    influencer_id: '',
+  })
+
+  // Load influencers
+  useState(() => {
+    const supabase = createClient()
+    supabase.from('influencers').select('id, name').eq('is_active', true).then(({ data }) => setInfluencers(data || []))
   })
 
   const [options, setOptions] = useState([
@@ -66,6 +74,7 @@ export default function NovoMercado() {
           closes_at: form.closes_at || null,
           resolves_at: form.resolves_at || null,
           image_url: form.image_url || null,
+          influencer_id: form.influencer_id || null,
         } as any)
 
       if (marketError) throw marketError
@@ -228,6 +237,19 @@ export default function NovoMercado() {
             />
             <span className="font-medium">Mercado em destaque</span>
           </label>
+
+          {influencers.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium mb-2">Influenciador (opcional)</label>
+              <select value={form.influencer_id} onChange={e => setForm({ ...form, influencer_id: e.target.value })}
+                className="w-full h-12 px-4 rounded-lg bg-background border border-border outline-none">
+                <option value="">Nenhum</option>
+                {influencers.map((inf: any) => (
+                  <option key={inf.id} value={inf.id}>{inf.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
 
         <div className="rounded-xl bg-card border border-border p-6 space-y-6">

@@ -21,7 +21,7 @@ export function RelatedMarkets({ marketId, category }: { marketId: string; categ
     async function load() {
       const supabase = createClient()
       const { data } = await supabase
-        .from('v_front_markets_v4')
+        .from('v_front_markets_v5')
         .select('id, slug, title, category, image_url, options')
         .eq('category', category)
         .neq('id', marketId)
