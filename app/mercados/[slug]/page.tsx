@@ -12,18 +12,33 @@ export const dynamic = 'force-dynamic'
 export const revalidate = 10
 
 async function getMarket(slug: string): Promise<FrontMarket | null> {
-  try {
-    const supabase = createClient()
-    const { data, error } = await supabase
-      .from('v_front_markets_v3')
-      .select('*')
-      .or(`slug.eq.${slug},id.eq.${slug}`)
-      .maybeSingle()
-    if (error) throw error
-    return (data as any) ?? null
-  } catch {
-    return null
+  const supabase = createClient()
+  
+  // Try by slug first
+  const { data, error } = await supabase
+    .from('v_front_markets_v4')
+    .select('*')
+    .eq('slug', slug)
+    .maybeSingle()
+  
+  if (error) {
+    console.error('Market query error:', error.message)
   }
+
+  if (data) return data as any
+
+  // Fallback: try by id
+  const { data: byId, error: idError } = await supabase
+    .from('v_front_markets_v4')
+    .select('*')
+    .eq('id', slug)
+    .maybeSingle()
+
+  if (idError) {
+    console.error('Market query by id error:', idError.message)
+  }
+
+  return (byId as any) ?? null
 }
 
 export default async function MarketDetailPage({
