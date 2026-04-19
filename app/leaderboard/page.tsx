@@ -2,8 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { SiteHeader } from '@/components/site-header'
-import { SiteFooter } from '@/components/site-footer'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { formatCurrency, cn } from '@/lib/utils'
@@ -44,7 +42,6 @@ export default function LeaderboardPage() {
 
   return (
     <>
-      <SiteHeader />
 
       <main className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6">
         <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -162,7 +159,6 @@ export default function LeaderboardPage() {
         </Card>
       </main>
 
-      <SiteFooter />
     </>
   )
 }

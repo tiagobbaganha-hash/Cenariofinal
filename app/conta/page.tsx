@@ -4,8 +4,6 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { SiteHeader } from '@/components/site-header'
-import { SiteFooter } from '@/components/site-footer'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -72,8 +70,7 @@ export default function AccountPage() {
 
   if (loading) {
     return (
-      <>
-        <SiteHeader />
+
         <main className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6">
           <Skeleton className="h-10 w-64 mb-8" />
           <div className="grid gap-6 lg:grid-cols-[380px_1fr]">
@@ -81,8 +78,7 @@ export default function AccountPage() {
             <Skeleton className="h-96" />
           </div>
         </main>
-        <SiteFooter />
-      </>
+
     )
   }
 
@@ -92,7 +88,6 @@ export default function AccountPage() {
 
   return (
     <>
-      <SiteHeader />
 
       <main className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6">
         <header className="mb-8">
@@ -271,7 +266,6 @@ export default function AccountPage() {
         </div>
       </main>
 
-      <SiteFooter />
     </>
   )
 }

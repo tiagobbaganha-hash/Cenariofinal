@@ -1,8 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { SiteHeader } from '@/components/site-header'
-import { SiteFooter } from '@/components/site-footer'
 import { BetWidget } from '@/components/bet-widget'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -41,7 +39,6 @@ export default async function MarketDetailPage({
 
   return (
     <>
-      <SiteHeader />
 
       <main className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 sm:py-10">
         {/* Breadcrumb */}
@@ -81,12 +78,12 @@ export default async function MarketDetailPage({
               <MiniStat
                 icon={TrendingUp}
                 label="Volume total"
-                value={formatCurrency(market.total_volume ?? 0)}
+                value={formatCurrency(0)}
               />
               <MiniStat
                 icon={Users}
-                label="Apostas"
-                value={String(market.bet_count ?? 0)}
+                label="Opções"
+                value={String(market.options_count ?? 0)}
               />
               <MiniStat
                 icon={Calendar}
@@ -167,7 +164,6 @@ export default async function MarketDetailPage({
         </div>
       </main>
 
-      <SiteFooter />
     </>
   )
 }
