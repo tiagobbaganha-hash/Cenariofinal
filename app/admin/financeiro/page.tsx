@@ -94,10 +94,23 @@ export default function AdminFinanceiro() {
     setProcessing(id)
     const supabase = createClient()
     
-    await supabase
-      .from('deposit_requests')
-      .update({ status: 'completed' })
-      .eq('id', id)
+    // Get deposit details
+    const { data: dep } = await supabase.from('deposit_requests').select('*').eq('id', id).single()
+    if (!dep) { setProcessing(null); return }
+
+    // Credit wallet
+    await supabase.from('wallets').update({
+      available_balance: (await supabase.from('wallets').select('available_balance').eq('user_id', dep.user_id).single()).data?.available_balance + parseFloat(dep.amount)
+    }).eq('user_id', dep.user_id)
+
+    // Record in ledger
+    await supabase.from('wallet_ledger').insert({
+      user_id: dep.user_id, entry_type: 'deposit', direction: 'credit',
+      amount: dep.amount, reference_type: 'deposit_request', reference_id: dep.id,
+    } as any)
+
+    // Update status
+    await supabase.from('deposit_requests').update({ status: 'approved' }).eq('id', id)
     
     await loadData()
     setProcessing(null)
@@ -106,12 +119,7 @@ export default function AdminFinanceiro() {
   async function rejectDeposit(id: string) {
     setProcessing(id)
     const supabase = createClient()
-    
-    await supabase
-      .from('deposit_requests')
-      .update({ status: 'rejected' })
-      .eq('id', id)
-    
+    await supabase.from('deposit_requests').update({ status: 'rejected' }).eq('id', id)
     await loadData()
     setProcessing(null)
   }
@@ -120,10 +128,26 @@ export default function AdminFinanceiro() {
     setProcessing(id)
     const supabase = createClient()
     
-    await supabase
-      .from('withdrawal_requests')
-      .update({ status: 'completed' })
-      .eq('id', id)
+    // Get withdrawal details
+    const { data: wr } = await supabase.from('withdrawal_requests').select('*').eq('id', id).single()
+    if (!wr) { setProcessing(null); return }
+
+    // Debit wallet
+    const { data: wallet } = await supabase.from('wallets').select('available_balance').eq('user_id', wr.user_id).single()
+    const currentBalance = parseFloat(wallet?.available_balance || '0')
+    
+    await supabase.from('wallets').update({
+      available_balance: Math.max(0, currentBalance - parseFloat(wr.amount))
+    }).eq('user_id', wr.user_id)
+
+    // Record in ledger
+    await supabase.from('wallet_ledger').insert({
+      user_id: wr.user_id, entry_type: 'withdrawal', direction: 'debit',
+      amount: wr.amount, reference_type: 'withdrawal_request', reference_id: wr.id,
+    } as any)
+
+    // Update status
+    await supabase.from('withdrawal_requests').update({ status: 'approved' }).eq('id', id)
     
     await loadData()
     setProcessing(null)
@@ -132,12 +156,7 @@ export default function AdminFinanceiro() {
   async function rejectWithdrawal(id: string) {
     setProcessing(id)
     const supabase = createClient()
-    
-    await supabase
-      .from('withdrawal_requests')
-      .update({ status: 'rejected' })
-      .eq('id', id)
-    
+    await supabase.from('withdrawal_requests').update({ status: 'rejected' }).eq('id', id)
     await loadData()
     setProcessing(null)
   }

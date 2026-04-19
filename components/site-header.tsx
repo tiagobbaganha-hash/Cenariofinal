@@ -19,6 +19,7 @@ export function SiteHeader() {
   const pathname = usePathname()
   const [userEmail, setUserEmail] = useState<string | null>(null)
   const [isAdmin, setIsAdmin] = useState(false)
+  const [balance, setBalance] = useState<number | null>(null)
   const [mobileOpen, setMobileOpen] = useState(false)
 
   useEffect(() => {
@@ -30,10 +31,13 @@ export function SiteHeader() {
       if (data.user) {
         const { data: me } = await supabase
           .from('v_front_me')
-          .select('role')
+          .select('role, available_balance')
           .single()
         const role = (me as any)?.role ?? 'user'
         setIsAdmin(['admin', 'super_admin'].includes(role))
+        setBalance((me as any)?.available_balance ?? null)
+      } else {
+        setBalance(null)
       }
     }
     load()
@@ -99,11 +103,20 @@ export function SiteHeader() {
         {/* Right actions */}
         <div className="flex items-center gap-2">
           {userEmail ? (
-            <Link href="/conta">
-              <Button variant="outline" size="sm" className="hidden md:inline-flex">
-                Conta
-              </Button>
-            </Link>
+            <>
+              {balance !== null && (
+                <Link href="/carteira">
+                  <Button variant="ghost" size="sm" className="hidden md:inline-flex font-mono text-green-400">
+                    R$ {balance.toFixed(0)}
+                  </Button>
+                </Link>
+              )}
+              <Link href="/conta">
+                <Button variant="outline" size="sm" className="hidden md:inline-flex">
+                  Conta
+                </Button>
+              </Link>
+            </>
           ) : (
             <>
               <Link href="/login" className="hidden md:block">

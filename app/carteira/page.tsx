@@ -25,11 +25,10 @@ import {
 } from 'lucide-react'
 
 interface WalletData {
-  balance: number
+  available_balance: number
+  locked_balance: number
   pendingDeposits: number
   pendingWithdrawals: number
-  totalDeposited: number
-  totalWithdrawn: number
 }
 
 interface Transaction {
@@ -87,16 +86,14 @@ export default function CarteiraPage() {
           .eq('status', 'pending')
 
         setWallet({
-          balance: parseFloat(walletData.available_balance || '0'),
+          available_balance: parseFloat(walletData.available_balance || '0'),
+          locked_balance: parseFloat(walletData.locked_balance || '0'),
           pendingDeposits: (pendingDep || []).reduce((s, d) => s + parseFloat(d.amount || '0'), 0),
           pendingWithdrawals: (pendingWith || []).reduce((s, w) => s + parseFloat(w.amount || '0'), 0),
-          totalDeposited: 0,
-          totalWithdrawn: 0,
         })
       } else {
         // Create wallet if not exists
         await supabase.from('wallets').insert({ user_id: user.id, available_balance: 0, locked_balance: 0 })
-        setWallet({ balance: 0, pendingDeposits: 0, pendingWithdrawals: 0, totalDeposited: 0, totalWithdrawn: 0 })
       }
 
       // Load transactions
@@ -205,35 +202,22 @@ export default function CarteiraPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-24">
-      {/* Header */}
-      <header className="sticky top-0 z-50 blur-backdrop border-b border-border/50">
-        <div className="mx-auto max-w-2xl px-4">
-          <div className="flex h-16 items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Link href="/" className="p-2 -ml-2 hover:bg-accent rounded-lg">
-                <ArrowLeft className="h-5 w-5" />
-              </Link>
-              <h1 className="text-lg font-bold">Carteira</h1>
-            </div>
-            <Link href="/" className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-secondary">
-                <Zap className="h-4 w-4 text-background" />
-              </div>
-            </Link>
-          </div>
-        </div>
-      </header>
-
+    <div className="pb-24">
       <main className="mx-auto max-w-2xl px-4 py-6 space-y-6">
+        <h1 className="text-3xl font-bold">Carteira</h1>
         {/* Balance Card */}
         <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary/20 via-card to-secondary/20 p-6 border border-primary/20">
           <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 rounded-full blur-3xl" />
           <div className="relative">
-            <p className="text-sm text-muted-foreground mb-1">Saldo Disponivel</p>
+            <p className="text-sm text-muted-foreground mb-1">Saldo Disponível</p>
             <p className="text-4xl font-black text-gradient">
               R$ {wallet?.available_balance.toFixed(2) || '0,00'}
             </p>
+            {(wallet?.locked_balance || 0) > 0 && (
+              <p className="text-sm text-blue-400 mt-1">
+                R$ {wallet?.locked_balance.toFixed(2)} em apostas
+              </p>
+            )}
             {(wallet?.pendingDeposits || 0) > 0 && (
               <p className="text-sm text-yellow-400 mt-2">
                 + R$ {wallet?.pendingDeposits.toFixed(2)} em depositos pendentes
@@ -348,18 +332,18 @@ export default function CarteiraPage() {
         {/* Stats */}
         <div className="grid grid-cols-2 gap-4">
           <div className="rounded-xl bg-card border border-border p-4">
-            <div className="flex items-center gap-2 text-green-400 mb-2">
+            <div className="flex items-center gap-2 text-blue-400 mb-2">
               <ArrowDownLeft className="h-4 w-4" />
-              <span className="text-sm">Total Depositado</span>
+              <span className="text-sm">Em Apostas</span>
             </div>
-            <p className="text-xl font-bold">R$ {wallet?.totalDeposited.toFixed(2) || '0,00'}</p>
+            <p className="text-xl font-bold">R$ {(wallet?.locked_balance || 0).toFixed(2)}</p>
           </div>
           <div className="rounded-xl bg-card border border-border p-4">
-            <div className="flex items-center gap-2 text-red-400 mb-2">
+            <div className="flex items-center gap-2 text-yellow-400 mb-2">
               <ArrowUpRight className="h-4 w-4" />
-              <span className="text-sm">Total Sacado</span>
+              <span className="text-sm">Saques Pendentes</span>
             </div>
-            <p className="text-xl font-bold">R$ {wallet?.totalWithdrawn.toFixed(2) || '0,00'}</p>
+            <p className="text-xl font-bold">R$ {(wallet?.pendingWithdrawals || 0).toFixed(2)}</p>
           </div>
         </div>
 
