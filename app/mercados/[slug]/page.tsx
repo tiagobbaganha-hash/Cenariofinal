@@ -61,11 +61,32 @@ export default async function MarketDetailPage({
 
   const options = Array.isArray(market.options) ? market.options : []
   const isOpen = market.status_text === 'open'
+  const isResolved = market.status_text === 'resolved'
+  const winnerOptionId = market.result_option_id
+  const winnerOption = options.find((o: any) => o.id === winnerOptionId)
 
   return (
     <>
 
       <main className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 sm:py-10">
+        {/* Resolved banner */}
+        {isResolved && winnerOption && (
+          <div className="mb-6 rounded-xl border border-green-500/20 bg-green-500/5 p-4 flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-500/10">
+              <TrendingUp className="h-5 w-5 text-green-400" />
+            </div>
+            <div>
+              <p className="font-bold text-green-400">Mercado resolvido</p>
+              <p className="text-sm text-muted-foreground">
+                Resultado: <span className="font-medium text-foreground">{(winnerOption as any).label}</span>
+                {market.resolution_outcome_text && (
+                  <span> — {market.resolution_outcome_text}</span>
+                )}
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Breadcrumb */}
         <nav className="mb-6 flex items-center gap-2 text-sm text-muted-foreground">
           <Link href="/mercados" className="inline-flex items-center gap-1 hover:text-foreground">
@@ -133,13 +154,21 @@ export default async function MarketDetailPage({
                   {options.map((opt: any) => {
                     const probability = opt.probability ?? 0
                     const isNo = opt.option_key === 'no' || opt.label?.toLowerCase() === 'não'
+                    const isWinner = isResolved && opt.id === winnerOptionId
                     return (
                       <div
                         key={opt.id}
-                        className="rounded-lg border border-border bg-background/40 p-4"
+                        className={`rounded-lg border p-4 ${
+                          isWinner 
+                            ? 'border-green-500/40 bg-green-500/5 ring-1 ring-green-500/20' 
+                            : 'border-border bg-background/40'
+                        }`}
                       >
                         <div className="flex items-center justify-between mb-2">
-                          <span className="font-medium">{opt.label}</span>
+                          <span className="font-medium flex items-center gap-2">
+                            {opt.label}
+                            {isWinner && <span className="text-xs text-green-400 font-bold">VENCEDOR</span>}
+                          </span>
                           <div className="flex items-center gap-3">
                             <span className="font-mono text-sm tabular-nums text-muted-foreground">
                               {Number(opt.odds ?? 0).toFixed(2)}x
@@ -175,6 +204,9 @@ export default async function MarketDetailPage({
                 </div>
               </CardContent>
             </Card>
+
+            {/* Share */}
+            <ShareButtons title={market.title} slug={market.slug} />
           </div>
 
           {/* RIGHT: Bet widget */}
@@ -217,6 +249,26 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
     <div className="flex items-center justify-between">
       <span className="text-muted-foreground">{label}</span>
       <span className="text-foreground">{value}</span>
+    </div>
+  )
+}
+
+function ShareButtons({ title, slug }: { title: string; slug: string }) {
+  const url = `https://cenariox.com.br/mercados/${slug}`
+  const text = `O que você acha? "${title}" — Faça sua previsão no CenarioX!`
+  const whatsapp = `https://wa.me/?text=${encodeURIComponent(text + ' ' + url)}`
+  const twitter = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`
+  
+  return (
+    <div className="flex gap-2">
+      <a href={whatsapp} target="_blank" rel="noopener noreferrer"
+        className="flex-1 flex items-center justify-center gap-2 rounded-xl border border-border bg-card py-3 text-sm font-medium hover:bg-accent/30 transition-colors">
+        WhatsApp
+      </a>
+      <a href={twitter} target="_blank" rel="noopener noreferrer"
+        className="flex-1 flex items-center justify-center gap-2 rounded-xl border border-border bg-card py-3 text-sm font-medium hover:bg-accent/30 transition-colors">
+        Twitter / X
+      </a>
     </div>
   )
 }

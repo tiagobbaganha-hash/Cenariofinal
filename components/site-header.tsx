@@ -10,6 +10,7 @@ import { Menu, X, TrendingUp } from 'lucide-react'
 
 const navigation = [
   { label: 'Mercados', href: '/mercados' },
+  { label: 'Apostas', href: '/apostas' },
   { label: 'Leaderboard', href: '/leaderboard' },
   { label: 'Comunidade', href: '/comunidade' },
 ]
