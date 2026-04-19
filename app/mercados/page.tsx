@@ -25,6 +25,8 @@ interface Market {
   slug: string
   category: string
   status: string
+  status_text?: string
+  image_url?: string | null
   featured: boolean
   closes_at: string | null
   total_volume?: number
@@ -253,19 +255,25 @@ function MarketCard({ market }: { market: Market }) {
   return (
     <Link href={`/mercados/${market.slug || market.id}`}>
       <div className="group relative overflow-hidden rounded-2xl bg-card border border-border hover:border-primary/50 transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 h-full">
-        <div className="absolute top-4 left-4 z-10">
-          <span className="px-3 py-1 rounded-full text-xs font-medium bg-white/10 backdrop-blur-sm border border-white/10">
+        {/* Cover image */}
+        {market.image_url && (
+          <div className="h-40 overflow-hidden">
+            <img src={market.image_url} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+          </div>
+        )}
+        <div className={`absolute ${market.image_url ? 'top-2' : 'top-4'} left-4 z-10`}>
+          <span className="px-3 py-1 rounded-full text-xs font-medium bg-black/50 backdrop-blur-sm border border-white/10">
             {market.category || 'Geral'}
           </span>
         </div>
         {market.featured && (
-          <div className="absolute top-4 right-4 z-10">
+          <div className={`absolute ${market.image_url ? 'top-2' : 'top-4'} right-4 z-10`}>
             <span className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
               <Star className="h-3 w-3" /> Destaque
             </span>
           </div>
         )}
-        <div className="p-6 pt-14">
+        <div className={market.image_url ? 'p-5' : 'p-6 pt-14'}>
           <h3 className="text-lg font-semibold line-clamp-2 group-hover:text-primary transition-colors mb-4">{market.title}</h3>
           <div className="flex items-center gap-4 text-sm text-muted-foreground mb-6">
             <span className="flex items-center gap-1"><BarChart3 className="h-4 w-4" /> R$ {(volume / 1000).toFixed(1)}k</span>
