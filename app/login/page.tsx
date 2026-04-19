@@ -12,12 +12,14 @@ import { Loader2, Mail, Lock, TrendingUp, ArrowLeft } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 type Mode = 'password' | 'otp'
+type AuthAction = 'signin' | 'signup'
 type OtpStep = 'request' | 'verify'
 
 export default function LoginPage() {
   const router = useRouter()
   const { toast } = useToast()
   const [mode, setMode] = useState<Mode>('password')
+  const [action, setAction] = useState<AuthAction>('signin')
   const [otpStep, setOtpStep] = useState<OtpStep>('request')
   const [loading, setLoading] = useState(false)
   const [email, setEmail] = useState('')
@@ -29,15 +31,29 @@ export default function LoginPage() {
     setLoading(true)
     try {
       const supabase = createClient()
-      const { error } = await supabase.auth.signInWithPassword({ email, password })
-      if (error) throw error
-      toast({ type: 'success', title: 'Bem-vindo de volta!' })
-      router.push('/conta')
-      router.refresh()
+      
+      if (action === 'signup') {
+        const { error } = await supabase.auth.signUp({ 
+          email, 
+          password,
+          options: {
+            data: { full_name: email.split('@')[0] }
+          }
+        })
+        if (error) throw error
+        toast({ type: 'success', title: 'Conta criada!', description: 'Verifique seu e-mail para confirmar.' })
+        setAction('signin')
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({ email, password })
+        if (error) throw error
+        toast({ type: 'success', title: 'Bem-vindo de volta!' })
+        router.push('/conta')
+        router.refresh()
+      }
     } catch (err: any) {
       toast({
         type: 'error',
-        title: 'Não foi possível entrar',
+        title: action === 'signup' ? 'Erro ao criar conta' : 'Não foi possível entrar',
         description: err?.message ?? 'Verifique suas credenciais.',
       })
     } finally {
@@ -110,10 +126,12 @@ export default function LoginPage() {
         <div className="relative w-full max-w-md">
           <div className="mb-8 text-center">
             <h1 className="text-balance text-3xl font-bold tracking-tight">
-              Bem-vindo de volta
+              {action === 'signup' ? 'Criar sua conta' : 'Bem-vindo de volta'}
             </h1>
             <p className="mt-2 text-sm text-muted-foreground">
-              Entre para acessar seus mercados e apostas.
+              {action === 'signup' 
+                ? 'Crie uma conta para começar a prever o futuro.'
+                : 'Entre para acessar seus mercados e apostas.'}
             </p>
           </div>
 
@@ -166,12 +184,21 @@ export default function LoginPage() {
                     {loading ? (
                       <>
                         <Loader2 className="h-4 w-4 animate-spin" />
-                        Entrando...
+                        {action === 'signup' ? 'Criando...' : 'Entrando...'}
                       </>
                     ) : (
-                      'Entrar'
+                      action === 'signup' ? 'Criar conta' : 'Entrar'
                     )}
                   </Button>
+                  <button
+                    type="button"
+                    onClick={() => setAction(action === 'signin' ? 'signup' : 'signin')}
+                    className="w-full text-center text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {action === 'signin' 
+                      ? 'Não tem conta? Criar conta grátis' 
+                      : 'Já tem conta? Entrar'}
+                  </button>
                 </form>
               )}
 
