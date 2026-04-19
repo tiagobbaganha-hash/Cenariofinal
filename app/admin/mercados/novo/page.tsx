@@ -47,10 +47,14 @@ export default function NovoMercado() {
     const supabase = createClient()
 
     try {
+      // Generate ID client-side to avoid .select() RLS issues
+      const marketId = crypto.randomUUID()
+      
       // Create market
-      const { data: market, error: marketError } = await supabase
+      const { error: marketError } = await supabase
         .from('markets')
         .insert({
+          id: marketId,
           title: form.title,
           slug: form.slug || generateSlug(form.title),
           description: form.description,
@@ -60,17 +64,13 @@ export default function NovoMercado() {
           closes_at: form.closes_at || null,
           resolves_at: form.resolves_at || null,
         } as any)
-        .select()
-        .single()
 
       if (marketError) throw marketError
-      if (!market) throw new Error('Mercado não foi criado')
 
-      // Create options
-      const marketData = market as any
+      // Create options using the known ID
       if (options.length > 0) {
         const optionsToInsert = options.map((opt: any, idx: number) => ({
-          market_id: marketData.id,
+          market_id: marketId,
           label: opt.label,
           option_key: opt.option_key || 'yes',
           odds: parseFloat(opt.odds) || 1.90,
