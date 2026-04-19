@@ -73,11 +73,11 @@ export default function NovoMercado() {
         resolves_at: m.resolves_at_days ? new Date(Date.now() + m.resolves_at_days * 86400000).toISOString().slice(0, 16) : f.resolves_at,
       }))
       if (m.options?.length) {
-        setOptions(m.options.map((o: any) => ({
-          label: o.label,
-          option_key: o.option_key,
-          probability: o.probability || 0.5,
-          odds: o.odds || 2.0,
+        setOptions(m.options.map((o: any, i: number) => ({
+          label: o.label || o.name || `Opção ${i + 1}`,
+          option_key: o.option_key || (i === 0 ? 'yes' : i === 1 ? 'no' : `opt${i + 1}`),
+          probability: typeof o.probability === 'number' ? o.probability : 0.5,
+          odds: typeof o.odds === 'number' ? o.odds : parseFloat((1 / (typeof o.probability === 'number' ? o.probability : 0.5)).toFixed(2)),
         })))
       }
       // Auto-gerar capa se tiver prompt de imagem
