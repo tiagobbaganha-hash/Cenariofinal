@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
 import { Brain, TrendingUp, TrendingDown, AlertCircle, Sparkles, ChevronDown, ChevronUp } from 'lucide-react'
 
 interface AIAnalysis {
@@ -33,6 +34,16 @@ export function AIAnalysis({
   const [error, setError] = useState('')
   const [expanded, setExpanded] = useState<number | null>(null)
 
+  const [isPro, setIsPro] = useState<boolean | null>(null)
+
+  useEffect(() => {
+    // Verificar plano do usuário
+    const supabase = createClient()
+    supabase.from('v_my_plan').select('is_pro, is_admin').maybeSingle()
+      .then(({ data }: any) => setIsPro(data?.is_pro || data?.is_admin || false))
+      .catch(() => setIsPro(false))
+  }, [])
+
   async function load() {
     if (analysis || loading) return
     setLoading(true)
@@ -64,6 +75,26 @@ export function AIAnalysis({
     frio: 'text-slate-400',
   }
   const momentoLabel = { quente: '🔥 Quente', neutro: '⚖️ Neutro', frio: '❄️ Frio' }
+
+  // Gate PRO
+  if (isPro === false) {
+    return (
+      <div className="rounded-2xl border border-border bg-card/50 overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
+              <Brain className="h-4 w-4 text-muted-foreground" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-foreground flex items-center gap-1.5">Análise IA <span className="text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded-full">PRO</span></p>
+              <p className="text-xs text-muted-foreground">Cenários e probabilidades com IA</p>
+            </div>
+          </div>
+          <a href="/upgrade" className="flex-shrink-0 text-xs bg-primary text-primary-foreground px-3 py-1.5 rounded-lg font-semibold hover:bg-primary/90 transition-colors">Assinar PRO</a>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="rounded-2xl border border-primary/20 bg-primary/5 overflow-hidden">

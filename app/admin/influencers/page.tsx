@@ -24,6 +24,8 @@ export default function AdminInfluencers() {
   const [expanded, setExpanded] = useState<string | null>(null)
   const [linkedMarkets, setLinkedMarkets] = useState<Record<string, any[]>>({})
   const [linkingMarket, setLinkingMarket] = useState<{ influencerId: string; marketId: string; commission: string } | null>(null)
+  const [origin, setOrigin] = useState('')
+  useEffect(() => { setOrigin(window.location.origin) }, [])
 
   const [form, setForm] = useState({
     name: '', social_url: '', commission_percent: '5', referral_code: '',
@@ -247,10 +249,10 @@ export default function AdminInfluencers() {
                 {/* Código referral */}
                 <div className="mt-3 flex items-center gap-2">
                   <div className="flex-1 rounded-lg bg-background border border-border px-3 py-1.5 text-xs font-mono text-muted-foreground">
-                    {window?.location?.origin || 'https://cenariox.com.br'}/?ref={inf.referral_code}
+                    {origin || 'cenariox.com.br'}/?ref={inf.referral_code}
                   </div>
                   <button
-                    onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/?ref=${inf.referral_code}`); toast({ title: '✅ Link copiado' }) }}
+                    onClick={() => { navigator.clipboard.writeText(`${origin}/?ref=${inf.referral_code}`); toast({ title: '✅ Link copiado' }) }}
                     className="p-1.5 rounded-lg border border-border hover:bg-primary/10 transition-colors"
                   >
                     <Copy className="h-3.5 w-3.5 text-muted-foreground" />

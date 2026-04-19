@@ -13,7 +13,7 @@ import { formatCurrency, formatDateTime, cn } from '@/lib/utils'
 import type { MeProfile, Notification } from '@/lib/types'
 import {
   User, Wallet, ArrowDownToLine, ArrowUpFromLine,
-  Bell, Activity, ShieldCheck, ShieldAlert, LogOut, Copy, Lightbulb, TrendingUp,
+  Bell, Activity, ShieldCheck, ShieldAlert, LogOut, Copy, Lightbulb, TrendingUp, Zap,
 } from 'lucide-react'
 
 export default function AccountPage() {
@@ -131,6 +131,19 @@ export default function AccountPage() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Upgrade PRO */}
+            <div className="rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/10 to-primary/5 p-5">
+              <div className="flex items-center gap-2 mb-2">
+                <Zap className="h-4 w-4 text-primary" />
+                <p className="text-sm font-semibold text-foreground">Planos CenárioX</p>
+              </div>
+              <p className="text-xs text-muted-foreground mb-3">Análise IA, criar mercados e comissão como influencer</p>
+              <Link href="/upgrade" className="flex items-center justify-center gap-2 w-full rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors">
+                <Zap className="h-4 w-4" />
+                Ver planos PRO e Influencer
+              </Link>
+            </div>
 
             {/* Propor Mercado */}
             <Card className="border-primary/20 bg-primary/5">
