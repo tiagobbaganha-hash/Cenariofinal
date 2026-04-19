@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logActivity } from '@/lib/activity-log'
 import { createClient } from '@supabase/supabase-js'
 
 const supabaseAdmin = createClient(
@@ -114,6 +115,12 @@ Responda SOMENTE com JSON válido (sem markdown):
         expires_at: new Date(Date.now() + 6 * 3600 * 1000).toISOString()
       }, { onConflict: 'market_id' })
     } catch (_) {}
+
+    // Log
+    try {
+      const { data: { user } } = await (await import('@/lib/supabase/server')).createClient().auth.getUser()
+      await logActivity({ userId: user?.id, action: 'ai.analysis_viewed', entityType: 'market', entityId: marketId, entityLabel: marketTitle, request: req })
+    } catch(_) {}
 
     return NextResponse.json({ analysis, cached: false })
   } catch (e: any) {
