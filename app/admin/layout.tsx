@@ -12,9 +12,9 @@ import {
   Settings,
   ChevronLeft,
   Zap,
-  BarChart3,
+
   FileText,
-  Shield,
+
   Menu,
   X,
   LogOut
@@ -24,11 +24,10 @@ import { Button } from '@/components/ui/button'
 const navItems = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/admin/mercados', label: 'Mercados', icon: TrendingUp },
-  { href: '/admin/usuarios', label: 'Usuarios', icon: Users },
+  { href: '/admin/usuarios', label: 'Usuários', icon: Users },
   { href: '/admin/financeiro', label: 'Financeiro', icon: Wallet },
-  { href: '/admin/relatorios', label: 'Relatorios', icon: BarChart3 },
-  { href: '/admin/auditoria', label: 'Auditoria', icon: FileText },
-  { href: '/admin/configuracoes', label: 'Configuracoes', icon: Settings },
+  { href: '/admin/cms', label: 'CMS / Páginas', icon: FileText },
+  { href: '/admin/branding', label: 'Branding', icon: Settings },
 ]
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -36,6 +35,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const router = useRouter()
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [isAdmin, setIsAdmin] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   useEffect(() => {
@@ -47,7 +47,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         router.push('/login')
         return
       }
+
+      // Check admin role
+      const { data: profile } = await supabase
+        .from('v_front_me')
+        .select('role')
+        .single()
+      
+      const role = (profile as any)?.role ?? 'user'
+      if (!['admin', 'super_admin'].includes(role)) {
+        router.push('/')
+        return
+      }
+
       setUser(user)
+      setIsAdmin(true)
       setLoading(false)
     }
     

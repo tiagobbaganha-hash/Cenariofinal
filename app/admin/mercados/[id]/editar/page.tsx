@@ -1,0 +1,198 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { useRouter, useParams } from 'next/navigation'
+import Link from 'next/link'
+import { createClient } from '@/lib/supabase/client'
+import { Button } from '@/components/ui/button'
+import { useToast } from '@/hooks/useToast'
+import { ArrowLeft, Save, Loader2, XCircle, Trash2 } from 'lucide-react'
+
+export default function EditarMercado() {
+  const router = useRouter()
+  const params = useParams()
+  const { toast } = useToast()
+  const marketId = params.id as string
+
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [form, setForm] = useState({
+    title: '', slug: '', description: '', category: 'Política',
+    status: 'open', featured: false, closes_at: '', resolves_at: '',
+  })
+  const [options, setOptions] = useState<any[]>([])
+
+  useEffect(() => {
+    async function load() {
+      const supabase = createClient()
+      const { data: market } = await supabase.from('markets').select('*').eq('id', marketId).single()
+      if (!market) { router.push('/admin/mercados'); return }
+
+      setForm({
+        title: market.title || '',
+        slug: market.slug || '',
+        description: market.description || '',
+        category: market.category || 'Política',
+        status: market.status || 'open',
+        featured: market.featured || false,
+        closes_at: market.closes_at ? market.closes_at.slice(0, 16) : '',
+        resolves_at: market.resolves_at ? market.resolves_at.slice(0, 16) : '',
+      })
+
+      const { data: opts } = await supabase
+        .from('market_options').select('*').eq('market_id', marketId).order('sort_order')
+      setOptions(opts || [])
+      setLoading(false)
+    }
+    load()
+  }, [marketId, router])
+
+  async function handleSave(e: React.FormEvent) {
+    e.preventDefault()
+    setSaving(true)
+    try {
+      const supabase = createClient()
+      const { error } = await supabase.from('markets').update({
+        title: form.title, slug: form.slug, description: form.description,
+        category: form.category, status: form.status, featured: form.featured,
+        closes_at: form.closes_at || null, resolves_at: form.resolves_at || null,
+      }).eq('id', marketId)
+      if (error) throw error
+
+      // Update options
+      for (const opt of options) {
+        await supabase.from('market_options').update({
+          label: opt.label, option_key: opt.option_key,
+          odds: parseFloat(opt.odds) || 1.90, probability: parseFloat(opt.probability) || 0.50,
+        }).eq('id', opt.id)
+      }
+
+      toast({ type: 'success', title: 'Mercado atualizado!' })
+      router.push('/admin/mercados')
+    } catch (err: any) {
+      toast({ type: 'error', title: 'Erro ao salvar', description: err?.message })
+    } finally { setSaving(false) }
+  }
+
+  async function handleCancel() {
+    if (!confirm('Cancelar este mercado? Apostas abertas serão reembolsadas.')) return
+    setSaving(true)
+    try {
+      const supabase = createClient()
+      const { error } = await supabase.from('markets').update({ status: 'canceled' }).eq('id', marketId)
+      if (error) throw error
+      toast({ type: 'success', title: 'Mercado cancelado' })
+      router.push('/admin/mercados')
+    } catch (err: any) {
+      toast({ type: 'error', title: 'Erro', description: err?.message })
+    } finally { setSaving(false) }
+  }
+
+  if (loading) return <div className="flex justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
+
+  return (
+    <div className="max-w-3xl mx-auto">
+      <div className="flex items-center gap-4 mb-8">
+        <Link href="/admin/mercados" className="p-2 hover:bg-accent rounded-lg"><ArrowLeft className="h-5 w-5" /></Link>
+        <div className="flex-1">
+          <h1 className="text-3xl font-bold">Editar Mercado</h1>
+          <p className="text-muted-foreground text-sm">{form.title}</p>
+        </div>
+        {(form.status === 'open' || form.status === 'draft') && (
+          <Button variant="outline" className="text-red-400 border-red-500/20 hover:bg-red-500/10" onClick={handleCancel} disabled={saving}>
+            <XCircle className="h-4 w-4 mr-2" /> Cancelar mercado
+          </Button>
+        )}
+      </div>
+
+      <form onSubmit={handleSave} className="space-y-6">
+        <div className="rounded-xl bg-card border border-border p-6 space-y-4">
+          <h2 className="font-semibold">Informações</h2>
+          <div>
+            <label className="block text-sm font-medium mb-1">Título</label>
+            <input value={form.title} onChange={e => setForm({ ...form, title: e.target.value })}
+              className="w-full h-10 px-4 rounded-lg bg-background border border-border focus:border-primary outline-none" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Slug</label>
+            <input value={form.slug} onChange={e => setForm({ ...form, slug: e.target.value })}
+              className="w-full h-10 px-4 rounded-lg bg-background border border-border focus:border-primary outline-none" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Descrição</label>
+            <textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} rows={3}
+              className="w-full px-4 py-2 rounded-lg bg-background border border-border focus:border-primary outline-none" />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">Categoria</label>
+              <select value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}
+                className="w-full h-10 px-4 rounded-lg bg-background border border-border outline-none">
+                {['Política','Economia','Tecnologia','Cripto','Esportes','Geopolítica','Entretenimento','Geral'].map(c =>
+                  <option key={c} value={c}>{c}</option>
+                )}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Status</label>
+              <select value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}
+                className="w-full h-10 px-4 rounded-lg bg-background border border-border outline-none">
+                <option value="draft">Rascunho</option>
+                <option value="open">Aberto</option>
+                <option value="closed">Fechado</option>
+                <option value="resolved">Resolvido</option>
+                <option value="canceled">Cancelado</option>
+              </select>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">Encerra em</label>
+              <input type="datetime-local" value={form.closes_at} onChange={e => setForm({ ...form, closes_at: e.target.value })}
+                className="w-full h-10 px-4 rounded-lg bg-background border border-border outline-none" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Resolve em</label>
+              <input type="datetime-local" value={form.resolves_at} onChange={e => setForm({ ...form, resolves_at: e.target.value })}
+                className="w-full h-10 px-4 rounded-lg bg-background border border-border outline-none" />
+            </div>
+          </div>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" checked={form.featured} onChange={e => setForm({ ...form, featured: e.target.checked })}
+              className="h-4 w-4 rounded accent-primary" />
+            <span className="text-sm">Mercado em destaque</span>
+          </label>
+        </div>
+
+        {/* Options */}
+        <div className="rounded-xl bg-card border border-border p-6 space-y-4">
+          <h2 className="font-semibold">Opções</h2>
+          {options.map((opt, i) => (
+            <div key={opt.id} className="grid grid-cols-4 gap-2">
+              <input value={opt.label} onChange={e => { const n = [...options]; n[i] = { ...n[i], label: e.target.value }; setOptions(n) }}
+                placeholder="Label" className="h-10 px-3 rounded-lg bg-background border border-border outline-none" />
+              <select value={opt.option_key} onChange={e => { const n = [...options]; n[i] = { ...n[i], option_key: e.target.value }; setOptions(n) }}
+                className="h-10 px-3 rounded-lg bg-background border border-border outline-none text-sm">
+                <option value="yes">yes</option><option value="no">no</option>
+              </select>
+              <input type="number" step="0.01" value={opt.odds} onChange={e => { const n = [...options]; n[i] = { ...n[i], odds: e.target.value }; setOptions(n) }}
+                placeholder="Odds" className="h-10 px-3 rounded-lg bg-background border border-border outline-none" />
+              <input type="number" step="0.01" value={opt.probability} onChange={e => { const n = [...options]; n[i] = { ...n[i], probability: e.target.value }; setOptions(n) }}
+                placeholder="Prob" className="h-10 px-3 rounded-lg bg-background border border-border outline-none" />
+            </div>
+          ))}
+        </div>
+
+        <div className="flex gap-4">
+          <Link href="/admin/mercados" className="flex-1">
+            <Button type="button" variant="outline" className="w-full">Voltar</Button>
+          </Link>
+          <Button type="submit" className="flex-1" disabled={saving}>
+            {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+            Salvar
+          </Button>
+        </div>
+      </form>
+    </div>
+  )
+}

@@ -21,11 +21,13 @@ interface User {
   id: string
   email: string
   display_name?: string
-  avatar_url?: string
+  full_name?: string
   role?: string
-  is_active?: boolean
-  balance?: number
-  total_bets?: number
+  status?: string
+  kyc_status?: string
+  available_balance?: number
+  cpf?: string
+  phone?: string
   created_at: string
 }
 
@@ -33,6 +35,10 @@ export default function AdminUsuarios() {
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
+  const [editUser, setEditUser] = useState<User | null>(null)
+  const [newRole, setNewRole] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [msg, setMsg] = useState<string | null>(null)
 
   useEffect(() => {
     loadUsers()
@@ -54,7 +60,7 @@ export default function AdminUsuarios() {
       const userIds = data.map(u => u.id)
       const { data: wallets } = await supabase
         .from('wallets')
-        .select('user_id, balance')
+        .select('user_id, available_balance')
         .in('user_id', userIds)
 
       const walletMap = new Map(wallets?.map(w => [w.user_id, parseFloat(w.available_balance || '0')]))
@@ -62,16 +68,48 @@ export default function AdminUsuarios() {
       setUsers(data.map((u: any) => ({
         id: u.id,
         email: u.email || '',
-        display_name: u.display_name || u.username || u.full_name,
-        avatar_url: u.avatar_url,
+        display_name: u.full_name || u.email?.split('@')[0] || '',
+        full_name: u.full_name,
         role: u.role || 'user',
-        is_active: u.is_active !== false,
-        balance: walletMap.get(u.id) || 0,
-        total_bets: u.total_bets || 0,
+        status: u.status || 'active',
+        kyc_status: u.kyc_status || 'pending',
+        available_balance: walletMap.get(u.id) || 0,
+        cpf: u.cpf,
+        phone: u.phone,
         created_at: u.created_at,
       })))
     }
     setLoading(false)
+  }
+
+  async function changeRole(userId: string, role: string) {
+    setSaving(true)
+    try {
+      const supabase = createClient()
+      const { error } = await supabase.from('profiles').update({ role }).eq('id', userId)
+      if (error) throw error
+      setMsg('Role atualizada!')
+      setEditUser(null)
+      loadUsers()
+    } catch (err: any) {
+      setMsg('Erro: ' + err?.message)
+    } finally { setSaving(false) }
+  }
+
+  async function toggleStatus(userId: string, currentStatus: string) {
+    const newStatus = currentStatus === 'active' ? 'suspended' : 'active'
+    const supabase = createClient()
+    await supabase.from('profiles').update({ status: newStatus }).eq('id', userId)
+    loadUsers()
+  }
+
+  async function updateKyc(userId: string, decision: string) {
+    const supabase = createClient()
+    await supabase.from('profiles').update({
+      kyc_status: decision,
+      kyc_reviewed_at: new Date().toISOString(),
+    }).eq('id', userId)
+    loadUsers()
   }
 
   const filteredUsers = users.filter(u => 
@@ -201,11 +239,19 @@ export default function AdminUsuarios() {
                       </div>
                     </td>
                     <td className="p-4">
-                      <div className="flex items-center justify-end gap-2">
-                        <Button size="sm" variant="ghost">
-                          <Eye className="h-4 w-4" />
+                      <div className="flex items-center justify-end gap-1">
+                        {/* KYC */}
+                        {user.kyc_status === 'pending' && (
+                          <Button size="sm" variant="ghost" className="text-green-400 text-xs" onClick={() => updateKyc(user.id, 'approved')}>
+                            KYC ✓
+                          </Button>
+                        )}
+                        {/* Role */}
+                        <Button size="sm" variant="ghost" onClick={() => { setEditUser(user); setNewRole(user.role || 'user'); setMsg(null) }}>
+                          <Shield className="h-4 w-4" />
                         </Button>
-                        <Button size="sm" variant="ghost" className="text-red-400 hover:text-red-300">
+                        {/* Ban/Unban */}
+                        <Button size="sm" variant="ghost" className="text-red-400" onClick={() => toggleStatus(user.id, user.status || 'active')}>
                           <Ban className="h-4 w-4" />
                         </Button>
                       </div>
@@ -217,6 +263,29 @@ export default function AdminUsuarios() {
           </table>
         </div>
       </div>
+
+      {/* Role Modal */}
+      {editUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="w-full max-w-sm rounded-2xl bg-card border border-border p-6 space-y-4">
+            <h2 className="font-bold">Alterar Role</h2>
+            <p className="text-sm text-muted-foreground">{editUser.email}</p>
+            <select value={newRole} onChange={e => setNewRole(e.target.value)}
+              className="w-full h-10 px-4 rounded-lg bg-background border border-border outline-none">
+              <option value="user">user</option>
+              <option value="admin">admin</option>
+              <option value="super_admin">super_admin</option>
+            </select>
+            {msg && <p className="text-sm text-green-400">{msg}</p>}
+            <div className="flex gap-3">
+              <Button variant="outline" className="flex-1" onClick={() => setEditUser(null)}>Cancelar</Button>
+              <Button className="flex-1" disabled={saving} onClick={() => changeRole(editUser.id, newRole)}>
+                {saving ? 'Salvando...' : 'Salvar'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
