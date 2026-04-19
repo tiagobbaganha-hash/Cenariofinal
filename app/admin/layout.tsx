@@ -28,6 +28,7 @@ const navItems = [
   { href: '/admin/financeiro', label: 'Financeiro', icon: Wallet },
   { href: '/admin/cms', label: 'CMS / Páginas', icon: FileText },
   { href: '/admin/branding', label: 'Branding', icon: Settings },
+  { href: '/admin/influencers', label: 'Influencers', icon: Users },
 ]
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

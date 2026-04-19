@@ -1,8 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -17,6 +17,7 @@ type OtpStep = 'request' | 'verify'
 
 export default function LoginPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { toast } = useToast()
   const [mode, setMode] = useState<Mode>('password')
   const [action, setAction] = useState<AuthAction>('signin')
@@ -25,6 +26,13 @@ export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [otp, setOtp] = useState('')
+  const [refCode, setRefCode] = useState<string | null>(null)
+
+  // Capturar código de influencer da URL
+  useEffect(() => {
+    const ref = searchParams.get('ref')
+    if (ref) setRefCode(ref)
+  }, [searchParams])
 
   async function handlePassword(e: React.FormEvent) {
     e.preventDefault()
@@ -41,6 +49,18 @@ export default function LoginPage() {
           }
         })
         if (error) throw error
+        
+        // Vincular ao influencer se veio por link de indicação
+        if (refCode) {
+          const { data: { user } } = await supabase.auth.getUser()
+          if (user) {
+            const { data: inf } = await supabase.from('influencers').select('id').eq('referral_code', refCode).eq('is_active', true).single()
+            if (inf) {
+              await supabase.from('profiles').update({ referred_by_influencer: inf.id }).eq('id', user.id)
+            }
+          }
+        }
+
         toast({ type: 'success', title: 'Conta criada!' })
         router.push('/onboarding')
         router.refresh()
