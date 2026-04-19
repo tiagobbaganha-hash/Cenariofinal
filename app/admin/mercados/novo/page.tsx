@@ -29,12 +29,14 @@ export default function NovoMercado() {
   ])
 
   function generateSlug(title: string) {
-    return title
+    const base = title
       .toLowerCase()
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)/g, '')
+    const suffix = Date.now().toString(36).slice(-4)
+    return `${base}-${suffix}`
   }
 
   async function handleSubmit(e: React.FormEvent) {
