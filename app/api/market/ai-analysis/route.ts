@@ -8,82 +8,81 @@ const supabaseAdmin = createClient(
 
 export async function POST(req: NextRequest) {
   try {
-    const { marketId } = await req.json()
+    const { marketId, title, description, category, options: clientOptions } = await req.json()
     if (!marketId) return NextResponse.json({ error: 'marketId obrigatório' }, { status: 400 })
 
-    // Verificar cache (opcional — tabela pode não existir ainda)
+    // Cache check
     try {
       const { data: cached } = await supabaseAdmin
-        .from('market_ai_analysis')
-        .select('analysis, expires_at')
-        .eq('market_id', marketId)
-        .single()
+        .from('market_ai_analysis').select('analysis, expires_at').eq('market_id', marketId).maybeSingle()
       if (cached && new Date(cached.expires_at) > new Date()) {
         return NextResponse.json({ analysis: cached.analysis, cached: true })
       }
-    } catch (_) { /* tabela não existe ainda, continuar sem cache */ }
+    } catch (_) {}
 
-    // Buscar dados do mercado
-    const { data: market } = await supabaseAdmin
-      .from('markets')
-      .select('id, title, description, category, closes_at, status')
-      .eq('id', marketId)
-      .single()
+    // Usar dados enviados pelo cliente (mais confiável) ou buscar do banco
+    let marketTitle = title || ''
+    let marketDesc = description || ''
+    let marketCategory = category || 'Geral'
+    let optionsList: any[] = clientOptions || []
 
-    if (!market) return NextResponse.json({ error: 'Mercado não encontrado' }, { status: 404 })
+    // Se não vieram dados do cliente, buscar do banco
+    if (!marketTitle) {
+      try {
+        const { data: m } = await supabaseAdmin
+          .from('markets').select('title, description, category').eq('id', marketId).maybeSingle()
+        if (m) { marketTitle = m.title; marketDesc = m.description || ''; marketCategory = m.category || 'Geral' }
+      } catch (_) {}
+    }
 
-    const { data: options } = await supabaseAdmin
-      .from('market_options')
-      .select('label, option_key, probability, odds')
-      .eq('market_id', marketId)
-      .order('sort_order')
+    if (optionsList.length === 0) {
+      try {
+        const { data: opts } = await supabaseAdmin
+          .from('market_options').select('label, probability, odds').eq('market_id', marketId)
+        optionsList = opts || []
+      } catch (_) {}
+    }
 
-    const { count: betCount } = await supabaseAdmin
-      .from('orders')
-      .select('*', { count: 'exact', head: true })
-      .eq('market_id', marketId)
+    // Dados de volume
+    let totalVolume = 0, betCount = 0
+    try {
+      const { data: vd } = await supabaseAdmin
+        .from('orders').select('stake_amount').eq('market_id', marketId)
+      totalVolume = (vd || []).reduce((s: number, o: any) => s + parseFloat(o.stake_amount || 0), 0)
+      betCount = (vd || []).length
+    } catch (_) {}
 
-    const { data: volumeData } = await supabaseAdmin
-      .from('orders')
-      .select('stake_amount, option_id')
-      .eq('market_id', marketId)
+    if (!marketTitle) return NextResponse.json({ error: 'Dados do mercado não encontrados' }, { status: 404 })
 
-    const totalVolume = (volumeData || []).reduce((s: number, o: any) => s + parseFloat(o.stake_amount || 0), 0)
-
-    const closesAt = market.closes_at ? new Date(market.closes_at) : null
-    const daysLeft = closesAt ? Math.max(0, Math.ceil((closesAt.getTime() - Date.now()) / 86400000)) : null
-
-    const optionsSummary = (options || []).map(o =>
+    const optsSummary = optionsList.map(o =>
       `${o.label}: ${((o.probability || 0.5) * 100).toFixed(0)}% probabilidade, odds ${(o.odds || 2).toFixed(2)}`
-    ).join('\n')
+    ).join('\n') || 'Opções não disponíveis'
 
     const prompt = `Você é um analista especialista em mercados preditivos brasileiros. 
-Analise o seguinte mercado e forneça uma análise objetiva e útil para investidores.
+Analise este mercado e forneça insights objetivos para apostadores.
 
-MERCADO: ${market.title}
-DESCRIÇÃO: ${market.description || 'Sem descrição'}
-CATEGORIA: ${market.category || 'Geral'}
-OPÇÕES ATUAIS:\n${optionsSummary}
-VOLUME TOTAL: R$ ${totalVolume.toFixed(2)}
-APOSTAS: ${betCount || 0}
-${daysLeft !== null ? `DIAS RESTANTES: ${daysLeft}` : ''}
+MERCADO: ${marketTitle}
+DESCRIÇÃO: ${marketDesc || 'Sem descrição'}
+CATEGORIA: ${marketCategory}
+OPÇÕES:\n${optsSummary}
+VOLUME: R$ ${totalVolume.toFixed(2)} | ${betCount} apostas
 
-Responda APENAS com JSON válido (sem markdown, sem backticks):
+Responda SOMENTE com JSON válido (sem markdown):
 {
-  "resumo": "2-3 frases resumindo o mercado e contexto atual",
+  "resumo": "2-3 frases sobre o mercado e contexto",
   "cenarios": [
     {
-      "opcao": "nome da opção",
+      "opcao": "nome",
       "probabilidade": 50,
-      "analise": "análise de 2-3 frases sobre por que essa opção pode vencer",
-      "fatores_favor": ["fator 1", "fator 2", "fator 3"],
-      "riscos": ["risco 1", "risco 2"]
+      "analise": "2 frases explicando a chance",
+      "fatores_favor": ["fator 1", "fator 2"],
+      "riscos": ["risco 1"]
     }
   ],
-  "fatores_chave": ["fator decisivo 1", "fator decisivo 2", "fator decisivo 3"],
-  "momento_mercado": "quente|neutro|frio",
-  "confianca_analise": "alta|media|baixa",
-  "data_resolucao_dica": "dica sobre quando o evento será resolvido e como acompanhar"
+  "fatores_chave": ["fator 1", "fator 2", "fator 3"],
+  "momento_mercado": "quente",
+  "confianca_analise": "media",
+  "data_resolucao_dica": "quando e como acompanhar a resolução"
 }`
 
     const aiRes = await fetch('https://api.anthropic.com/v1/messages', {
@@ -100,18 +99,21 @@ Responda APENAS com JSON válido (sem markdown, sem backticks):
       })
     })
 
+    if (!aiRes.ok) {
+      const errText = await aiRes.text()
+      return NextResponse.json({ error: `API Claude: ${errText}` }, { status: 500 })
+    }
+
     const aiData = await aiRes.json()
     const raw = aiData.content?.[0]?.text || '{}'
     const analysis = JSON.parse(raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim())
 
-    // Salvar cache (opcional)
     try {
       await supabaseAdmin.from('market_ai_analysis').upsert({
-        market_id: marketId,
-        analysis,
+        market_id: marketId, analysis,
         expires_at: new Date(Date.now() + 6 * 3600 * 1000).toISOString()
       }, { onConflict: 'market_id' })
-    } catch (_) { /* tabela não existe ainda */ }
+    } catch (_) {}
 
     return NextResponse.json({ analysis, cached: false })
   } catch (e: any) {

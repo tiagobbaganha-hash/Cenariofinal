@@ -242,8 +242,14 @@ export default async function MarketDetailPage({
             {/* Share */}
             <ShareButtons title={market.title} slug={market.slug} />
 
-            {/* AI Analysis — visível só para logados */}
-            <AIAnalysis marketId={market.id} />
+            {/* AI Analysis */}
+            <AIAnalysis 
+              marketId={market.id}
+              title={market.title}
+              description={market.description || ''}
+              category={market.category || ''}
+              optionsData={options.map((o: any) => ({ label: o.label, probability: o.probability, odds: o.odds }))}
+            />
 
             {/* Comments */}
             <MarketComments marketId={market.id} />

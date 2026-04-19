@@ -20,6 +20,8 @@ export function MarketComments({ marketId }: { marketId: string }) {
   const [posting, setPosting] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
   const [isAdmin, setIsAdmin] = useState(false)
+  const [postError, setPostError] = useState('')
+  const [tableError, setTableError] = useState(false)
 
   useEffect(() => {
     load()
@@ -35,12 +37,13 @@ export function MarketComments({ marketId }: { marketId: string }) {
 
   async function load() {
     const supabase = createClient()
-    const { data } = await supabase
+    const { data, error: tblErr } = await supabase
       .from('community_comments')
       .select('id, content, author_id, created_at')
       .eq('market_id', marketId)
       .order('created_at', { ascending: true })
       .limit(50)
+    if (tblErr) { setTableError(true); setLoading(false); return }
 
     if (data) {
       const authorIds = [...new Set(data.map(c => c.author_id))]
@@ -72,8 +75,8 @@ export function MarketComments({ marketId }: { marketId: string }) {
       if (error) throw error
       setText('')
       load()
-    } catch (err) {
-      console.error(err)
+    } catch (err: any) {
+      setPostError(err?.message || 'Erro ao enviar comentário')
     } finally { setPosting(false) }
   }
 
@@ -88,6 +91,11 @@ export function MarketComments({ marketId }: { marketId: string }) {
       <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
         <MessageSquare className="h-4 w-4" /> Comentários ({comments.length})
       </h3>
+      {tableError && (
+        <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/10 px-3 py-2 text-xs text-yellow-400 mb-3">
+          ⚠️ Tabela de comentários não configurada. Execute o SQL do Sprint 3 no Supabase.
+        </div>
+      )}
 
       {loading ? (
         <div className="flex justify-center py-4"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
@@ -123,7 +131,7 @@ export function MarketComments({ marketId }: { marketId: string }) {
         <div className="flex gap-2">
           <input
             value={text}
-            onChange={e => setText(e.target.value)}
+            onChange={e => { setText(e.target.value); setPostError('') }}
             onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handlePost()}
             placeholder="Escreva um comentário..."
             className="flex-1 h-10 px-4 rounded-lg bg-background border border-border outline-none text-sm"

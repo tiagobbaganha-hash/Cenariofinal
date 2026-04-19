@@ -18,7 +18,15 @@ interface AIAnalysis {
   data_resolucao_dica: string
 }
 
-export function AIAnalysis({ marketId }: { marketId: string }) {
+export function AIAnalysis({ 
+  marketId, title = '', description = '', category = '', optionsData = [] 
+}: { 
+  marketId: string
+  title?: string
+  description?: string
+  category?: string
+  optionsData?: any[]
+}) {
   const [analysis, setAnalysis] = useState<AIAnalysis | null>(null)
   const [loading, setLoading] = useState(false)
   const [open, setOpen] = useState(false)
@@ -33,7 +41,7 @@ export function AIAnalysis({ marketId }: { marketId: string }) {
       const res = await fetch('/api/market/ai-analysis', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ marketId })
+        body: JSON.stringify({ marketId, title, description, category, options: optionsData })
       })
       const data = await res.json()
       if (data.error) throw new Error(data.error)

@@ -6,8 +6,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/useToast'
-import { ArrowLeft, Save, Loader2, XCircle, Trash2 } from 'lucide-react'
-import { ImageUpload } from '@/components/ui/image-upload'
+import { ArrowLeft, Save, Loader2, XCircle, Trash2, Sparkles, Image as ImageIcon, X, Plus } from 'lucide-react'
 
 export default function EditarMercado() {
   const router = useRouter()
@@ -22,6 +21,13 @@ export default function EditarMercado() {
     status: 'open', featured: false, closes_at: '', resolves_at: '', image_url: '',
   })
   const [options, setOptions] = useState<any[]>([])
+  const [influencers, setInfluencers] = useState<any[]>([])
+  const [influencerId, setInfluencerId] = useState('')
+  const [aiPrompt, setAiPrompt] = useState('')
+  const [aiLoading, setAiLoading] = useState(false)
+  const [aiCoverLoading, setAiCoverLoading] = useState(false)
+  const [coverFiles, setCoverFiles] = useState<File[]>([])
+  const [coverPreview, setCoverPreview] = useState<string[]>([])
 
   useEffect(() => {
     async function load() {
@@ -44,10 +50,50 @@ export default function EditarMercado() {
       const { data: opts } = await supabase
         .from('market_options').select('*').eq('market_id', marketId).order('sort_order')
       setOptions(opts || [])
+      // Carregar influencers
+      const infRes = await supabase.from('influencers').select('id, name').eq('is_active', true)
+      setInfluencers(infRes.data || [])
+      setInfluencerId((market as any).influencer_id || '')
       setLoading(false)
     }
     load()
   }, [marketId, router])
+
+  async function handleAIGenerate() {
+    if (!aiPrompt.trim()) return
+    setAiLoading(true)
+    try {
+      const res = await fetch('/api/admin/ai-market', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: aiPrompt }) })
+      const data = await res.json()
+      if (data.market) {
+        const m = data.market
+        setForm(f => ({ ...f, title: m.title || f.title, description: m.description || f.description, category: m.category || f.category }))
+        if (m.options?.length) setOptions(m.options.map((o: any) => ({ ...o, id: undefined })))
+      }
+    } catch (e: any) { toast({ title: 'Erro IA', description: e.message, variant: 'destructive' }) }
+    finally { setAiLoading(false) }
+  }
+
+  async function handleAICover() {
+    setAiCoverLoading(true)
+    try {
+      const fd = new FormData()
+      fd.append('description', form.title)
+      coverFiles.forEach((f, i) => fd.append(`image_${i}`, f))
+      const res = await fetch('/api/admin/ai-cover', { method: 'POST', body: fd })
+      const data = await res.json()
+      if (data.image_data_url) {
+        const supabase = createClient()
+        const blob = await fetch(data.image_data_url).then(r => r.blob())
+        const file = new File([blob], `cover-${Date.now()}.png`, { type: 'image/png' })
+        const { data: up, error: upErr } = await supabase.storage.from('market-images').upload(`covers/${file.name}`, file)
+        if (upErr) throw upErr
+        const { data: { publicUrl } } = supabase.storage.from('market-images').getPublicUrl(up.path)
+        setForm(f => ({ ...f, image_url: publicUrl }))
+      }
+    } catch (e: any) { toast({ title: 'Erro capa', description: e.message, variant: 'destructive' }) }
+    finally { setAiCoverLoading(false) }
+  }
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
@@ -59,6 +105,7 @@ export default function EditarMercado() {
         category: form.category, status: form.status, featured: form.featured,
         closes_at: form.closes_at || null, resolves_at: form.resolves_at || null,
         image_url: form.image_url || null,
+        influencer_id: influencerId || null,
       }).eq('id', marketId)
       if (error) throw error
 
@@ -112,6 +159,18 @@ export default function EditarMercado() {
         <div className="rounded-xl bg-card border border-border p-6 space-y-4">
           <h2 className="font-semibold">Informações</h2>
           <div>
+            {/* IA Generate */}
+            <div className="mb-4 rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-3">
+              <p className="text-xs font-semibold text-primary flex items-center gap-1.5"><Sparkles className="h-3.5 w-3.5" /> Atualizar com IA</p>
+              <div className="flex gap-2">
+                <input className="flex-1 rounded-xl border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40" placeholder="Descreva como quer alterar o mercado..." value={aiPrompt} onChange={e => setAiPrompt(e.target.value)} />
+                <Button type="button" onClick={handleAIGenerate} disabled={aiLoading||!aiPrompt.trim()} size="sm" className="gap-1.5 flex-shrink-0">
+                  {aiLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                  Gerar
+                </Button>
+              </div>
+            </div>
+
             <label className="block text-sm font-medium mb-1">Título</label>
             <input value={form.title} onChange={e => setForm({ ...form, title: e.target.value })}
               className="w-full h-10 px-4 rounded-lg bg-background border border-border focus:border-primary outline-none" />
@@ -127,8 +186,27 @@ export default function EditarMercado() {
               className="w-full px-4 py-2 rounded-lg bg-background border border-border focus:border-primary outline-none" />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Imagem de capa</label>
-            <ImageUpload value={form.image_url} onChange={(url) => setForm({ ...form, image_url: url })} />
+            <label className="block text-sm font-medium mb-2">Imagem de capa</label>
+            {form.image_url && (
+              <div className="relative mb-3">
+                <img src={form.image_url} className="w-full h-32 object-cover rounded-xl border border-border" />
+                <button onClick={() => setForm({...form, image_url: ''})} className="absolute top-2 right-2 rounded-full bg-black/60 p-1"><X className="h-3 w-3 text-white" /></button>
+              </div>
+            )}
+            <div className="flex gap-2 mb-2">
+              {coverPreview.map((src, i) => <img key={i} src={src} className="h-12 w-12 object-cover rounded-lg border border-border" />)}
+              <label className="flex h-12 w-12 cursor-pointer items-center justify-center rounded-lg border border-dashed border-border hover:border-primary/50">
+                <Plus className="h-4 w-4 text-muted-foreground" />
+                <input type="file" accept="image/*" multiple className="hidden" onChange={e => { const files = Array.from(e.target.files||[]).slice(0,4); setCoverFiles(files); setCoverPreview(files.map(f => URL.createObjectURL(f))) }} />
+              </label>
+            </div>
+            <div className="flex gap-2">
+              <input className="flex-1 rounded-xl border border-border bg-card px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40" placeholder="URL da imagem" value={form.image_url} onChange={e => setForm({...form, image_url: e.target.value})} />
+              <Button type="button" onClick={handleAICover} disabled={aiCoverLoading} variant="outline" size="sm" className="gap-1.5 flex-shrink-0">
+                {aiCoverLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                {aiCoverLoading ? 'Gerando...' : 'IA'}
+              </Button>
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
