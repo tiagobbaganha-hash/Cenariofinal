@@ -1,9 +1,11 @@
-// CenarioX Root Layout - Fixed fonts for Next.js 14
+// CenarioX Root Layout
 import type { Metadata, Viewport } from 'next'
 import { Inter, JetBrains_Mono } from 'next/font/google'
 import './globals.css'
 import { ToastProvider } from '@/lib/context/ToastContext'
 import { Toaster } from '@/components/ui/toaster'
+import { SiteHeader } from '@/components/site-header'
+import { SiteFooter } from '@/components/site-footer'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -43,7 +45,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     >
       <body className="min-h-dvh font-sans antialiased">
         <ToastProvider>
-          {children}
+          <SiteHeader />
+          <main className="min-h-[calc(100dvh-8rem)]">
+            {children}
+          </main>
+          <SiteFooter />
           <Toaster />
         </ToastProvider>
       </body>
