@@ -37,11 +37,20 @@ export function AIAnalysis({
   const [isPro, setIsPro] = useState<boolean | null>(null)
 
   useEffect(() => {
-    // Verificar plano do usuário
+    // Verificar role do usuário (sem depender de view que pode não existir)
     const supabase = createClient()
-    supabase.from('v_my_plan').select('is_pro, is_admin').maybeSingle()
-      .then(({ data }: any) => setIsPro(data?.is_pro || data?.is_admin || false))
-      .catch(() => setIsPro(false))
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) { setIsPro(false); return }
+      supabase.from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .maybeSingle()
+        .then(({ data: p }: any) => {
+          const role = p?.role || 'free'
+          setIsPro(['admin', 'super_admin', 'pro', 'influencer'].includes(role))
+        })
+        .catch(() => setIsPro(false))
+    }).catch(() => setIsPro(false))
   }, [])
 
   async function load() {

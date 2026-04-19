@@ -63,6 +63,19 @@ export function SiteHeader() {
     }
   }, [])
 
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.from('branding_settings')
+      .select('logo_url, brand_name, app_name')
+      .eq('id', 1)
+      .maybeSingle()
+      .then(({ data: b }) => {
+        if (b?.logo_url) setLogoUrl(b.logo_url)
+        if (b?.brand_name || b?.app_name) setBrandName(b.brand_name || b.app_name || 'CenárioX')
+      })
+      .catch(() => {})
+  }, [])
+
   return (
     <header className="sticky top-0 z-40 w-full border-b border-border/60 bg-background/80 backdrop-blur-xl">
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4 sm:px-6">

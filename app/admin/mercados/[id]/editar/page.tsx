@@ -49,7 +49,14 @@ export default function EditarMercado() {
 
       const { data: opts } = await supabase
         .from('market_options').select('*').eq('market_id', marketId).order('sort_order')
-      setOptions(opts || [])
+      setOptions((opts || []).map((o: any) => ({
+        id: o.id,
+        label: o.label || o.name || o.option_key || '',
+        option_key: o.option_key || 'yes',
+        odds: parseFloat(o.odds || '2'),
+        probability: parseFloat(o.probability || '0.5'),
+        sort_order: o.sort_order || 0,
+      })))
       // Carregar influencers
       const infRes = await supabase.from('influencers').select('id, name').eq('is_active', true)
       setInfluencers(infRes.data || [])
@@ -68,7 +75,13 @@ export default function EditarMercado() {
       if (data.market) {
         const m = data.market
         setForm(f => ({ ...f, title: m.title || f.title, description: m.description || f.description, category: m.category || f.category }))
-        if (m.options?.length) setOptions(m.options.map((o: any) => ({ ...o, id: undefined })))
+        if (m.options?.length) setOptions(m.options.map((o: any, i: number) => ({
+          id: undefined,
+          label: o.label || o.name || `Opção ${i+1}`,
+          option_key: o.option_key || (i === 0 ? 'yes' : i === 1 ? 'no' : `opt${i+1}`),
+          odds: typeof o.odds === 'number' ? o.odds : 2.0,
+          probability: typeof o.probability === 'number' ? o.probability : 0.5,
+        })))
       }
     } catch (e: any) { toast({ title: 'Erro IA', description: e.message, variant: 'destructive' }) }
     finally { setAiLoading(false) }
