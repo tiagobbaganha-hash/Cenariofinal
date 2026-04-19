@@ -1,7 +1,31 @@
+'use client'
+
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { TrendingUp } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
+
+interface FooterPage {
+  slug: string
+  title: string
+}
 
 export function SiteFooter() {
+  const [pages, setPages] = useState<FooterPage[]>([])
+
+  useEffect(() => {
+    async function load() {
+      const supabase = createClient()
+      const { data } = await supabase
+        .from('v_site_footer_pages')
+        .select('slug, title, sort_order')
+        .order('sort_order')
+        .limit(10)
+      setPages((data || []) as FooterPage[])
+    }
+    load()
+  }, [])
+
   return (
     <footer className="mt-24 border-t border-border/60">
       <div className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6">
@@ -37,9 +61,21 @@ export function SiteFooter() {
               Legal
             </h4>
             <ul className="mt-3 space-y-2 text-sm">
-              <li><Link href="/termos" className="text-muted-foreground hover:text-foreground">Termos de Uso</Link></li>
-              <li><Link href="/privacidade" className="text-muted-foreground hover:text-foreground">Privacidade</Link></li>
-              <li><Link href="/faq" className="text-muted-foreground hover:text-foreground">FAQ</Link></li>
+              {pages.length > 0 ? (
+                pages.map(p => (
+                  <li key={p.slug}>
+                    <Link href={`/p/${p.slug}`} className="text-muted-foreground hover:text-foreground">
+                      {p.title}
+                    </Link>
+                  </li>
+                ))
+              ) : (
+                <>
+                  <li><Link href="/p/termos" className="text-muted-foreground hover:text-foreground">Termos de Uso</Link></li>
+                  <li><Link href="/p/privacidade" className="text-muted-foreground hover:text-foreground">Privacidade</Link></li>
+                  <li><Link href="/p/ajuda" className="text-muted-foreground hover:text-foreground">Ajuda</Link></li>
+                </>
+              )}
             </ul>
           </div>
         </div>

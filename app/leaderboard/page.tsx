@@ -26,10 +26,15 @@ export default function LeaderboardPage() {
       setLoading(true)
       try {
         const supabase = createClient()
+        const viewMap: Record<Period, string> = {
+          '7d': 'v_leaderboard_7d',
+          '30d': 'v_leaderboard_30d',
+          'all': 'v_front_leaderboard_v1',
+        }
         const { data } = await supabase
-          .from('v_front_leaderboard_v1')
+          .from(viewMap[period])
           .select('*')
-          .limit(100)
+          .limit(50)
         setRows((data ?? []) as any)
       } catch {
         setRows([])

@@ -263,10 +263,107 @@ export default function AccountPage() {
               </CardContent>
             </Card>
           </section>
+
+          {/* Referral */}
+          <section>
+            <Card>
+              <CardContent className="p-6">
+                <h2 className="text-lg font-bold mb-4">Indicações</h2>
+                <ReferralSection />
+              </CardContent>
+            </Card>
+          </section>
+
+          {/* Promo Code */}
+          <section>
+            <Card>
+              <CardContent className="p-6">
+                <h2 className="text-lg font-bold mb-4">Código Promocional</h2>
+                <PromoSection />
+              </CardContent>
+            </Card>
+          </section>
         </div>
       </main>
 
     </>
+  )
+}
+
+function ReferralSection() {
+  const [code, setCode] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [copied, setCopied] = useState(false)
+
+  useEffect(() => {
+    async function load() {
+      const supabase = createClient()
+      const { data } = await supabase.rpc('get_or_create_referral_code')
+      setCode((data as any)?.code || (data as string) || '')
+      setLoading(false)
+    }
+    load()
+  }, [])
+
+  const link = code ? `https://cenariox.com.br/login?ref=${code}` : ''
+
+  function copy() {
+    navigator.clipboard.writeText(link)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  if (loading) return <p className="text-sm text-muted-foreground">Carregando...</p>
+
+  return (
+    <div className="space-y-3">
+      <p className="text-sm text-muted-foreground">Convide amigos e ganhe bônus quando eles apostarem!</p>
+      <div className="flex gap-2">
+        <input value={link} readOnly className="flex-1 h-10 px-4 rounded-lg bg-background border border-border text-sm font-mono" />
+        <Button variant="outline" onClick={copy}>{copied ? 'Copiado!' : 'Copiar'}</Button>
+      </div>
+      <p className="text-xs text-muted-foreground">Seu código: <span className="font-mono font-bold">{code}</span></p>
+    </div>
+  )
+}
+
+function PromoSection() {
+  const [code, setPromoCode] = useState('')
+  const [msg, setMsg] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+
+  async function apply() {
+    if (!code.trim()) return
+    setLoading(true)
+    setMsg(null)
+    try {
+      const supabase = createClient()
+      const { data, error } = await supabase.rpc('validate_promo_code_v2', { p_code: code.trim() })
+      if (error) throw error
+      const result = data as any
+      if (result?.valid) {
+        const { error: redeemErr } = await supabase.rpc('redeem_promo_code', { p_code: code.trim() })
+        if (redeemErr) throw redeemErr
+        setMsg('Código aplicado com sucesso!')
+        setPromoCode('')
+      } else {
+        setMsg(result?.reason || 'Código inválido')
+      }
+    } catch (err: any) {
+      setMsg(err?.message || 'Erro ao aplicar código')
+    } finally { setLoading(false) }
+  }
+
+  return (
+    <div className="space-y-3">
+      <p className="text-sm text-muted-foreground">Tem um código? Digite abaixo.</p>
+      <div className="flex gap-2">
+        <input value={code} onChange={e => setPromoCode(e.target.value.toUpperCase())}
+          placeholder="CODIGO123" className="flex-1 h-10 px-4 rounded-lg bg-background border border-border text-sm font-mono uppercase" />
+        <Button onClick={apply} disabled={loading}>{loading ? 'Aplicando...' : 'Aplicar'}</Button>
+      </div>
+      {msg && <p className={`text-sm ${msg.includes('sucesso') ? 'text-green-400' : 'text-red-400'}`}>{msg}</p>}
+    </div>
   )
 }
 

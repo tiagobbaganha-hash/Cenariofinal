@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { Menu, X, TrendingUp } from 'lucide-react'
+import { Menu, X, TrendingUp, Bell } from 'lucide-react'
 
 const navigation = [
   { label: 'Mercados', href: '/mercados' },
@@ -20,6 +20,7 @@ export function SiteHeader() {
   const [userEmail, setUserEmail] = useState<string | null>(null)
   const [isAdmin, setIsAdmin] = useState(false)
   const [balance, setBalance] = useState<number | null>(null)
+  const [unread, setUnread] = useState(0)
   const [mobileOpen, setMobileOpen] = useState(false)
 
   useEffect(() => {
@@ -36,8 +37,17 @@ export function SiteHeader() {
         const role = (me as any)?.role ?? 'user'
         setIsAdmin(['admin', 'super_admin'].includes(role))
         setBalance((me as any)?.available_balance ?? null)
+
+        // Count unread notifications
+        const { count } = await supabase
+          .from('user_notifications')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', data.user.id)
+          .is('read_at', null)
+        setUnread(count || 0)
       } else {
         setBalance(null)
+        setUnread(0)
       }
     }
     load()
@@ -111,6 +121,16 @@ export function SiteHeader() {
                   </Button>
                 </Link>
               )}
+              <Link href="/conta" className="relative hidden md:block">
+                <Button variant="ghost" size="sm" className="p-2">
+                  <Bell className="h-4 w-4" />
+                  {unread > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+                      {unread > 9 ? '9+' : unread}
+                    </span>
+                  )}
+                </Button>
+              </Link>
               <Link href="/conta">
                 <Button variant="outline" size="sm" className="hidden md:inline-flex">
                   Conta
