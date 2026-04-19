@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/useToast'
 import { ArrowLeft, Save, Loader2, XCircle, Trash2 } from 'lucide-react'
+import { ImageUpload } from '@/components/ui/image-upload'
 
 export default function EditarMercado() {
   const router = useRouter()
@@ -18,7 +19,7 @@ export default function EditarMercado() {
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState({
     title: '', slug: '', description: '', category: 'Política',
-    status: 'open', featured: false, closes_at: '', resolves_at: '',
+    status: 'open', featured: false, closes_at: '', resolves_at: '', image_url: '',
   })
   const [options, setOptions] = useState<any[]>([])
 
@@ -35,6 +36,7 @@ export default function EditarMercado() {
         category: market.category || 'Política',
         status: market.status || 'open',
         featured: market.featured || false,
+        image_url: market.image_url || '',
         closes_at: market.closes_at ? market.closes_at.slice(0, 16) : '',
         resolves_at: market.resolves_at ? market.resolves_at.slice(0, 16) : '',
       })
@@ -56,6 +58,7 @@ export default function EditarMercado() {
         title: form.title, slug: form.slug, description: form.description,
         category: form.category, status: form.status, featured: form.featured,
         closes_at: form.closes_at || null, resolves_at: form.resolves_at || null,
+        image_url: form.image_url || null,
       }).eq('id', marketId)
       if (error) throw error
 
@@ -122,6 +125,10 @@ export default function EditarMercado() {
             <label className="block text-sm font-medium mb-1">Descrição</label>
             <textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} rows={3}
               className="w-full px-4 py-2 rounded-lg bg-background border border-border focus:border-primary outline-none" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Imagem de capa</label>
+            <ImageUpload value={form.image_url} onChange={(url) => setForm({ ...form, image_url: url })} />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>

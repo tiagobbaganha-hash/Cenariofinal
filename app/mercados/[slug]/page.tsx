@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { BetWidget } from '@/components/bet-widget'
+import { PriceHistoryChart } from '@/components/market/PriceHistoryChart'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import type { FrontMarket } from '@/lib/types'
@@ -104,6 +105,13 @@ export default async function MarketDetailPage({
                 )}
               </p>
             </div>
+          </div>
+        )}
+
+        {/* Cover image */}
+        {market.image_url && (
+          <div className="mb-6 rounded-2xl overflow-hidden border border-border">
+            <img src={market.image_url} alt={market.title} className="w-full h-48 sm:h-64 object-cover" />
           </div>
         )}
 
@@ -210,6 +218,9 @@ export default async function MarketDetailPage({
                 </div>
               </CardContent>
             </Card>
+
+            {/* Price History Chart */}
+            <PriceHistoryChart marketId={market.id} />
 
             {/* About */}
             <Card>

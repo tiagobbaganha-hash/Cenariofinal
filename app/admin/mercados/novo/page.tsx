@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
+import { ImageUpload } from '@/components/ui/image-upload'
 import { ArrowLeft, Save, RefreshCw, Plus, Trash2 } from 'lucide-react'
 
 export default function NovoMercado() {
@@ -21,6 +22,7 @@ export default function NovoMercado() {
     featured: false,
     closes_at: '',
     resolves_at: '',
+    image_url: '',
   })
 
   const [options, setOptions] = useState([
@@ -63,6 +65,7 @@ export default function NovoMercado() {
           featured: form.featured,
           closes_at: form.closes_at || null,
           resolves_at: form.resolves_at || null,
+          image_url: form.image_url || null,
         } as any)
 
       if (marketError) throw marketError
@@ -154,6 +157,14 @@ export default function NovoMercado() {
               placeholder="Descreva o mercado..."
               rows={4}
               className="w-full px-4 py-3 rounded-lg bg-background border border-border focus:border-primary outline-none resize-none"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">Imagem de capa</label>
+            <ImageUpload 
+              value={form.image_url} 
+              onChange={(url) => setForm({ ...form, image_url: url })} 
             />
           </div>
 

@@ -9,6 +9,7 @@ export interface MarketCardData {
   title: string
   category: string | null
   description?: string | null
+  image_url?: string | null
   status_text?: string | null
   featured?: boolean | null
   closes_at?: string | null
@@ -29,11 +30,18 @@ export function MarketCard({ market, compact = false }: { market: MarketCardData
     <Link
       href={`/mercados/${market.slug ?? market.id}`}
       className={cn(
-        'group relative flex flex-col rounded-xl border border-border bg-card transition-all',
+        'group relative flex flex-col rounded-xl border border-border bg-card transition-all overflow-hidden',
         'hover:border-primary/40 hover:shadow-[0_0_0_1px_hsl(var(--primary)/0.2),0_0_30px_hsl(var(--primary)/0.08)]',
-        compact ? 'p-4' : 'p-5'
       )}
     >
+      {/* Cover image */}
+      {market.image_url && (
+        <div className="h-36 overflow-hidden">
+          <img src={market.image_url} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+        </div>
+      )}
+
+      <div className={compact ? 'p-4' : 'p-5'}>
       {/* Top meta */}
       <div className="mb-3 flex items-start justify-between gap-2">
         <div className="flex flex-wrap items-center gap-1.5">
@@ -101,6 +109,7 @@ export function MarketCard({ market, compact = false }: { market: MarketCardData
             {daysLeft === 0 ? 'Hoje' : daysLeft === 1 ? '1d' : `${daysLeft}d`}
           </span>
         )}
+      </div>
       </div>
     </Link>
   )
