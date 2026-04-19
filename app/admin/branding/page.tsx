@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/useToast'
 import { Save, Loader2, Palette } from 'lucide-react'
+import { ImageUpload } from '@/components/ui/image-upload'
 
 export default function AdminBranding() {
   const { toast } = useToast()
@@ -12,7 +13,7 @@ export default function AdminBranding() {
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState({
     brand_name: '', app_title: '', app_tagline: '',
-    logo_url: '', favicon_url: '',
+    logo_url: '', favicon_url: '', login_background_url: '', hero_banner_url: '',
     color_primary: '#F59E0B', color_secondary: '#FB923C', color_accent: '#22C55E',
     color_bg: '#0B0F14', color_surface: '#111827', color_text: '#E5E7EB',
     font_family: 'Inter',
@@ -30,6 +31,8 @@ export default function AdminBranding() {
           brand_name: data.brand_name || data.app_name || data.site_name || '',
           app_title: data.app_title || '', app_tagline: data.app_tagline || '',
           logo_url: data.logo_url || '', favicon_url: data.favicon_url || '',
+          login_background_url: data.login_background_url || '',
+          hero_banner_url: data.custom_css || '', // reusing custom_css field for hero banner URL
           color_primary: data.color_primary || '#F59E0B',
           color_secondary: data.color_secondary || '#FB923C',
           color_accent: data.color_accent || '#22C55E',
@@ -57,6 +60,8 @@ export default function AdminBranding() {
         brand_name: form.brand_name, app_name: form.brand_name, site_name: form.brand_name,
         app_title: form.app_title, app_tagline: form.app_tagline,
         logo_url: form.logo_url, favicon_url: form.favicon_url,
+        login_background_url: form.login_background_url,
+        custom_css: form.hero_banner_url, // reusing for hero banner URL
         color_primary: form.color_primary, color_secondary: form.color_secondary,
         color_accent: form.color_accent, color_bg: form.color_bg,
         color_surface: form.color_surface, color_text: form.color_text,
@@ -112,8 +117,27 @@ export default function AdminBranding() {
         <Field label="Nome da marca" field="brand_name" />
         <Field label="Título do app" field="app_title" />
         <Field label="Tagline" field="app_tagline" />
-        <Field label="URL do logo" field="logo_url" />
-        <Field label="URL do favicon" field="favicon_url" />
+        
+        <div>
+          <label className="block text-sm font-medium mb-2">Logo</label>
+          <ImageUpload value={form.logo_url} onChange={(url) => setForm({ ...form, logo_url: url })} bucket="market-images" folder="branding" />
+        </div>
+        
+        <div>
+          <label className="block text-sm font-medium mb-2">Favicon</label>
+          <ImageUpload value={form.favicon_url} onChange={(url) => setForm({ ...form, favicon_url: url })} bucket="market-images" folder="branding" />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-2">Banner da Home (imagem grande "Preveja o Futuro")</label>
+          <ImageUpload value={form.hero_banner_url} onChange={(url) => setForm({ ...form, hero_banner_url: url })} bucket="market-images" folder="banners" />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-2">Background da página de login</label>
+          <ImageUpload value={form.login_background_url} onChange={(url) => setForm({ ...form, login_background_url: url })} bucket="market-images" folder="branding" />
+        </div>
+
         <Field label="Fonte" field="font_family" />
       </div>
 

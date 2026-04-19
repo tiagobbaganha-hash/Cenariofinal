@@ -117,6 +117,15 @@ export default async function HomePage() {
     .select('*')
     .single()
 
+  // Fetch branding (hero banner)
+  const { data: branding } = await supabase
+    .from('branding_settings')
+    .select('custom_css')
+    .eq('id', 1)
+    .single()
+  
+  const heroBannerUrl = (branding as any)?.custom_css || ''
+
   // Handle errors
   if (marketsError) {
     console.error('Error fetching markets:', marketsError)
@@ -136,10 +145,21 @@ export default async function HomePage() {
     <div className="min-h-screen" style={{ backgroundColor: '#0B0F14' }}>
       {/* HERO SECTION */}
       <section className="relative overflow-hidden py-20 lg:py-32">
-        {/* Background effects */}
-        <div className="absolute inset-0 bg-gradient-to-b from-green-500/5 via-transparent to-transparent" />
-        <div className="absolute top-20 left-1/4 w-96 h-96 bg-green-500/10 rounded-full blur-3xl" />
-        <div className="absolute top-40 right-1/4 w-80 h-80 bg-cyan-500/10 rounded-full blur-3xl" />
+        {/* Background: banner image or gradient */}
+        {heroBannerUrl ? (
+          <>
+            <div className="absolute inset-0">
+              <img src={heroBannerUrl} alt="" className="w-full h-full object-cover" />
+              <div className="absolute inset-0 bg-black/50" />
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="absolute inset-0 bg-gradient-to-b from-green-500/5 via-transparent to-transparent" />
+            <div className="absolute top-20 left-1/4 w-96 h-96 bg-green-500/10 rounded-full blur-3xl" />
+            <div className="absolute top-40 right-1/4 w-80 h-80 bg-cyan-500/10 rounded-full blur-3xl" />
+          </>
+        )}
         
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6 text-center">
           <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black tracking-tight">
@@ -326,9 +346,17 @@ function MarketCard({ market }: { market: Market }) {
   return (
     <Link href={`/mercados/${market.slug}`}>
       <div 
-        className="group relative overflow-hidden rounded-2xl border border-gray-800 hover:border-green-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-green-500/10 p-6"
+        className="group relative overflow-hidden rounded-2xl border border-gray-800 hover:border-green-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-green-500/10"
         style={{ backgroundColor: '#111827' }}
       >
+        {/* Cover image */}
+        {market.image_url && (
+          <div className="h-40 overflow-hidden">
+            <img src={market.image_url} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+          </div>
+        )}
+
+        <div className="p-6">
         {/* Category badge */}
         <div className="flex items-center justify-between mb-4">
           <span className={`px-3 py-1 rounded-full text-xs font-medium border ${categoryClass}`}>
@@ -382,6 +410,7 @@ function MarketCard({ market }: { market: Market }) {
           <span className="text-xs">
             {formatDate(market.closes_at)}
           </span>
+        </div>
         </div>
       </div>
     </Link>
