@@ -22,6 +22,8 @@ export function SiteHeader() {
   const [balance, setBalance] = useState<number | null>(null)
   const [unread, setUnread] = useState(0)
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [logoUrl, setLogoUrl] = useState('')
+  const [brandName, setBrandName] = useState('CenárioX')
 
   useEffect(() => {
     const load = async () => {
@@ -67,12 +69,18 @@ export function SiteHeader() {
         {/* Logo */}
         <div className="flex items-center gap-8">
           <Link href="/" className="flex items-center gap-2 group">
-            <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/15 text-primary ring-1 ring-primary/30 group-hover:bg-primary/20 transition-colors">
-              <TrendingUp className="h-4 w-4" strokeWidth={2.5} />
-            </div>
-            <span className="text-base font-bold tracking-tight">
-              Cenario<span className="text-primary">X</span>
-            </span>
+            {logoUrl ? (
+              <img src={logoUrl} alt={brandName} className="h-8 w-auto max-w-[120px] object-contain" />
+            ) : (
+              <>
+                <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/15 text-primary ring-1 ring-primary/30 group-hover:bg-primary/20 transition-colors">
+                  <TrendingUp className="h-4 w-4" strokeWidth={2.5} />
+                </div>
+                <span className="text-base font-bold tracking-tight">
+                  {brandName.replace('CenárioX', 'Cenario').replace(/x$/i, '')}<span className="text-primary">X</span>
+                </span>
+              </>
+            )}
           </Link>
 
           {/* Desktop nav */}

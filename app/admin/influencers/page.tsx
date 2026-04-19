@@ -29,8 +29,10 @@ export default function AdminInfluencers() {
 
   const [form, setForm] = useState({
     name: '', social_url: '', commission_percent: '5', referral_code: '',
-    bio: '', email: '', photo_url: ''
+    bio: '', email: '', photo_url: '', user_id: ''
   })
+  const [userSearch, setUserSearch] = useState('')
+  const [userResults, setUserResults] = useState<any[]>([])
 
   useEffect(() => { load() }, [])
 
@@ -66,6 +68,16 @@ export default function AdminInfluencers() {
     return name.toUpperCase().replace(/\s+/g, '').slice(0, 8) + Math.random().toString(36).slice(2, 5).toUpperCase()
   }
 
+  async function searchUsers(q: string) {
+    if (q.length < 3) { setUserResults([]); return }
+    const supabase = createClient()
+    const { data } = await supabase.from('profiles')
+      .select('id, full_name, email, role')
+      .or(`full_name.ilike.%${q}%,email.ilike.%${q}%`)
+      .limit(5)
+    setUserResults(data || [])
+  }
+
   async function handlePhotoUpload(e: React.ChangeEvent<HTMLInputElement>, influencerId?: string) {
     const file = e.target.files?.[0]
     if (!file) return
@@ -90,6 +102,7 @@ export default function AdminInfluencers() {
       const supabase = createClient()
       const { error } = await supabase.from('influencers').insert({
         name: form.name, social_url: form.social_url, bio: form.bio, email: form.email,
+        user_id: form.user_id || null,
         commission_percent: parseFloat(form.commission_percent) || 5,
         referral_code: form.referral_code || generateCode(form.name),
         photo_url: form.photo_url || null,
@@ -173,6 +186,37 @@ export default function AdminInfluencers() {
             </div>
           </div>
           <textarea className={inputCls} rows={2} placeholder="Bio (opcional)" value={form.bio} onChange={e => setForm(f => ({ ...f, bio: e.target.value }))} />
+          <div>
+            <label className="block text-xs text-muted-foreground mb-1.5">Vincular a usuário existente (opcional)</label>
+            <input
+              className={inputCls}
+              placeholder="Buscar por nome ou e-mail..."
+              value={userSearch}
+              onChange={e => { setUserSearch(e.target.value); searchUsers(e.target.value) }}
+            />
+            {userResults.length > 0 && (
+              <div className="mt-1 rounded-xl border border-border bg-card overflow-hidden">
+                {userResults.map(u => (
+                  <button key={u.id} onClick={() => {
+                    setForm(f => ({ ...f, user_id: u.id, name: f.name || u.full_name || '', email: f.email || u.email || '' }))
+                    setUserSearch(u.full_name || u.email)
+                    setUserResults([])
+                  }} className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-primary/5 text-left border-b border-border/50 last:border-0">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary flex-shrink-0">
+                      {(u.full_name || u.email || '?').charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <p className="text-sm text-foreground">{u.full_name || 'Sem nome'}</p>
+                      <p className="text-xs text-muted-foreground">{u.email} · {u.role}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+            {form.user_id && (
+              <p className="text-xs text-green-400 mt-1">✅ Usuário vinculado: {userSearch}</p>
+            )}
+          </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => setShowForm(false)} className="flex-1">Cancelar</Button>
             <Button onClick={handleCreate} disabled={saving} className="flex-1 gap-2">

@@ -67,12 +67,16 @@ export function MarketComments({ marketId }: { marketId: string }) {
     setPosting(true)
     try {
       const supabase = createClient()
+      // Confirmar user autenticado antes de inserir
+      const { data: { user: currentUser } } = await supabase.auth.getUser()
+      if (!currentUser) throw new Error('Faça login para comentar')
+      
       const { error } = await supabase.from('community_comments').insert({
         market_id: marketId,
-        author_id: userId,
+        author_id: currentUser.id,
         content: text.trim(),
-      } as any)
-      if (error) throw error
+      })
+      if (error) throw new Error(error.message)
       setText('')
       load()
     } catch (err: any) {
