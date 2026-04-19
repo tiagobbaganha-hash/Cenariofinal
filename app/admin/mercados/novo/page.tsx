@@ -64,21 +64,23 @@ export default function NovoMercado() {
         .single()
 
       if (marketError) throw marketError
+      if (!market) throw new Error('Mercado não foi criado')
 
       // Create options
-      if (market && options.length > 0) {
-        const marketData = market as any
+      const marketData = market as any
+      if (options.length > 0) {
         const optionsToInsert = options.map((opt: any, idx: number) => ({
           market_id: marketData.id,
           label: opt.label,
           option_key: opt.option_key || 'yes',
-          odds: opt.odds ?? 1.90,
-          probability: opt.probability ?? 0.50,
+          odds: parseFloat(opt.odds) || 1.90,
+          probability: parseFloat(opt.probability) || 0.50,
           sort_order: idx,
           is_active: true,
         }))
 
-        await supabase.from('market_options').insert(optionsToInsert as any)
+        const { error: optError } = await supabase.from('market_options').insert(optionsToInsert as any)
+        if (optError) console.error('Erro nas opções:', optError.message)
       }
 
       router.push('/admin/mercados')
@@ -112,8 +114,9 @@ export default function NovoMercado() {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {error && (
-          <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400">
-            {error}
+          <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 flex items-start justify-between">
+            <span>{error}</span>
+            <button type="button" onClick={() => setError('')} className="ml-4 text-red-400 hover:text-red-300 font-bold">✕</button>
           </div>
         )}
 
