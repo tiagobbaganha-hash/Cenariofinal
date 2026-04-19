@@ -54,9 +54,8 @@ export default function MercadosPage() {
       const { data } = await supabase
         .from('v_front_markets_v4')
         .select('*')
-        .eq('status', 'open')
         .order('featured', { ascending: false })
-        .order('total_volume', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(100)
 
       if (data) {
