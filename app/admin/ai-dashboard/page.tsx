@@ -47,17 +47,22 @@ export default function AIDashboardPage() {
   const [loading, setLoading] = useState(true)
   const [cached, setCached] = useState(false)
   const [lastUpdate, setLastUpdate] = useState('')
+  const [error, setError] = useState('')
 
   async function load(force = false) {
     setLoading(true)
+    setError('')
     try {
       const res = await fetch('/api/admin/ai-insights' + (force ? '?refresh=1' : ''))
       const data = await res.json()
+      if (data.error) throw new Error(data.error)
       if (data.insights) {
         setInsights(data.insights)
         setCached(data.cached)
         setLastUpdate(new Date().toLocaleTimeString('pt-BR'))
       }
+    } catch (e: any) {
+      setError(e.message || 'Erro ao carregar insights')
     } finally {
       setLoading(false)
     }
@@ -101,6 +106,16 @@ export default function AIDashboardPage() {
           <div className="h-10 w-10 rounded-full border-2 border-primary border-t-transparent animate-spin" />
           <p className="text-sm text-muted-foreground">Analisando plataforma com IA...</p>
           <p className="text-xs text-muted-foreground/50">Isso pode levar alguns segundos</p>
+        </div>
+      )}
+
+      {error && !loading && (
+        <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-6 text-center space-y-3">
+          <p className="text-red-400 font-semibold">Erro ao carregar análise</p>
+          <p className="text-sm text-red-300/70 font-mono">{error}</p>
+          <button onClick={() => load(true)} className="mt-2 px-4 py-2 rounded-lg bg-red-500/20 border border-red-500/30 text-red-300 text-sm hover:bg-red-500/30 transition-colors">
+            Tentar novamente
+          </button>
         </div>
       )}
 

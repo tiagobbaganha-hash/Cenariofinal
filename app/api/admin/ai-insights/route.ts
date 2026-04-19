@@ -8,17 +8,18 @@ const supabaseAdmin = createClient(
 
 export async function GET() {
   try {
-    // Cache 1h
-    const { data: cached } = await supabaseAdmin
-      .from('admin_ai_insights')
-      .select('insights, expires_at')
-      .order('generated_at', { ascending: false })
-      .limit(1)
-      .single()
-
-    if (cached && new Date(cached.expires_at) > new Date()) {
-      return NextResponse.json({ insights: cached.insights, cached: true })
-    }
+    // Cache 1h (opcional)
+    try {
+      const { data: cached } = await supabaseAdmin
+        .from('admin_ai_insights')
+        .select('insights, expires_at')
+        .order('generated_at', { ascending: false })
+        .limit(1)
+        .single()
+      if (cached && new Date(cached.expires_at) > new Date()) {
+        return NextResponse.json({ insights: cached.insights, cached: true })
+      }
+    } catch (_) { /* tabela não existe ainda */ }
 
     // Coletar todos os dados da plataforma em paralelo
     const [
@@ -130,11 +131,13 @@ Responda APENAS com JSON válido:
     const raw = aiData.content?.[0]?.text || '{}'
     const insights = JSON.parse(raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim())
 
-    // Cache 1h
-    await supabaseAdmin.from('admin_ai_insights').insert({
-      insights,
-      expires_at: new Date(Date.now() + 3600 * 1000).toISOString()
-    })
+    // Cache 1h (opcional)
+    try {
+      await supabaseAdmin.from('admin_ai_insights').insert({
+        insights,
+        expires_at: new Date(Date.now() + 3600 * 1000).toISOString()
+      })
+    } catch (_) { /* tabela não existe ainda */ }
 
     return NextResponse.json({ insights, cached: false })
   } catch (e: any) {

@@ -11,16 +11,17 @@ export async function POST(req: NextRequest) {
     const { marketId } = await req.json()
     if (!marketId) return NextResponse.json({ error: 'marketId obrigatório' }, { status: 400 })
 
-    // Verificar cache
-    const { data: cached } = await supabaseAdmin
-      .from('market_ai_analysis')
-      .select('analysis, expires_at')
-      .eq('market_id', marketId)
-      .single()
-
-    if (cached && new Date(cached.expires_at) > new Date()) {
-      return NextResponse.json({ analysis: cached.analysis, cached: true })
-    }
+    // Verificar cache (opcional — tabela pode não existir ainda)
+    try {
+      const { data: cached } = await supabaseAdmin
+        .from('market_ai_analysis')
+        .select('analysis, expires_at')
+        .eq('market_id', marketId)
+        .single()
+      if (cached && new Date(cached.expires_at) > new Date()) {
+        return NextResponse.json({ analysis: cached.analysis, cached: true })
+      }
+    } catch (_) { /* tabela não existe ainda, continuar sem cache */ }
 
     // Buscar dados do mercado
     const { data: market } = await supabaseAdmin
@@ -103,12 +104,14 @@ Responda APENAS com JSON válido (sem markdown, sem backticks):
     const raw = aiData.content?.[0]?.text || '{}'
     const analysis = JSON.parse(raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim())
 
-    // Salvar cache (upsert)
-    await supabaseAdmin.from('market_ai_analysis').upsert({
-      market_id: marketId,
-      analysis,
-      expires_at: new Date(Date.now() + 6 * 3600 * 1000).toISOString()
-    }, { onConflict: 'market_id' })
+    // Salvar cache (opcional)
+    try {
+      await supabaseAdmin.from('market_ai_analysis').upsert({
+        market_id: marketId,
+        analysis,
+        expires_at: new Date(Date.now() + 6 * 3600 * 1000).toISOString()
+      }, { onConflict: 'market_id' })
+    } catch (_) { /* tabela não existe ainda */ }
 
     return NextResponse.json({ analysis, cached: false })
   } catch (e: any) {
