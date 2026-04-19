@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { BetWidget } from '@/components/bet-widget'
 import { PriceHistoryChart } from '@/components/market/PriceHistoryChart'
 import { MarketComments } from '@/components/market/MarketComments'
+import { RelatedMarkets } from '@/components/market/RelatedMarkets'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import type { FrontMarket } from '@/lib/types'
@@ -242,6 +243,9 @@ export default async function MarketDetailPage({
 
             {/* Comments */}
             <MarketComments marketId={market.id} />
+
+            {/* Related */}
+            <RelatedMarkets marketId={market.id} category={market.category || 'Geral'} />
           </div>
 
           {/* RIGHT: Bet widget */}
