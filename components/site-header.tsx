@@ -27,14 +27,12 @@ export function SiteHeader() {
       setUserEmail(data.user?.email ?? null)
 
       if (data.user) {
-        const { data: roles } = await supabase
-          .from('user_roles')
+        const { data: me } = await supabase
+          .from('v_front_me')
           .select('role')
-          .eq('user_id', data.user.id)
-        const hasAdmin = (roles ?? []).some((r: any) =>
-          ['admin', 'super_admin', 'moderator', 'finance'].includes(r.role)
-        )
-        setIsAdmin(hasAdmin)
+          .single()
+        const role = (me as any)?.role ?? 'user'
+        setIsAdmin(['admin', 'super_admin'].includes(role))
       }
     }
     load()

@@ -154,8 +154,8 @@ async function recordLedgerEntry(
 export async function getUserBalance(userId: string): Promise<number> {
   try {
     const { data } = await supabase
-      .from('user_balances')
-      .select('balance')
+      .from('wallets')
+      .select('available_balance')
       .eq('user_id', userId)
       .single()
 

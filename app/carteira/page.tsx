@@ -90,8 +90,8 @@ export default function CarteiraPage() {
           balance: parseFloat(walletData.available_balance || '0'),
           pendingDeposits: (pendingDep || []).reduce((s, d) => s + parseFloat(d.amount || '0'), 0),
           pendingWithdrawals: (pendingWith || []).reduce((s, w) => s + parseFloat(w.amount || '0'), 0),
-          totalDeposited: parseFloat(walletData.total_deposited || '0'),
-          totalWithdrawn: parseFloat(walletData.total_withdrawn || '0'),
+          totalDeposited: 0,
+          totalWithdrawn: 0,
         })
       } else {
         // Create wallet if not exists
@@ -110,10 +110,10 @@ export default function CarteiraPage() {
       if (txs) {
         setTransactions(txs.map((t: any) => ({
           id: t.id,
-          type: t.type,
-          amount: parseFloat(t.credit || t.debit || '0'),
-          status: 'completed',
-          description: getDescription(t.type),
+          type: t.entry_type ?? 'adjustment',
+          amount: parseFloat(t.amount || '0'),
+          status: t.direction === 'credit' ? 'credit' : 'debit',
+          description: getDescription(t.entry_type),
           created_at: t.created_at,
         })))
       }
@@ -126,13 +126,17 @@ export default function CarteiraPage() {
 
   function getDescription(type: string): string {
     const map: Record<string, string> = {
-      deposit: 'Deposito PIX',
-      withdrawal: 'Saque PIX',
-      bet: 'Aposta',
-      payout: 'Ganho de aposta',
-      bonus: 'Bonus',
+      deposit: 'Depósito',
+      withdrawal: 'Saque',
+      bet_lock: 'Aposta realizada',
+      bet_stake: 'Aposta realizada',
+      bet_settle_win: 'Ganho de aposta',
+      bet_settle_loss: 'Perda de aposta',
+      refund: 'Reembolso',
+      bonus: 'Bônus',
+      adjustment: 'Ajuste',
     }
-    return map[type] || 'Transacao'
+    return map[type] || 'Transação'
   }
 
   async function handleDeposit() {
@@ -372,16 +376,16 @@ export default function CarteiraPage() {
               {transactions.map(tx => (
                 <div key={tx.id} className="flex items-center justify-between p-4 rounded-xl bg-card border border-border">
                   <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-lg ${tx.type === 'deposit' || tx.type === 'payout' || tx.type === 'bonus' ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
-                      {tx.type === 'deposit' || tx.type === 'payout' || tx.type === 'bonus' ? <ArrowDownLeft className="h-4 w-4" /> : <ArrowUpRight className="h-4 w-4" />}
+                    <div className={`p-2 rounded-lg ${tx.status === 'credit' ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
+                      {tx.status === 'credit' ? <ArrowDownLeft className="h-4 w-4" /> : <ArrowUpRight className="h-4 w-4" />}
                     </div>
                     <div>
                       <p className="font-medium">{tx.description}</p>
                       <p className="text-xs text-muted-foreground">{new Date(tx.created_at).toLocaleDateString('pt-BR')}</p>
                     </div>
                   </div>
-                  <p className={`font-bold ${tx.type === 'deposit' || tx.type === 'payout' || tx.type === 'bonus' ? 'text-green-400' : 'text-red-400'}`}>
-                    {tx.type === 'deposit' || tx.type === 'payout' || tx.type === 'bonus' ? '+' : '-'} R$ {tx.amount.toFixed(2)}
+                  <p className={`font-bold ${tx.status === 'credit' ? 'text-green-400' : 'text-red-400'}`}>
+                    {tx.status === 'credit' ? '+' : '-'} R$ {tx.amount.toFixed(2)}
                   </p>
                 </div>
               ))}

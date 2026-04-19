@@ -33,7 +33,7 @@ export async function startVeriffSession(userId: string) {
     
     // Salvar referência da sessão no banco
     await supabase
-      .from('user_profiles')
+      .from('profiles')
       .update({ veriff_session_id: data.id })
       .eq('id', userId)
 
@@ -47,7 +47,7 @@ export async function startVeriffSession(userId: string) {
 export async function getKycStatus(userId: string): Promise<VeriffStatus | null> {
   try {
     const { data: profile } = await supabase
-      .from('user_profiles')
+      .from('profiles')
       .select('kyc_status, veriff_session_id')
       .eq('id', userId)
       .single()
@@ -83,7 +83,7 @@ export async function handleVeriffWebhook(payload: any) {
 
     // Buscar usuário pela session_id
     const { data: profile } = await supabase
-      .from('user_profiles')
+      .from('profiles')
       .select('id')
       .eq('veriff_session_id', sessionId)
       .single()
@@ -97,7 +97,7 @@ export async function handleVeriffWebhook(payload: any) {
 
     // Atualizar status
     const { error } = await supabase
-      .from('user_profiles')
+      .from('profiles')
       .update({
         kyc_status: kycStatus,
         kyc_verified_at: kycStatus === 'approved' ? new Date().toISOString() : null,
