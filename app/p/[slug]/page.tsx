@@ -120,27 +120,21 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 }
 
-// Client component for feedback buttons
+// Feedback section (static - interactivity pode ser adicionada depois via 'use client')
 function FeedbackButtons() {
   return (
     <div className="mt-12 pt-8 border-t border-border">
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
         <p className="text-muted-foreground">Este artigo foi útil?</p>
         <div className="flex items-center gap-3">
-          <button
-            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border bg-card hover:bg-primary/10 hover:border-primary transition-colors group"
-            onClick={() => {}}
-          >
-            <ThumbsUp className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-            <span className="text-sm text-muted-foreground group-hover:text-primary transition-colors">Sim</span>
-          </button>
-          <button
-            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border bg-card hover:bg-destructive/10 hover:border-destructive transition-colors group"
-            onClick={() => {}}
-          >
-            <ThumbsDown className="h-4 w-4 text-muted-foreground group-hover:text-destructive transition-colors" />
-            <span className="text-sm text-muted-foreground group-hover:text-destructive transition-colors">Não</span>
-          </button>
+          <div className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border bg-card">
+            <ThumbsUp className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">Sim</span>
+          </div>
+          <div className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border bg-card">
+            <ThumbsDown className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">Não</span>
+          </div>
         </div>
       </div>
     </div>
