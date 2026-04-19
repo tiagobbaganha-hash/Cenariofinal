@@ -5,20 +5,25 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
-import { ImageUpload } from '@/components/ui/image-upload'
-import { ArrowLeft, Save, RefreshCw, Plus, Trash2 } from 'lucide-react'
+import { ArrowLeft, Save, Plus, Trash2, Sparkles, Image as ImageIcon, Loader2, X } from 'lucide-react'
 
 export default function NovoMercado() {
   const router = useRouter()
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  const [influencers, setInfluencers] = useState<any[]>([])
-  
+
+  // IA states
+  const [aiPrompt, setAiPrompt] = useState('')
+  const [aiLoading, setAiLoading] = useState(false)
+  const [aiCoverLoading, setAiCoverLoading] = useState(false)
+  const [coverFiles, setCoverFiles] = useState<File[]>([])
+  const [coverPreview, setCoverPreview] = useState<string[]>([])
+
   const [form, setForm] = useState({
     title: '',
     slug: '',
     description: '',
-    category: 'politica',
+    category: 'Política',
     status: 'draft',
     featured: false,
     closes_at: '',
@@ -27,315 +32,334 @@ export default function NovoMercado() {
     influencer_id: '',
   })
 
-  // Load influencers
+  const [influencers, setInfluencers] = useState<any[]>([])
   useState(() => {
     const supabase = createClient()
-    supabase.from('influencers').select('id, name').eq('is_active', true).then(({ data }) => setInfluencers(data || []))
+    supabase.from('influencers').select('id, name').eq('is_active', true)
+      .then(({ data }) => setInfluencers(data || []))
   })
 
   const [options, setOptions] = useState([
-    { label: 'SIM', option_key: 'yes' },
-    { label: 'NÃO', option_key: 'no' },
+    { label: 'SIM', option_key: 'yes', probability: 0.5, odds: 2.0 },
+    { label: 'NÃO', option_key: 'no', probability: 0.5, odds: 2.0 },
   ])
 
   function generateSlug(title: string) {
-    const base = title
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)/g, '')
-    const suffix = Date.now().toString(36).slice(-4)
-    return `${base}-${suffix}`
+    const base = title.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+    return `${base}-${Date.now().toString(36).slice(-4)}`
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setSaving(true)
+  // IA — gerar mercado completo
+  async function handleAIGenerate() {
+    if (!aiPrompt.trim()) return
+    setAiLoading(true)
     setError('')
-
-    const supabase = createClient()
-
     try {
-      // Generate ID client-side to avoid .select() RLS issues
-      const marketId = crypto.randomUUID()
-      
-      // Create market
-      const { error: marketError } = await supabase
-        .from('markets')
-        .insert({
-          id: marketId,
-          title: form.title,
-          slug: form.slug || generateSlug(form.title),
-          description: form.description,
-          category: form.category,
-          status: form.status,
-          featured: form.featured,
-          closes_at: form.closes_at || null,
-          resolves_at: form.resolves_at || null,
-          image_url: form.image_url || null,
-          influencer_id: form.influencer_id || null,
-        } as any)
-
-      if (marketError) throw marketError
-
-      // Create options using the known ID
-      if (options.length > 0) {
-        const optionsToInsert = options.map((opt: any, idx: number) => ({
-          market_id: marketId,
-          label: opt.label,
-          option_key: opt.option_key || 'yes',
-          odds: parseFloat(opt.odds) || 1.90,
-          probability: parseFloat(opt.probability) || 0.50,
-          sort_order: idx,
-          is_active: true,
-        }))
-
-        const { error: optError } = await supabase.from('market_options').insert(optionsToInsert as any)
-        if (optError) console.error('Erro nas opções:', optError.message)
+      const res = await fetch('/api/admin/ai-market', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: aiPrompt })
+      })
+      const data = await res.json()
+      if (data.error) throw new Error(data.error)
+      const m = data.market
+      setForm(f => ({
+        ...f,
+        title: m.title || f.title,
+        slug: generateSlug(m.title || f.title),
+        description: m.description || f.description,
+        category: m.category || f.category,
+        closes_at: m.closes_at_days ? new Date(Date.now() + m.closes_at_days * 86400000).toISOString().slice(0, 16) : f.closes_at,
+        resolves_at: m.resolves_at_days ? new Date(Date.now() + m.resolves_at_days * 86400000).toISOString().slice(0, 16) : f.resolves_at,
+      }))
+      if (m.options?.length) {
+        setOptions(m.options.map((o: any) => ({
+          label: o.label,
+          option_key: o.option_key,
+          probability: o.probability || 0.5,
+          odds: o.odds || 2.0,
+        })))
       }
+      // Auto-gerar capa se tiver prompt de imagem
+      if (m.image_prompt) {
+        setAiPrompt(m.image_prompt)
+      }
+    } catch (e: any) {
+      setError('Erro IA: ' + e.message)
+    } finally {
+      setAiLoading(false)
+    }
+  }
+
+  // IA — gerar capa com Gemini Imagen
+  async function handleAICover() {
+    setAiCoverLoading(true)
+    setError('')
+    try {
+      const fd = new FormData()
+      fd.append('description', form.title || aiPrompt)
+      coverFiles.forEach((f, i) => fd.append(`image_${i}`, f))
+
+      const res = await fetch('/api/admin/ai-cover', { method: 'POST', body: fd })
+      const data = await res.json()
+
+      if (data.image_data_url) {
+        // Upload para Supabase Storage
+        const supabase = createClient()
+        const blob = await fetch(data.image_data_url).then(r => r.blob())
+        const file = new File([blob], `cover-${Date.now()}.png`, { type: 'image/png' })
+        const { data: uploaded, error: upErr } = await supabase.storage.from('market-images').upload(`covers/${file.name}`, file)
+        if (upErr) throw upErr
+        const { data: { publicUrl } } = supabase.storage.from('market-images').getPublicUrl(uploaded.path)
+        setForm(f => ({ ...f, image_url: publicUrl }))
+      } else if (data.fallback) {
+        setError(`Imagen indisponível. Prompt gerado: ${data.prompt}`)
+      }
+    } catch (e: any) {
+      setError('Erro capa: ' + e.message)
+    } finally {
+      setAiCoverLoading(false)
+    }
+  }
+
+  function handleCoverFiles(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files || []).slice(0, 4)
+    setCoverFiles(files)
+    setCoverPreview(files.map(f => URL.createObjectURL(f)))
+  }
+
+  async function handleSave() {
+    if (!form.title || !form.slug) { setError('Título e slug são obrigatórios'); return }
+    setSaving(true); setError('')
+    try {
+      const supabase = createClient()
+      const { data: market, error: mErr } = await supabase.from('markets').insert({
+        title: form.title, slug: form.slug, description: form.description,
+        category: form.category, status: form.status, featured: form.featured,
+        closes_at: form.closes_at || null, resolves_at: form.resolves_at || null,
+        image_url: form.image_url || null,
+        ...(form.influencer_id ? { influencer_id: form.influencer_id } : {})
+      }).select().single()
+      if (mErr) throw mErr
+
+      const opts = options.map((o, i) => ({
+        market_id: (market as any).id, label: o.label, option_key: o.option_key,
+        probability: o.probability, odds: o.odds, sort_order: i, is_active: true
+      }))
+      const { error: oErr } = await supabase.from('market_options').insert(opts as any)
+      if (oErr) throw oErr
 
       router.push('/admin/mercados')
-    } catch (err: any) {
-      setError(err.message || 'Erro ao criar mercado')
+    } catch (e: any) {
+      setError(e.message)
+    } finally {
       setSaving(false)
     }
   }
 
-  function addOption() {
-    setOptions([...options, { label: '', option_key: 'yes' }])
-  }
-
-  function removeOption(index: number) {
-    if (options.length > 2) {
-      setOptions(options.filter((_, i) => i !== index))
-    }
-  }
+  const categories = ['Política', 'Economia', 'Esportes', 'Tecnologia', 'Cripto', 'Entretenimento', 'Geopolítica', 'Geral']
+  const inputCls = 'w-full rounded-xl border border-border bg-card px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40'
 
   return (
-    <div className="max-w-3xl mx-auto">
-      <div className="flex items-center gap-4 mb-8">
-        <Link href="/admin/mercados" className="p-2 hover:bg-accent rounded-lg">
-          <ArrowLeft className="h-5 w-5" />
+    <div className="max-w-2xl mx-auto space-y-6 pb-12">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <Link href="/admin/mercados" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors text-sm">
+          <ArrowLeft className="h-4 w-4" /> Mercados
         </Link>
-        <div>
-          <h1 className="text-3xl font-bold">Novo Mercado</h1>
-          <p className="text-muted-foreground">Criar um novo mercado preditivo</p>
+        <h1 className="text-lg font-bold">Novo Mercado</h1>
+        <Button onClick={handleSave} disabled={saving} size="sm" className="gap-2">
+          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+          Salvar
+        </Button>
+      </div>
+
+      {error && (
+        <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">{error}</div>
+      )}
+
+      {/* BLOCO IA — Gerar mercado */}
+      <div className="rounded-2xl border border-primary/30 bg-primary/5 p-5 space-y-4">
+        <div className="flex items-center gap-2">
+          <Sparkles className="h-4 w-4 text-primary" />
+          <p className="text-sm font-semibold text-foreground">Gerar com IA</p>
+          <span className="text-xs text-muted-foreground">— descreva o mercado e a IA preenche tudo</span>
+        </div>
+        <div className="flex gap-2">
+          <input
+            className={inputCls + ' flex-1'}
+            placeholder="Ex: Eleições municipais de São Paulo 2024, quem vai ganhar?"
+            value={aiPrompt}
+            onChange={e => setAiPrompt(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleAIGenerate()}
+          />
+          <Button onClick={handleAIGenerate} disabled={aiLoading || !aiPrompt.trim()} size="sm" className="gap-2 flex-shrink-0">
+            {aiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+            Gerar
+          </Button>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {error && (
-          <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 flex items-start justify-between">
-            <span>{error}</span>
-            <button type="button" onClick={() => setError('')} className="ml-4 text-red-400 hover:text-red-300 font-bold">✕</button>
+      {/* BLOCO Capa IA */}
+      <div className="rounded-2xl border border-border bg-card p-5 space-y-4">
+        <div className="flex items-center gap-2">
+          <ImageIcon className="h-4 w-4 text-muted-foreground" />
+          <p className="text-sm font-semibold text-foreground">Capa do Mercado</p>
+        </div>
+
+        {/* Preview da capa gerada */}
+        {form.image_url && (
+          <div className="relative">
+            <img src={form.image_url} alt="Capa" className="w-full h-40 object-cover rounded-xl" />
+            <button onClick={() => setForm(f => ({ ...f, image_url: '' }))} className="absolute top-2 right-2 rounded-full bg-black/60 p-1">
+              <X className="h-3 w-3 text-white" />
+            </button>
           </div>
         )}
 
-        <div className="rounded-xl bg-card border border-border p-6 space-y-6">
-          <h2 className="text-lg font-bold">Informacoes Basicas</h2>
-
-          <div>
-            <label className="block text-sm font-medium mb-2">Titulo *</label>
-            <input
-              type="text"
-              value={form.title}
-              onChange={(e) => setForm({ ...form, title: e.target.value, slug: generateSlug(e.target.value) })}
-              placeholder="Ex: Lula sera reeleito em 2026?"
-              className="w-full h-12 px-4 rounded-lg bg-background border border-border focus:border-primary outline-none"
-              required
-            />
+        {/* Upload de fotos de referência */}
+        <div>
+          <p className="text-xs text-muted-foreground mb-2">Fotos de referência (opcional) — até 4 imagens</p>
+          <div className="flex gap-2 flex-wrap">
+            {coverPreview.map((src, i) => (
+              <img key={i} src={src} className="h-16 w-16 object-cover rounded-lg border border-border" />
+            ))}
+            <label className="flex h-16 w-16 cursor-pointer items-center justify-center rounded-lg border border-dashed border-border hover:border-primary/50 transition-colors">
+              <Plus className="h-5 w-5 text-muted-foreground" />
+              <input type="file" accept="image/*" multiple className="hidden" onChange={handleCoverFiles} />
+            </label>
           </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-2">Slug</label>
-            <input
-              type="text"
-              value={form.slug}
-              onChange={(e) => setForm({ ...form, slug: e.target.value })}
-              placeholder="lula-reeleito-2026"
-              className="w-full h-12 px-4 rounded-lg bg-background border border-border focus:border-primary outline-none font-mono"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-2">Descricao</label>
-            <textarea
-              value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
-              placeholder="Descreva o mercado..."
-              rows={4}
-              className="w-full px-4 py-3 rounded-lg bg-background border border-border focus:border-primary outline-none resize-none"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-2">Imagem de capa</label>
-            <ImageUpload 
-              value={form.image_url} 
-              onChange={(url) => setForm({ ...form, image_url: url })} 
-            />
-          </div>
-
-          <div className="grid sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">Categoria</label>
-              <select
-                value={form.category}
-                onChange={(e) => setForm({ ...form, category: e.target.value })}
-                className="w-full h-12 px-4 rounded-lg bg-background border border-border focus:border-primary outline-none"
-              >
-                <option value="politica">Politica</option>
-                <option value="esportes">Esportes</option>
-                <option value="economia">Economia</option>
-                <option value="cultura">Cultura</option>
-                <option value="tecnologia">Tecnologia</option>
-                <option value="entretenimento">Entretenimento</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">Status</label>
-              <select
-                value={form.status}
-                onChange={(e) => setForm({ ...form, status: e.target.value })}
-                className="w-full h-12 px-4 rounded-lg bg-background border border-border focus:border-primary outline-none"
-              >
-                <option value="draft">Rascunho</option>
-                <option value="open">Aberto</option>
-                <option value="suspended">Suspenso</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="grid sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">Encerra em</label>
-              <input
-                type="datetime-local"
-                value={form.closes_at}
-                onChange={(e) => setForm({ ...form, closes_at: e.target.value })}
-                className="w-full h-12 px-4 rounded-lg bg-background border border-border focus:border-primary outline-none"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">Resolve em</label>
-              <input
-                type="datetime-local"
-                value={form.resolves_at}
-                onChange={(e) => setForm({ ...form, resolves_at: e.target.value })}
-                className="w-full h-12 px-4 rounded-lg bg-background border border-border focus:border-primary outline-none"
-              />
-            </div>
-          </div>
-
-          <label className="flex items-center gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={form.featured}
-              onChange={(e) => setForm({ ...form, featured: e.target.checked })}
-              className="w-5 h-5 rounded border-border"
-            />
-            <span className="font-medium">Mercado em destaque</span>
-          </label>
-
-          {influencers.length > 0 && (
-            <div>
-              <label className="block text-sm font-medium mb-2">Influenciador (opcional)</label>
-              <select value={form.influencer_id} onChange={e => setForm({ ...form, influencer_id: e.target.value })}
-                className="w-full h-12 px-4 rounded-lg bg-background border border-border outline-none">
-                <option value="">Nenhum</option>
-                {influencers.map((inf: any) => (
-                  <option key={inf.id} value={inf.id}>{inf.name}</option>
-                ))}
-              </select>
-            </div>
-          )}
         </div>
 
-        <div className="rounded-xl bg-card border border-border p-6 space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold">Opcoes</h2>
-            <Button type="button" variant="outline" size="sm" onClick={addOption}>
-              <Plus className="h-4 w-4 mr-2" /> Adicionar
-            </Button>
-          </div>
-
-          {options.map((option, index) => (
-            <div key={index} className="flex gap-4 items-start">
-              <div className="flex-1 space-y-2">
-                <input
-                  type="text"
-                  value={option.label}
-                  onChange={(e) => {
-                    const newOpts = [...options]
-                    newOpts[index] = { ...newOpts[index], label: e.target.value }
-                    setOptions(newOpts)
-                  }}
-                  placeholder="Label (ex: SIM, NÃO)"
-                  className="w-full h-10 px-4 rounded-lg bg-background border border-border focus:border-primary outline-none"
-                />
-                <div className="grid grid-cols-3 gap-2">
-                  <select
-                    value={option.option_key}
-                    onChange={(e) => {
-                      const newOpts = [...options]
-                      newOpts[index] = { ...newOpts[index], option_key: e.target.value }
-                      setOptions(newOpts)
-                    }}
-                    className="h-10 px-3 rounded-lg bg-background border border-border focus:border-primary outline-none text-sm"
-                  >
-                    <option value="yes">yes (SIM)</option>
-                    <option value="no">no (NÃO)</option>
-                  </select>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={(option as any).odds ?? 1.90}
-                    onChange={(e) => {
-                      const newOpts = [...options]
-                      newOpts[index] = { ...newOpts[index], odds: parseFloat(e.target.value) || 1.90 } as any
-                      setOptions(newOpts)
-                    }}
-                    placeholder="Odds (ex: 1.90)"
-                    className="h-10 px-3 rounded-lg bg-background border border-border focus:border-primary outline-none text-sm"
-                  />
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    max="1"
-                    value={(option as any).probability ?? 0.50}
-                    onChange={(e) => {
-                      const newOpts = [...options]
-                      newOpts[index] = { ...newOpts[index], probability: parseFloat(e.target.value) || 0.50 } as any
-                      setOptions(newOpts)
-                    }}
-                    placeholder="Prob (ex: 0.50)"
-                    className="h-10 px-3 rounded-lg bg-background border border-border focus:border-primary outline-none text-sm"
-                  />
-                </div>
-              </div>
-              {options.length > 2 && (
-                <Button type="button" variant="ghost" size="sm" onClick={() => removeOption(index)} className="text-red-400">
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
-          ))}
-        </div>
-
-        <div className="flex gap-4">
-          <Link href="/admin/mercados" className="flex-1">
-            <Button type="button" variant="outline" className="w-full">
-              Cancelar
-            </Button>
-          </Link>
-          <Button type="submit" className="flex-1 glow-green" disabled={saving}>
-            {saving ? <RefreshCw className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
-            Criar Mercado
+        <div className="flex gap-2">
+          <input
+            className={inputCls + ' flex-1'}
+            placeholder="URL da imagem (ou gere com IA)"
+            value={form.image_url}
+            onChange={e => setForm({ ...form, image_url: e.target.value })}
+          />
+          <Button
+            onClick={handleAICover}
+            disabled={aiCoverLoading}
+            variant="outline"
+            size="sm"
+            className="gap-2 flex-shrink-0"
+          >
+            {aiCoverLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+            {aiCoverLoading ? 'Gerando...' : 'Gerar capa'}
           </Button>
         </div>
-      </form>
+      </div>
+
+      {/* Dados básicos */}
+      <div className="rounded-2xl border border-border bg-card p-5 space-y-4">
+        <p className="text-sm font-semibold text-foreground">Dados do mercado</p>
+
+        <div>
+          <label className="block text-xs font-medium text-muted-foreground mb-1.5">Título *</label>
+          <input className={inputCls} placeholder="Pergunta do mercado?" value={form.title}
+            onChange={e => setForm({ ...form, title: e.target.value, slug: generateSlug(e.target.value) })} />
+        </div>
+
+        <div>
+          <label className="block text-xs font-medium text-muted-foreground mb-1.5">Slug</label>
+          <input className={inputCls} value={form.slug} onChange={e => setForm({ ...form, slug: e.target.value })} />
+        </div>
+
+        <div>
+          <label className="block text-xs font-medium text-muted-foreground mb-1.5">Descrição</label>
+          <textarea className={inputCls} rows={3} placeholder="Explique o mercado, critérios de resolução..." value={form.description}
+            onChange={e => setForm({ ...form, description: e.target.value })} />
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs font-medium text-muted-foreground mb-1.5">Categoria</label>
+            <select className={inputCls} value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}>
+              {categories.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-muted-foreground mb-1.5">Status</label>
+            <select className={inputCls} value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}>
+              <option value="draft">Rascunho</option>
+              <option value="open">Aberto</option>
+              <option value="closed">Fechado</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs font-medium text-muted-foreground mb-1.5">Fecha em</label>
+            <input type="datetime-local" className={inputCls} value={form.closes_at}
+              onChange={e => setForm({ ...form, closes_at: e.target.value })} />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-muted-foreground mb-1.5">Resolve em</label>
+            <input type="datetime-local" className={inputCls} value={form.resolves_at}
+              onChange={e => setForm({ ...form, resolves_at: e.target.value })} />
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <input type="checkbox" id="featured" checked={form.featured}
+            onChange={e => setForm({ ...form, featured: e.target.checked })}
+            className="h-4 w-4 accent-primary" />
+          <label htmlFor="featured" className="text-sm text-muted-foreground">Destaque na home</label>
+        </div>
+      </div>
+
+      {/* Opções */}
+      <div className="rounded-2xl border border-border bg-card p-5 space-y-3">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-semibold text-foreground">Opções de aposta</p>
+          <button onClick={() => setOptions(o => [...o, { label: '', option_key: `opt${o.length+1}`, probability: 0.5, odds: 2.0 }])}
+            className="flex items-center gap-1.5 text-xs text-primary hover:underline">
+            <Plus className="h-3.5 w-3.5" /> Adicionar opção
+          </button>
+        </div>
+        {options.map((opt, i) => (
+          <div key={i} className="flex gap-2 items-center">
+            <input className={inputCls + ' flex-1'} placeholder="Label" value={opt.label}
+              onChange={e => setOptions(o => o.map((x, j) => j === i ? { ...x, label: e.target.value } : x))} />
+            <input className={inputCls + ' w-20'} placeholder="%" type="number" min="0" max="100" step="1"
+              value={Math.round(opt.probability * 100)}
+              onChange={e => {
+                const pct = Math.min(100, Math.max(0, Number(e.target.value))) / 100
+                setOptions(o => o.map((x, j) => j === i ? { ...x, probability: pct, odds: pct > 0 ? parseFloat((1/pct).toFixed(2)) : 0 } : x))
+              }} />
+            <span className="text-xs text-muted-foreground w-16 text-center">odds {opt.odds.toFixed(2)}</span>
+            {options.length > 2 && (
+              <button onClick={() => setOptions(o => o.filter((_, j) => j !== i))} className="text-red-400 hover:text-red-300">
+                <Trash2 className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Influencer */}
+      <div className="rounded-2xl border border-border bg-card p-5 space-y-3">
+        <p className="text-sm font-semibold text-foreground">Influencer associado</p>
+        <p className="text-xs text-muted-foreground">Associe um influencer para rastrear conversões e pagar comissão</p>
+        <select className={inputCls} value={form.influencer_id} onChange={e => setForm({ ...form, influencer_id: e.target.value })}>
+          <option value="">Sem influencer</option>
+          {influencers.map((inf: any) => (
+            <option key={inf.id} value={inf.id}>{inf.name}</option>
+          ))}
+        </select>
+        {influencers.length === 0 && (
+          <p className="text-xs text-muted-foreground">
+            Nenhum influencer cadastrado. <Link href="/admin/influencers" className="text-primary hover:underline">Cadastrar →</Link>
+          </p>
+        )}
+      </div>
+
+      <Button onClick={handleSave} disabled={saving} className="w-full gap-2" size="lg">
+        {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
+        {saving ? 'Salvando...' : 'Criar Mercado'}
+      </Button>
     </div>
   )
 }

@@ -23,14 +23,15 @@ export async function GET() {
 
     // Coletar todos os dados da plataforma em paralelo
     const [
-      usersRes, marketsRes, ordersRes, leaderRes, influRes
+      usersRes, marketsRes, ordersRes, leaderRes
     ] = await Promise.all([
       supabaseAdmin.from('profiles').select('id, created_at, balance').limit(500),
       supabaseAdmin.from('markets').select('id, title, category, status, created_at, closes_at').limit(100),
       supabaseAdmin.from('orders').select('market_id, stake_amount, status, created_at').limit(1000),
       supabaseAdmin.from('profiles').select('id, balance').order('balance', { ascending: false }).limit(10),
-      supabaseAdmin.from('influencers').select('id, name, commission_rate').limit(20).catch(() => ({ data: [] })),
     ])
+    let influRes: any = { data: [] }
+    try { influRes = await supabaseAdmin.from('influencers').select('id, name, commission_rate').limit(20) } catch (_) {}
 
     const users = usersRes.data || []
     const markets = marketsRes.data || []

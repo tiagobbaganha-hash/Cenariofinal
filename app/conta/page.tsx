@@ -13,7 +13,7 @@ import { formatCurrency, formatDateTime, cn } from '@/lib/utils'
 import type { MeProfile, Notification } from '@/lib/types'
 import {
   User, Wallet, ArrowDownToLine, ArrowUpFromLine,
-  Bell, Activity, ShieldCheck, ShieldAlert, LogOut, Copy,
+  Bell, Activity, ShieldCheck, ShieldAlert, LogOut, Copy, Lightbulb, TrendingUp,
 } from 'lucide-react'
 
 export default function AccountPage() {
@@ -129,6 +129,25 @@ export default function AccountPage() {
                     <LogOut className="h-4 w-4" />
                   </Button>
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* Propor Mercado */}
+            <Card className="border-primary/20 bg-primary/5">
+              <CardContent className="p-5">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-primary/20">
+                    <Lightbulb className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">Tem uma ideia de mercado?</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Proponha um mercado preditivo e ganhe comissão quando outras pessoas apostarem.</p>
+                  </div>
+                </div>
+                <Link href="/propor-mercado" className="mt-4 flex items-center justify-center gap-2 w-full rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors">
+                  <TrendingUp className="h-4 w-4" />
+                  Propor um mercado
+                </Link>
               </CardContent>
             </Card>
 

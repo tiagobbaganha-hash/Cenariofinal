@@ -39,7 +39,7 @@ export function AIAnalysis({ marketId }: { marketId: string }) {
       if (data.error) throw new Error(data.error)
       setAnalysis(data.analysis)
     } catch (e: any) {
-      setError('Não foi possível carregar a análise.')
+      setError(e.message || 'Não foi possível carregar a análise.')
     } finally {
       setLoading(false)
     }
