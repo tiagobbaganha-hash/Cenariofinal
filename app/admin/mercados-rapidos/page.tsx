@@ -48,9 +48,12 @@ export default function AdminRapidMarketsPage() {
     const price = prices[form.asset]
     if (!price) { setMsg('Não foi possível obter o preço. Tente novamente.'); setCreating(false); return }
     try {
+      const supa = createClient()
+      const { data: { session } } = await supa.auth.getSession()
+      const tok = session?.access_token || ''
       const res = await fetch('/api/admin/rapid-markets', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${tok}` },
         body: JSON.stringify({
           asset: form.asset, asset_symbol: asset.symbol,
           price_at_creation: price, duration_minutes: parseInt(form.duration),
@@ -68,9 +71,12 @@ export default function AdminRapidMarketsPage() {
   async function handleResolve(id: string) {
     setResolving(id)
     try {
+      const supa = createClient()
+      const { data: { session } } = await supa.auth.getSession()
+      const tok = session?.access_token || ''
       const res = await fetch('/api/admin/rapid-markets', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${tok}` },
         body: JSON.stringify({ market_id: id })
       })
       const data = await res.json()
