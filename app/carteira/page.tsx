@@ -34,10 +34,15 @@ interface WalletData {
 interface Transaction {
   id: string
   type: string
+  entry_type: string
   amount: number
-  status: string
+  direction: 'credit' | 'debit'
   description: string
+  market_title?: string
+  market_slug?: string
+  reference_id?: string
   created_at: string
+  balance_after?: number
 }
 
 export default function CarteiraPage() {
@@ -47,6 +52,9 @@ export default function CarteiraPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'depositar' | 'sacar' | null>(null)
+  const [txFilter, setTxFilter] = useState<string>('all')
+  const [txPage, setTxPage] = useState(0)
+  const [hasMore, setHasMore] = useState(false)
   const [amount, setAmount] = useState('')
   const [pixKey, setPixKey] = useState('')
   const [pixCode, setPixCode] = useState('')
@@ -96,22 +104,30 @@ export default function CarteiraPage() {
         await supabase.from('wallets').insert({ user_id: user.id, available_balance: 0, locked_balance: 0 })
       }
 
-      // Load transactions
-      const { data: txs } = await supabase
+      // Load transactions com dados completos
+      let txQuery = supabase
         .from('wallet_ledger')
-        .select('*')
+        .select('*, orders(market_id, markets(title, slug))')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
-        .limit(20)
+        .limit(21)
+
+      const { data: txs } = await txQuery
 
       if (txs) {
-        setTransactions(txs.map((t: any) => ({
+        setHasMore(txs.length > 20)
+        setTransactions(txs.slice(0, 20).map((t: any) => ({
           id: t.id,
           type: t.entry_type ?? 'adjustment',
+          entry_type: t.entry_type ?? 'adjustment',
           amount: parseFloat(t.amount || '0'),
-          status: t.direction === 'credit' ? 'credit' : 'debit',
+          direction: t.direction === 'credit' ? 'credit' : 'debit',
           description: getDescription(t.entry_type),
+          market_title: t.orders?.markets?.title || null,
+          market_slug: t.orders?.markets?.slug || null,
+          reference_id: t.reference_id || null,
           created_at: t.created_at,
+          balance_after: t.balance_after ? parseFloat(t.balance_after) : null,
         })))
       }
 
@@ -123,18 +139,60 @@ export default function CarteiraPage() {
 
   function getDescription(type: string): string {
     const map: Record<string, string> = {
-      deposit: 'Depósito',
+      deposit: 'Depósito via PIX',
       withdrawal: 'Saque',
-      bet_lock: 'Aposta realizada',
-      bet_stake: 'Aposta realizada',
-      bet_settle_win: 'Ganho de aposta',
-      bet_settle_loss: 'Perda de aposta',
+      withdrawal_fee: 'Taxa de saque',
+      bet_lock: 'Aposta reservada',
+      bet_stake: 'Aposta confirmada',
+      bet_settle_win: 'Ganho de aposta ✓',
+      bet_settle_loss: 'Aposta perdida',
+      bet_cancel: 'Aposta cancelada',
+      bet_refund: 'Reembolso de aposta',
       refund: 'Reembolso',
-      bonus: 'Bônus',
-      adjustment: 'Ajuste',
+      bonus: 'Bônus creditado',
+      referral_commission: 'Comissão de indicação',
+      influencer_commission: 'Comissão de influencer',
+      adjustment: 'Ajuste manual',
+      platform_fee: 'Taxa da plataforma',
     }
-    return map[type] || 'Transação'
+    return map[type] || type?.replace(/_/g, ' ') || 'Transação'
   }
+
+  function getTxIcon(type: string) {
+    if (type === 'deposit') return '💰'
+    if (type === 'withdrawal' || type === 'withdrawal_fee') return '📤'
+    if (type?.includes('bet_settle_win') || type === 'refund') return '🏆'
+    if (type?.includes('bet_settle_loss')) return '📉'
+    if (type?.includes('bet')) return '🎯'
+    if (type?.includes('commission')) return '💸'
+    if (type === 'bonus') return '🎁'
+    return '💳'
+  }
+
+  function getTxColor(direction: string, type: string) {
+    if (direction === 'credit') return 'text-green-400'
+    if (type?.includes('fee')) return 'text-orange-400'
+    return 'text-red-400'
+  }
+
+  function getTxBg(direction: string, type: string) {
+    if (direction === 'credit') return 'bg-green-500/10 border-green-500/20'
+    if (type?.includes('fee')) return 'bg-orange-500/10 border-orange-500/20'
+    return 'bg-red-500/10 border-red-500/20'
+  }
+
+  const TX_FILTERS = [
+    { label: 'Todos', value: 'all' },
+    { label: 'Depósitos', value: 'deposit' },
+    { label: 'Saques', value: 'withdrawal' },
+    { label: 'Apostas', value: 'bet' },
+    { label: 'Ganhos', value: 'bet_settle_win' },
+    { label: 'Comissões', value: 'commission' },
+  ]
+
+  const filteredTxs = txFilter === 'all'
+    ? transactions
+    : transactions.filter(tx => tx.entry_type?.includes(txFilter))
 
   async function handleDeposit() {
     const value = parseFloat(amount)
@@ -348,31 +406,72 @@ export default function CarteiraPage() {
         </div>
 
         {/* Transactions */}
-        <div>
-          <h2 className="text-lg font-bold mb-4">Historico</h2>
-          {transactions.length === 0 ? (
-            <div className="rounded-xl bg-card border border-border p-8 text-center">
-              <Clock className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-              <p className="text-muted-foreground">Nenhuma transacao ainda</p>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-bold">Histórico de Transações</h2>
+            <span className="text-xs text-muted-foreground">{filteredTxs.length} registro{filteredTxs.length !== 1 ? 's' : ''}</span>
+          </div>
+
+          {/* Filtros */}
+          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+            {TX_FILTERS.map(f => (
+              <button key={f.value} onClick={() => setTxFilter(f.value)}
+                className={`flex-shrink-0 text-xs px-3 py-1.5 rounded-full border transition-colors ${txFilter === f.value ? 'bg-primary text-primary-foreground border-primary' : 'border-border text-muted-foreground hover:text-foreground'}`}>
+                {f.label}
+              </button>
+            ))}
+          </div>
+
+          {filteredTxs.length === 0 ? (
+            <div className="rounded-xl bg-card border border-border p-10 text-center">
+              <Clock className="h-8 w-8 mx-auto text-muted-foreground mb-3" />
+              <p className="text-muted-foreground text-sm">Nenhuma transação encontrada</p>
             </div>
           ) : (
             <div className="space-y-2">
-              {transactions.map(tx => (
-                <div key={tx.id} className="flex items-center justify-between p-4 rounded-xl bg-card border border-border">
-                  <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-lg ${tx.status === 'credit' ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
-                      {tx.status === 'credit' ? <ArrowDownLeft className="h-4 w-4" /> : <ArrowUpRight className="h-4 w-4" />}
+              {filteredTxs.map(tx => (
+                <div key={tx.id} className={`rounded-xl border p-4 transition-colors hover:bg-card/80 ${getTxBg(tx.direction, tx.entry_type)}`}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-3 flex-1 min-w-0">
+                      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-card border border-border text-lg">
+                        {getTxIcon(tx.entry_type)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-foreground">{tx.description}</p>
+                        {tx.market_title && (
+                          <p className="text-xs text-muted-foreground truncate mt-0.5">
+                            {tx.market_slug ? (
+                              <a href={`/mercados/${tx.market_slug}`} className="hover:text-primary transition-colors">
+                                📊 {tx.market_title}
+                              </a>
+                            ) : tx.market_title}
+                          </p>
+                        )}
+                        <div className="flex items-center gap-3 mt-1">
+                          <span className="text-[10px] text-muted-foreground/60">
+                            {new Date(tx.created_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                          {tx.balance_after !== null && tx.balance_after !== undefined && (
+                            <span className="text-[10px] text-muted-foreground/60">
+                              Saldo após: R$ {tx.balance_after.toFixed(2)}
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-medium">{tx.description}</p>
-                      <p className="text-xs text-muted-foreground">{new Date(tx.created_at).toLocaleDateString('pt-BR')}</p>
+                    <div className="text-right flex-shrink-0">
+                      <p className={`text-base font-bold ${getTxColor(tx.direction, tx.entry_type)}`}>
+                        {tx.direction === 'credit' ? '+' : '-'}R$ {tx.amount.toFixed(2)}
+                      </p>
                     </div>
                   </div>
-                  <p className={`font-bold ${tx.status === 'credit' ? 'text-green-400' : 'text-red-400'}`}>
-                    {tx.status === 'credit' ? '+' : '-'} R$ {tx.amount.toFixed(2)}
-                  </p>
                 </div>
               ))}
+              {hasMore && (
+                <button className="w-full rounded-xl border border-border bg-card/50 py-3 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                  Carregar mais transações →
+                </button>
+              )}
             </div>
           )}
         </div>
