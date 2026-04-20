@@ -5,6 +5,7 @@ import { BetWidget } from '@/components/bet-widget'
 import { PriceHistoryChart } from '@/components/market/PriceHistoryChart'
 import { MarketComments } from '@/components/market/MarketComments'
 import { AIAnalysis } from '@/components/market/AIAnalysis'
+import { MarketCountdown } from '@/components/market/MarketCountdown'
 import { RelatedMarkets } from '@/components/market/RelatedMarkets'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -141,6 +142,15 @@ export default async function MarketDetailPage({
                 <StatusBadge status={market.status_text ?? 'open'} />
               </div>
 
+              {/* Contagem regressiva */}
+              {isOpen && (
+                <MarketCountdown
+                  closesAt={market.closes_at ?? null}
+                  resolvesAt={market.resolves_at ?? null}
+                  status={market.status_text ?? 'open'}
+                />
+              )}
+
               {/* Badge do influencer */}
               {(market as any).influencer_name && (
                 <div className="flex items-center gap-2 rounded-xl border border-border bg-card/60 px-3 py-2 w-fit">
@@ -238,7 +248,7 @@ export default async function MarketDetailPage({
             </Card>
 
             {/* Price History Chart */}
-            <PriceHistoryChart marketId={market.id} />
+            <PriceHistoryChart marketId={market.id} options={options.map((o: any) => ({ label: o.label, option_key: o.option_key, probability: o.probability }))} />
 
             {/* About */}
             <Card>
