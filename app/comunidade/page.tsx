@@ -192,6 +192,12 @@ export default function ComunidadePage() {
             className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40" />
           <textarea value={content} onChange={e => setContent(e.target.value)} rows={3} placeholder="Compartilhe sua análise, previsão ou dúvida..."
             className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-primary/40" />
+          {/* Emojis rápidos */}
+          <div className="flex gap-1.5 flex-wrap">
+            {['🔥','💯','🎯','📈','🚀','💎','🤔','👍','😂','🏆','⚡','🌙'].map(e => (
+              <button key={e} type="button" onClick={() => setContent(c => c + e)} className="text-lg hover:scale-125 transition-transform">{e}</button>
+            ))}
+          </div>
           <div className="flex justify-end gap-2">
             <button onClick={handlePost} disabled={!title.trim() || !content.trim() || posting}
               className="flex items-center gap-2 rounded-xl bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50 hover:bg-primary/90 transition-colors">

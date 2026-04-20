@@ -87,8 +87,8 @@ export default async function MarketDetailPage({
   const betCount = (statsData || []).length
 
   const options = Array.isArray(market.options) ? market.options : []
-  const isOpen = market.status_text === 'open'
-  const isResolved = market.status_text === 'resolved'
+  const isOpen = market.status_text === 'open' || market.status === 'open'
+  const isResolved = market.status_text === 'resolved' || market.status === 'resolved'
   const winnerOptionId = market.result_option_id
   const winnerOption = options.find((o: any) => o.id === winnerOptionId)
 

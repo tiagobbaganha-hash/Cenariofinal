@@ -1,442 +1,233 @@
-import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
-import { 
-  TrendingUp, 
-  Trophy, 
-  Users, 
-  Search,
-  Target,
-  Clock,
-  BarChart3,
-  Star,
-  ArrowRight,
-  Zap,
-  Activity
-} from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import Link from 'next/link'
+import { TrendingUp, Zap, Radio, Clock, ChevronRight, Users } from 'lucide-react'
 
-// Types
-interface MarketOption {
-  id: string
-  option_key: 'yes' | 'no'
-  label: string
-  odds: number
-  probability: number
-  is_active: boolean
-  sort_order: number
-}
+const CATEGORIES = ['Todos', 'Política', 'Esportes', 'Cripto', 'Entretenimento', 'Economia', 'Tecnologia']
 
-interface Market {
-  id: string
-  slug: string
-  title: string
-  description: string
-  category: string
-  image_url: string | null
-  influencer_name?: string | null
-  influencer_code?: string | null
-  status_text: string
-  featured: boolean
-  opens_at: string | null
-  closes_at: string | null
-  resolves_at: string | null
-  options: MarketOption[]
-  options_count: number
-}
-
-interface Stats {
-  total_users: number
-  active_markets: number
-  total_markets: number
-  total_bets: number
-  total_volume: number
-  volume_24h: number
-}
-
-// Formatters
-function formatCurrency(value: number): string {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value)
-}
-
-function formatDate(dateString: string | null): string {
-  if (!dateString) return 'Sem prazo'
-  const date = new Date(dateString)
-  return new Intl.DateTimeFormat('pt-BR', {
-    day: '2-digit',
-    month: 'short',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(date)
-}
-
-function getTimeLeft(dateString: string | null): string {
-  if (!dateString) return ''
-  const now = new Date()
-  const target = new Date(dateString)
-  const diff = target.getTime() - now.getTime()
-  
+function timeLeft(iso: string) {
+  const diff = new Date(iso).getTime() - Date.now()
   if (diff <= 0) return 'Encerrado'
-  
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24))
-  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
-  
-  if (days > 0) return `${days}d ${hours}h`
-  if (hours > 0) return `${hours}h`
-  return 'Menos de 1h'
+  const d = Math.floor(diff / 86400000)
+  const h = Math.floor((diff % 86400000) / 3600000)
+  const m = Math.floor((diff % 3600000) / 60000)
+  if (d > 0) return `${d}d ${h}h`
+  if (h > 0) return `${h}h ${m}m`
+  return `${m}m`
 }
 
-// Category colors
-const categoryColors: Record<string, string> = {
-  'Política': 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-  'Economia': 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
-  'Tecnologia': 'bg-purple-500/20 text-purple-400 border-purple-500/30',
-  'Cripto': 'bg-orange-500/20 text-orange-400 border-orange-500/30',
-  'Esportes': 'bg-red-500/20 text-red-400 border-red-500/30',
-  'Geopolítica': 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30',
-  'Entretenimento': 'bg-pink-500/20 text-pink-400 border-pink-500/30',
+function pct(p: number) { return `${Math.round((p || 0.5) * 100)}%` }
+
+async function getHomeData() {
+  const supabase = createClient()
+  const [marketsRes, statsRes] = await Promise.all([
+    supabase.from('v_front_markets_v5')
+      .select('id, title, slug, category, status, closes_at, featured, total_volume, bet_count, options')
+      .in('status', ['open'])
+      .order('featured', { ascending: false })
+      .order('total_volume', { ascending: false })
+      .limit(40),
+    supabase.from('orders').select('stake_amount', { count: 'exact', head: false })
+  ])
+  const totalVol = (statsRes.data || []).reduce((s: number, o: any) => s + parseFloat(o.stake_amount || 0), 0)
+  return { markets: marketsRes.data || [], totalVol, totalBets: statsRes.count || 0 }
 }
 
 export default async function HomePage() {
-  const supabase = createClient()
-  
-  // Fetch markets
-  const { data: markets, error: marketsError } = await supabase
-    .from('v_front_markets_v5')
-    .select('*')
-    .in('status_text', ['open'])
-    .order('featured', { ascending: false })
-    .order('closes_at', { ascending: true })
-    .limit(12)
+  const { markets, totalVol, totalBets } = await getHomeData()
 
-  // Fetch stats
-  const { data: stats } = await supabase
-    .from('v_kpi_public_dashboard')
-    .select('*')
-    .single()
-
-  // Fetch branding (hero banner)
-  const { data: branding } = await supabase
-    .from('branding_settings')
-    .select('custom_css')
-    .eq('id', 1)
-    .single()
-  
-  const heroBannerUrl = (branding as any)?.custom_css || ''
-
-  // Handle errors
-  if (marketsError) {
-    console.error('Error fetching markets:', marketsError)
-  }
-
-  const marketsList = (markets || []) as Market[]
-  const statsData = (stats || {
-    total_users: 0,
-    active_markets: 0,
-    total_markets: 0,
-    total_bets: 0,
-    total_volume: 0,
-    volume_24h: 0,
-  }) as Stats
+  const featured = markets.filter((m: any) => m.featured).slice(0, 3)
+  const trending = markets.slice(0, 20)
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#0B0F14' }}>
-      {/* HERO SECTION */}
-      <section className="relative overflow-hidden py-20 lg:py-32">
-        {/* Background: banner image or gradient */}
-        {heroBannerUrl ? (
-          <>
-            <div className="absolute inset-0">
-              <img src={heroBannerUrl} alt="" className="w-full h-full object-cover" />
-              <div className="absolute inset-0 bg-black/50" />
+    <div className="min-h-screen bg-background">
+      {/* Hero compacto */}
+      <div className="border-b border-border bg-card/30 px-4 py-6 sm:px-6">
+        <div className="mx-auto max-w-6xl flex items-center justify-between gap-6 flex-wrap">
+          <div>
+            <h1 className="text-2xl font-black text-foreground sm:text-3xl">
+              Preveja o futuro. <span className="text-primary">Ganhe apostando certo.</span>
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1">A plataforma de mercados preditivos do Brasil</p>
+          </div>
+          <div className="flex gap-6">
+            {[
+              { label: 'Volume total', value: `R$${(totalVol/1000).toFixed(1)}k` },
+              { label: 'Mercados ativos', value: markets.length.toString() },
+            ].map(s => (
+              <div key={s.label} className="text-center">
+                <p className="text-xl font-black text-primary">{s.value}</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{s.label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 space-y-8">
+
+        {/* Destaque — mercados featured */}
+        {featured.length > 0 && (
+          <section className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-primary" /> Em destaque
+              </h2>
             </div>
-          </>
-        ) : (
-          <>
-            <div className="absolute inset-0 bg-gradient-to-b from-green-500/5 via-transparent to-transparent" />
-            <div className="absolute top-20 left-1/4 w-96 h-96 bg-green-500/10 rounded-full blur-3xl" />
-            <div className="absolute top-40 right-1/4 w-80 h-80 bg-cyan-500/10 rounded-full blur-3xl" />
-          </>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {featured.map((m: any) => <MarketCard key={m.id} market={m} featured />)}
+            </div>
+          </section>
         )}
-        
-        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 text-center">
-          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black tracking-tight">
-            <span className="bg-gradient-to-r from-green-400 via-emerald-400 to-cyan-400 bg-clip-text text-transparent">
-              Preveja o Futuro
-            </span>
-          </h1>
-          
-          <p className="mt-6 text-xl sm:text-2xl text-gray-400 max-w-2xl mx-auto">
-            A plataforma de mercado preditivo mais avancada do Brasil
-          </p>
 
-          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link href="/mercados">
-              <Button size="lg" className="h-14 px-8 text-lg font-bold bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white shadow-lg shadow-green-500/25">
-                Explorar Mercados
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
+        {/* Filtros de categoria */}
+        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none -mx-4 px-4 sm:mx-0 sm:px-0">
+          {CATEGORIES.map(cat => (
+            <Link key={cat} href={cat === 'Todos' ? '/mercados' : `/mercados?categoria=${encodeURIComponent(cat)}`}
+              className="flex-shrink-0 rounded-full border border-border bg-card px-4 py-2 text-xs font-medium text-muted-foreground hover:border-primary/40 hover:text-foreground transition-colors">
+              {cat}
             </Link>
-            <a href="#como-funciona">
-              <Button size="lg" variant="outline" className="h-14 px-8 text-lg border-gray-700 hover:bg-gray-800">
-                Como Funciona
-              </Button>
-            </a>
-          </div>
+          ))}
         </div>
-      </section>
 
-      {/* STATS BAR */}
-      <section className="py-12 border-y border-gray-800" style={{ backgroundColor: '#111827' }}>
-        <div className="mx-auto max-w-7xl px-4 sm:px-6">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-            <StatCard 
-              icon={Users} 
-              value={statsData.total_users?.toLocaleString('pt-BR') || '0'} 
-              label="Usuarios Ativos" 
-            />
-            <StatCard 
-              icon={BarChart3} 
-              value={formatCurrency(statsData.total_volume || 0)} 
-              label="Volume Total" 
-            />
-            <StatCard 
-              icon={Activity} 
-              value={formatCurrency(statsData.volume_24h || 0)} 
-              label="Volume 24h" 
-            />
-            <StatCard 
-              icon={TrendingUp} 
-              value={statsData.active_markets?.toString() || '0'} 
-              label="Mercados Ativos" 
-            />
+        {/* Grid de mercados */}
+        {trending.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-border bg-card/30 p-16 text-center space-y-3">
+            <TrendingUp className="h-10 w-10 mx-auto text-muted-foreground/30" />
+            <p className="text-sm font-medium text-foreground">Nenhum mercado aberto ainda</p>
+            <Link href="/admin/mercados/ia" className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline">
+              Criar mercados com IA →
+            </Link>
           </div>
-        </div>
-      </section>
-
-      {/* MERCADOS EM DESTAQUE */}
-      <section className="py-20">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-4xl font-bold text-white">
-              Mercados em Destaque
-            </h2>
-            <p className="mt-3 text-lg text-gray-400">
-              Mercados reais do CenarioX
-            </p>
-          </div>
-
-          {marketsList.length === 0 ? (
-            <div className="text-center py-16 rounded-2xl border border-gray-800" style={{ backgroundColor: '#111827' }}>
-              <Zap className="h-12 w-12 text-gray-600 mx-auto mb-4" />
-              <p className="text-gray-400 text-lg">Nenhum mercado disponivel no momento</p>
-              <p className="text-gray-500 mt-2">Volte em breve para ver novos mercados</p>
-            </div>
-          ) : (
-            <div className="grid gap-6 md:grid-cols-2">
-              {marketsList.map((market) => (
-                <MarketCard key={market.id} market={market} />
-              ))}
-            </div>
-          )}
-
-          {marketsList.length > 0 && (
-            <div className="mt-12 text-center">
-              <Link href="/mercados">
-                <Button size="lg" variant="outline" className="border-gray-700 hover:bg-gray-800">
-                  Ver Todos os Mercados
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
+        ) : (
+          <section className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">
+                🔥 Tendências — {trending.length} mercados
+              </h2>
+              <Link href="/mercados" className="text-xs text-primary hover:underline flex items-center gap-1">
+                Ver todos <ChevronRight className="h-3.5 w-3.5" />
               </Link>
             </div>
-          )}
-        </div>
-      </section>
-
-      {/* COMO FUNCIONA */}
-      <section id="como-funciona" className="py-20 border-t border-gray-800" style={{ backgroundColor: '#111827' }}>
-        <div className="mx-auto max-w-7xl px-4 sm:px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold text-white">
-              Como Funciona
-            </h2>
-            <p className="mt-3 text-lg text-gray-400">
-              Comece a prever em 3 passos simples
-            </p>
-          </div>
-
-          <div className="grid gap-8 md:grid-cols-3">
-            <StepCard
-              number="1"
-              icon={Search}
-              title="Escolha um mercado"
-              description="Navegue por categorias como Politica, Economia, Esportes e Tecnologia. Encontre eventos que voce conhece."
-            />
-            <StepCard
-              number="2"
-              icon={Target}
-              title="Faca sua previsao"
-              description="Compre SIM se acha que vai acontecer, NAO se acha que nao vai. O preco reflete a probabilidade."
-            />
-            <StepCard
-              number="3"
-              icon={Trophy}
-              title="Ganhe quando acertar"
-              description="Se sua previsao estiver correta, voce ganha! Quanto mais cedo apostar, maior o potencial de lucro."
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* CTA FINAL */}
-      <section className="py-20">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6">
-          <div className="relative overflow-hidden rounded-3xl p-12 text-center" style={{ backgroundColor: '#111827' }}>
-            {/* Gradient effects */}
-            <div className="absolute top-0 left-1/4 w-64 h-64 bg-green-500/20 rounded-full blur-3xl" />
-            <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-cyan-500/20 rounded-full blur-3xl" />
-            
-            <div className="relative">
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white">
-                Comece a prever o futuro
-              </h2>
-              <p className="mt-4 text-xl text-gray-400 max-w-xl mx-auto">
-                Junte-se a milhares de usuarios que ja estao fazendo previsoes
-              </p>
-              <div className="mt-8">
-                <Link href="/login">
-                  <Button size="lg" className="h-14 px-10 text-lg font-bold bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white shadow-lg shadow-green-500/25">
-                    Criar Conta Gratis
-                    <ArrowRight className="ml-2 h-5 w-5" />
-                  </Button>
-                </Link>
-              </div>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {trending.map((m: any) => <MarketCard key={m.id} market={m} />)}
             </div>
-          </div>
-        </div>
-      </section>
-    </div>
-  )
-}
-
-// Components
-function StatCard({ icon: Icon, value, label }: { icon: any; value: string; label: string }) {
-  return (
-    <div className="text-center p-6 rounded-2xl border border-gray-800" style={{ backgroundColor: 'rgba(17, 24, 39, 0.5)' }}>
-      <Icon className="h-6 w-6 text-green-400 mx-auto mb-3" />
-      <div className="text-2xl sm:text-3xl font-bold text-white font-mono">{value}</div>
-      <div className="text-sm text-gray-400 mt-1">{label}</div>
-    </div>
-  )
-}
-
-function MarketCard({ market }: { market: Market }) {
-  const options = market.options || []
-  const yesOption = options.find(o => o.option_key === 'yes')
-  const noOption = options.find(o => o.option_key === 'no')
-  
-  const yesOdds = yesOption?.odds || 2.0
-  const noOdds = noOption?.odds || 2.0
-  const yesProbability = yesOption?.probability || 50
-
-  const categoryClass = categoryColors[market.category] || 'bg-gray-500/20 text-gray-400 border-gray-500/30'
-
-  return (
-    <Link href={`/mercados/${market.slug}`}>
-      <div 
-        className="group relative overflow-hidden rounded-2xl border border-gray-800 hover:border-green-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-green-500/10"
-        style={{ backgroundColor: '#111827' }}
-      >
-        {/* Cover image */}
-        {market.image_url && (
-          <div className="h-40 overflow-hidden">
-            <img src={market.image_url} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-          </div>
+          </section>
         )}
 
-        <div className="p-6">
-        {/* Category badge */}
-        <div className="flex items-center justify-between mb-4">
-          <span className={`px-3 py-1 rounded-full text-xs font-medium border ${categoryClass}`}>
-            {market.category || 'Geral'}
-          </span>
-          
-          {market.featured && (
-            <span className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-amber-500/20 text-amber-400 border border-amber-500/30">
-              <Star className="h-3 w-3" /> Destaque
-            </span>
-          )}
-          {market.influencer_name && (
-            <span className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-purple-500/20 text-purple-400 border border-purple-500/30">
-              @{market.influencer_name}
-            </span>
-          )}
+        {/* Seção ao vivo + rápidos */}
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Link href="/ao-vivo" className="group rounded-2xl border border-red-500/20 bg-gradient-to-br from-red-500/10 to-red-500/5 p-6 hover:border-red-500/40 transition-all">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="h-2 w-2 rounded-full bg-red-400 animate-pulse" />
+              <span className="text-xs font-bold text-red-400 uppercase tracking-wider">Ao Vivo</span>
+            </div>
+            <p className="text-sm font-bold text-foreground mb-1">Mercados em tempo real</p>
+            <p className="text-xs text-muted-foreground">Aposte em eventos acontecendo agora</p>
+            <span className="inline-flex items-center gap-1 mt-3 text-xs text-red-400 group-hover:underline">Ver ao vivo <ChevronRight className="h-3.5 w-3.5" /></span>
+          </Link>
+          <Link href="/mercados-rapidos" className="group rounded-2xl border border-yellow-500/20 bg-gradient-to-br from-yellow-500/10 to-yellow-500/5 p-6 hover:border-yellow-500/40 transition-all">
+            <div className="flex items-center gap-2 mb-2">
+              <Zap className="h-3.5 w-3.5 text-yellow-400" />
+              <span className="text-xs font-bold text-yellow-400 uppercase tracking-wider">Mercados Rápidos</span>
+            </div>
+            <p className="text-sm font-bold text-foreground mb-1">Bitcoin sobe ou desce em 5 min?</p>
+            <p className="text-xs text-muted-foreground">Previsões de cripto com resolução automática</p>
+            <span className="inline-flex items-center gap-1 mt-3 text-xs text-yellow-400 group-hover:underline">Ver rápidos <ChevronRight className="h-3.5 w-3.5" /></span>
+          </Link>
         </div>
 
-        {/* Title */}
-        <h3 className="text-lg font-semibold text-white line-clamp-2 group-hover:text-green-400 transition-colors mb-4">
-          {market.title}
-        </h3>
-
-        {/* Probability bar */}
-        <div className="mb-4">
-          <div className="flex justify-between text-xs text-gray-400 mb-1">
-            <span>SIM {yesProbability.toFixed(0)}%</span>
-            <span>NAO {(100 - yesProbability).toFixed(0)}%</span>
+        {/* Como funciona — compacto */}
+        <section className="rounded-2xl border border-border bg-card/50 p-6">
+          <h2 className="text-sm font-bold text-foreground mb-4 text-center">Como funciona</h2>
+          <div className="grid gap-4 sm:grid-cols-3">
+            {[
+              { n: '1', icon: '🔍', title: 'Escolha um mercado', desc: 'Navegue por política, esportes, cripto e muito mais' },
+              { n: '2', icon: '🎯', title: 'Faça sua previsão', desc: 'Aposte na opção que você acredita que vai acontecer' },
+              { n: '3', icon: '💰', title: 'Ganhe quando acertar', desc: 'Quanto mais cedo você apostar, maior o retorno' },
+            ].map(s => (
+              <div key={s.n} className="text-center space-y-2">
+                <div className="text-3xl">{s.icon}</div>
+                <p className="text-sm font-bold text-foreground">{s.title}</p>
+                <p className="text-xs text-muted-foreground">{s.desc}</p>
+              </div>
+            ))}
           </div>
-          <div className="h-2 rounded-full bg-gray-800 overflow-hidden">
-            <div 
-              className="h-full bg-gradient-to-r from-green-500 to-emerald-500 transition-all duration-300"
-              style={{ width: `${yesProbability}%` }}
-            />
+        </section>
+      </div>
+    </div>
+  )
+}
+
+function MarketCard({ market, featured }: { market: any; featured?: boolean }) {
+  const opts = Array.isArray(market.options) ? market.options : []
+  const yesOpt = opts.find((o: any) => o.option_key === 'yes') || opts[0]
+  const noOpt = opts.find((o: any) => o.option_key === 'no') || opts[1]
+  const vol = parseFloat(market.total_volume || 0)
+  const tl = market.closes_at ? timeLeft(market.closes_at) : null
+
+  return (
+    <Link href={`/mercados/${market.slug}`}
+      className={`group flex flex-col rounded-2xl border bg-card overflow-hidden hover:border-primary/30 transition-all hover:shadow-lg hover:shadow-primary/5 ${featured ? 'border-primary/20 bg-primary/5' : 'border-border'}`}>
+
+      {featured && <div className="h-0.5 bg-gradient-to-r from-primary/60 via-primary to-primary/60" />}
+
+      <div className="p-4 flex-1 flex flex-col gap-3">
+        {/* Header */}
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="text-[10px] bg-muted text-muted-foreground rounded-full px-2 py-0.5 font-medium">{market.category}</span>
+              {featured && <span className="text-[10px] bg-primary/20 text-primary rounded-full px-2 py-0.5 font-bold">Destaque</span>}
+            </div>
+            <h3 className="text-sm font-bold text-foreground leading-snug group-hover:text-primary transition-colors line-clamp-2">
+              {market.title}
+            </h3>
           </div>
         </div>
 
-        {/* Odds buttons */}
-        <div className="grid grid-cols-2 gap-3 mb-4">
-          <button className="flex flex-col items-center justify-center py-3 px-4 rounded-xl bg-green-500/10 border border-green-500/30 hover:bg-green-500/20 transition-colors">
-            <span className="text-xs text-green-400 mb-1">SIM</span>
-            <span className="text-lg font-bold text-green-400">{yesOdds.toFixed(2)}</span>
-          </button>
-          <button className="flex flex-col items-center justify-center py-3 px-4 rounded-xl bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 transition-colors">
-            <span className="text-xs text-red-400 mb-1">NAO</span>
-            <span className="text-lg font-bold text-red-400">{noOdds.toFixed(2)}</span>
-          </button>
-        </div>
+        {/* Opções principais */}
+        {opts.length === 2 && yesOpt && noOpt ? (
+          <div className="space-y-1.5">
+            {[yesOpt, noOpt].map((opt: any) => {
+              const isNo = opt.option_key === 'no'
+              const prob = Math.round((opt.probability || 0.5) * 100)
+              return (
+                <div key={opt.id} className="flex items-center gap-2">
+                  <div className="flex-1 h-6 rounded-lg overflow-hidden bg-muted relative">
+                    <div className={`h-full transition-all ${isNo ? 'bg-red-500/30' : 'bg-primary/30'}`} style={{ width: `${prob}%` }} />
+                    <span className="absolute inset-0 flex items-center px-2.5 text-[10px] font-bold text-foreground">{opt.label}</span>
+                  </div>
+                  <span className={`text-xs font-black w-10 text-right ${isNo ? 'text-red-400' : 'text-primary'}`}>{prob}%</span>
+                </div>
+              )
+            })}
+          </div>
+        ) : opts.length > 0 ? (
+          <div className="flex flex-wrap gap-1.5">
+            {opts.slice(0, 3).map((opt: any) => (
+              <div key={opt.id} className="flex items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 py-1.5">
+                <span className="text-[10px] font-semibold text-foreground truncate max-w-[100px]">{opt.label}</span>
+                <span className="text-[10px] font-black text-primary">{pct(opt.probability)}</span>
+              </div>
+            ))}
+            {opts.length > 3 && <span className="text-[10px] text-muted-foreground self-center">+{opts.length - 3}</span>}
+          </div>
+        ) : null}
 
         {/* Footer */}
-        <div className="flex items-center justify-between text-sm text-gray-500">
-          <span className="flex items-center gap-1">
-            <Clock className="h-4 w-4" />
-            {getTimeLeft(market.closes_at)}
-          </span>
-          <span className="text-xs">
-            {formatDate(market.closes_at)}
-          </span>
-        </div>
+        <div className="flex items-center justify-between mt-auto pt-2 border-t border-border/50">
+          <div className="flex items-center gap-3">
+            {vol > 0 && <span className="text-[10px] text-muted-foreground">R${vol >= 1000 ? `${(vol/1000).toFixed(1)}k` : vol.toFixed(0)}</span>}
+            {market.bet_count > 0 && <span className="text-[10px] text-muted-foreground">{market.bet_count} apostas</span>}
+          </div>
+          {tl && (
+            <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+              <Clock className="h-3 w-3" />
+              {tl}
+            </div>
+          )}
         </div>
       </div>
     </Link>
-  )
-}
-
-function StepCard({ number, icon: Icon, title, description }: { number: string; icon: any; title: string; description: string }) {
-  return (
-    <div className="relative p-8 rounded-2xl border border-gray-800" style={{ backgroundColor: 'rgba(11, 15, 20, 0.8)' }}>
-      <div className="flex items-center gap-4 mb-4">
-        <span className="text-5xl font-black bg-gradient-to-r from-green-400 to-cyan-400 bg-clip-text text-transparent">
-          {number}
-        </span>
-        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-green-500/10 border border-green-500/30">
-          <Icon className="h-6 w-6 text-green-400" />
-        </div>
-      </div>
-      <h3 className="text-xl font-bold text-white mb-2">{title}</h3>
-      <p className="text-gray-400">{description}</p>
-    </div>
   )
 }

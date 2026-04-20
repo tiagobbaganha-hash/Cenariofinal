@@ -1,281 +1,164 @@
 'use client'
 
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { MessageSquare, Send, Users, Loader2, Star } from 'lucide-react'
+import { Send, Smile, Loader2 } from 'lucide-react'
 
-interface ChatMessage {
-  id: string
-  user_id: string
-  username: string
-  message: string
-  created_at: string
-  is_own: boolean
+interface Message { id: string; user_id: string; message: string; created_at: string; username?: string }
+
+const AVATARS = ['🚀','🐂','🦁','🔮','🎯','⚡','🌊','🔥','💎','🦅','🎲','🌙','☀️','🏆','⚔️','🦊','🐉','🌟','💫','🎪']
+const QUICK_EMOJIS = ['🔥','💯','🎯','📈','📉','🚀','💎','🤔','👍','👎','😂','🏆']
+const QUICK_GIFS = [
+  { label: 'Stonks', url: 'https://media.giphy.com/media/XNBcChLQt3beckMGhZ/giphy.gif' },
+  { label: 'Moon', url: 'https://media.giphy.com/media/YnkMcHgNIMW4Yfmjxr/giphy.gif' },
+  { label: 'Hype', url: 'https://media.giphy.com/media/l41Ymrnk3UYOAJ1rO/giphy.gif' },
+  { label: 'Isso!', url: 'https://media.giphy.com/media/OkJat1YNdoD3W/giphy.gif' },
+]
+
+function timeAgo(iso: string) {
+  const diff = Date.now() - new Date(iso).getTime()
+  if (diff < 60000) return 'agora'
+  if (diff < 3600000) return `${Math.floor(diff / 60000)}m`
+  return `${Math.floor(diff / 3600000)}h`
 }
 
-const QUICK_REACTIONS = ['🔥', '💯', '🚀', '😮', '👍', '❌']
-const MAX_MSG = 300
-const RATE_LIMIT_MS = 3000 // 3s entre mensagens
-
 export function MarketChat({ marketId }: { marketId: string }) {
-  const supabase = createClient()
-  const [messages, setMessages] = useState<ChatMessage[]>([])
+  const [messages, setMessages] = useState<Message[]>([])
   const [text, setText] = useState('')
-  const [loading, setLoading] = useState(true)
-  const [sending, setSending] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
-  const [username, setUsername] = useState('Anônimo')
-  const [onlineCount, setOnlineCount] = useState(1)
-  const [error, setError] = useState('')
-  const [lastSent, setLastSent] = useState(0)
-  const [open, setOpen] = useState(false)
-  const [unread, setUnread] = useState(0)
+  const [sending, setSending] = useState(false)
+  const [showEmoji, setShowEmoji] = useState(false)
+  const [showGif, setShowGif] = useState(false)
+  const [loading, setLoading] = useState(true)
   const bottomRef = useRef<HTMLDivElement>(null)
-  const inputRef = useRef<HTMLInputElement>(null)
-  const channelRef = useRef<any>(null)
 
-  // Carregar usuário + mensagens iniciais
   useEffect(() => {
-    async function init() {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        setUserId(user.id)
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('username, full_name')
-          .eq('id', user.id)
-          .single()
-        setUsername((profile as any)?.username || (profile as any)?.full_name?.split(' ')[0] || 'Apostador')
-      }
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id || null))
 
-      // Últimas 50 mensagens
-      const { data: msgs } = await supabase
-        .from('market_chat')
-        .select('id, user_id, message, created_at, profiles(username, full_name)')
-        .eq('market_id', marketId)
-        .order('created_at', { ascending: true })
-        .limit(50)
+    // Carregar mensagens
+    supabase.from('market_chat')
+      .select('*')
+      .eq('market_id', marketId)
+      .order('created_at', { ascending: true })
+      .limit(50)
+      .then(({ data }) => { setMessages(data || []); setLoading(false) })
 
-      if (msgs) {
-        setMessages(msgs.map((m: any) => ({
-          id: m.id,
-          user_id: m.user_id,
-          username: m.profiles?.username || m.profiles?.full_name?.split(' ')[0] || 'Apostador',
-          message: m.message,
-          created_at: m.created_at,
-          is_own: m.user_id === user?.id,
-        })))
-      }
-      setLoading(false)
-    }
-    init()
+    // Realtime
+    const channel = supabase.channel(`chat:${marketId}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'market_chat', filter: `market_id=eq.${marketId}` },
+        (payload) => setMessages(prev => [...prev, payload.new as Message]))
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
   }, [marketId])
 
-  // Realtime subscription
   useEffect(() => {
-    const channel = supabase
-      .channel(`market_chat:${marketId}`)
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'market_chat', filter: `market_id=eq.${marketId}` },
-        async (payload) => {
-          const m = payload.new as any
-          // Buscar username
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('username, full_name')
-            .eq('id', m.user_id)
-            .single()
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages])
 
-          const newMsg: ChatMessage = {
-            id: m.id,
-            user_id: m.user_id,
-            username: (profile as any)?.username || (profile as any)?.full_name?.split(' ')[0] || 'Apostador',
-            message: m.message,
-            created_at: m.created_at,
-            is_own: m.user_id === userId,
-          }
-          setMessages(prev => [...prev.slice(-99), newMsg])
-          if (!open) setUnread(u => u + 1)
-        }
-      )
-      .on('presence', { event: 'sync' }, () => {
-        const state = channel.presenceState()
-        setOnlineCount(Math.max(1, Object.keys(state).length))
-      })
-      .subscribe(async (status) => {
-        if (status === 'SUBSCRIBED' && userId) {
-          await channel.track({ user_id: userId, online_at: new Date().toISOString() })
-        }
-      })
-
-    channelRef.current = channel
-    return () => { supabase.removeChannel(channel) }
-  }, [marketId, userId, open])
-
-  // Auto-scroll
-  useEffect(() => {
-    if (open) {
-      bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-      setUnread(0)
-    }
-  }, [messages, open])
-
-  async function handleSend(msg?: string) {
-    const content = (msg ?? text).trim()
-    if (!content || !userId) return
-    if (!msg && content.length > MAX_MSG) return
-
-    const now = Date.now()
-    if (now - lastSent < RATE_LIMIT_MS) {
-      setError(`Aguarde ${Math.ceil((RATE_LIMIT_MS - (now - lastSent)) / 1000)}s`)
-      setTimeout(() => setError(''), 2000)
-      return
-    }
-
+  async function send(content?: string) {
+    const msg = content || text.trim()
+    if (!msg || !userId) return
     setSending(true)
-    setError('')
+    setShowEmoji(false)
+    setShowGif(false)
     try {
-      const { error: err } = await supabase.from('market_chat').insert({
-        market_id: marketId,
-        user_id: userId,
-        message: content,
-      })
-      if (err) throw err
-      if (!msg) setText('')
-      setLastSent(Date.now())
-    } catch (e: any) {
-      setError(e.message?.includes('row-level') ? 'Faça login para comentar' : 'Erro ao enviar')
-    } finally {
-      setSending(false)
-      inputRef.current?.focus()
-    }
-  }
-
-  function formatTime(iso: string) {
-    const d = new Date(iso)
-    return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+      const supabase = createClient()
+      await supabase.from('market_chat').insert({ market_id: marketId, user_id: userId, message: msg })
+      setText('')
+    } catch (e) {}
+    setSending(false)
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-card overflow-hidden">
-      {/* Header toggle */}
-      <button
-        onClick={() => { setOpen(v => !v); setUnread(0) }}
-        className="w-full flex items-center justify-between px-5 py-4 hover:bg-card/80 transition-colors"
-      >
-        <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-500/15">
-            <MessageSquare className="h-4 w-4 text-green-400" />
+    <div className="rounded-2xl border border-border bg-card overflow-hidden flex flex-col" style={{ height: 360 }}>
+      {/* Header */}
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-border/50 bg-card/80">
+        <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+        <span className="text-xs font-semibold text-foreground">Chat ao vivo</span>
+        <span className="text-[10px] text-muted-foreground ml-auto">{messages.length} mensagens</span>
+      </div>
+
+      {/* Mensagens */}
+      <div className="flex-1 overflow-y-auto p-3 space-y-2">
+        {loading ? (
+          <div className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+        ) : messages.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full gap-2 py-8">
+            <span className="text-3xl">💬</span>
+            <p className="text-xs text-muted-foreground text-center">Seja o primeiro a comentar!</p>
           </div>
-          <div className="text-left">
-            <p className="text-sm font-semibold text-foreground flex items-center gap-2">
-              Chat ao vivo
-              <span className="flex h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse" />
-            </p>
-            <p className="text-xs text-muted-foreground flex items-center gap-1">
-              <Users className="h-3 w-3" />
-              {onlineCount} online
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          {unread > 0 && !open && (
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
-              {unread > 9 ? '9+' : unread}
-            </span>
+        ) : messages.map(m => {
+          const isMe = m.user_id === userId
+          const emoji = AVATARS[m.user_id.charCodeAt(0) % AVATARS.length]
+          const isGif = m.message.startsWith('__GIF__:')
+          const gifUrl = isGif ? m.message.replace('__GIF__:', '') : null
+
+          return (
+            <div key={m.id} className={`flex items-end gap-2 ${isMe ? 'flex-row-reverse' : ''}`}>
+              <div className="text-base flex-shrink-0">{emoji}</div>
+              <div className={`max-w-[75%] rounded-2xl px-3 py-2 ${isMe ? 'bg-primary/20 border border-primary/30' : 'bg-muted border border-border'}`}>
+                {gifUrl ? (
+                  <img src={gifUrl} alt="GIF" className="rounded-xl max-w-[180px]" />
+                ) : (
+                  <p className="text-sm text-foreground break-words">{m.message}</p>
+                )}
+                <p className={`text-[9px] mt-0.5 ${isMe ? 'text-primary/60 text-right' : 'text-muted-foreground'}`}>{timeAgo(m.created_at)}</p>
+              </div>
+            </div>
+          )
+        })}
+        <div ref={bottomRef} />
+      </div>
+
+      {/* Input */}
+      {userId ? (
+        <div className="border-t border-border/50 p-3 space-y-2">
+          {/* Emoji picker */}
+          {showEmoji && (
+            <div className="flex flex-wrap gap-1.5 p-2 rounded-xl bg-muted/50 border border-border">
+              {QUICK_EMOJIS.map(e => (
+                <button key={e} onClick={() => send(e)} className="text-xl hover:scale-125 transition-transform">{e}</button>
+              ))}
+            </div>
           )}
-          <svg className={`h-4 w-4 text-muted-foreground transition-transform ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
-        </div>
-      </button>
-
-      {open && (
-        <div className="border-t border-border flex flex-col" style={{ height: '400px' }}>
-          {/* Mensagens */}
-          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2 scrollbar-thin">
-            {loading ? (
-              <div className="flex justify-center py-8">
-                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-              </div>
-            ) : messages.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full text-center py-8">
-                <MessageSquare className="h-8 w-8 text-muted-foreground/30 mb-2" />
-                <p className="text-xs text-muted-foreground">Nenhuma mensagem ainda</p>
-                <p className="text-xs text-muted-foreground">Seja o primeiro a comentar!</p>
-              </div>
-            ) : (
-              messages.map((msg, i) => {
-                const showUser = i === 0 || messages[i-1].user_id !== msg.user_id
-                return (
-                  <div key={msg.id} className={`flex flex-col ${msg.is_own ? 'items-end' : 'items-start'}`}>
-                    {showUser && !msg.is_own && (
-                      <span className="text-[10px] text-muted-foreground ml-1 mb-0.5 font-medium">
-                        @{msg.username}
-                      </span>
-                    )}
-                    <div className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm ${
-                      msg.is_own
-                        ? 'bg-primary text-primary-foreground rounded-br-sm'
-                        : 'bg-muted text-foreground rounded-bl-sm'
-                    }`}>
-                      {msg.message}
-                    </div>
-                    <span className="text-[9px] text-muted-foreground mt-0.5 mx-1">
-                      {formatTime(msg.created_at)}
-                    </span>
-                  </div>
-                )
-              })
-            )}
-            <div ref={bottomRef} />
-          </div>
-
-          {/* Reações rápidas */}
-          <div className="flex gap-1.5 px-4 py-2 border-t border-border/50">
-            {QUICK_REACTIONS.map(r => (
-              <button
-                key={r}
-                onClick={() => handleSend(r)}
-                disabled={!userId || sending}
-                className="text-lg hover:scale-125 transition-transform disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                {r}
-              </button>
-            ))}
-          </div>
-
-          {/* Input */}
-          <div className="px-4 pb-4 pt-2 border-t border-border/50">
-            {error && <p className="text-xs text-destructive mb-1.5">{error}</p>}
-            {!userId ? (
-              <p className="text-xs text-center text-muted-foreground py-2">
-                <a href="/login" className="text-primary hover:underline">Faça login</a> para participar do chat
-              </p>
-            ) : (
-              <div className="flex gap-2">
-                <input
-                  ref={inputRef}
-                  value={text}
-                  onChange={e => setText(e.target.value.slice(0, MAX_MSG))}
-                  onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleSend()}
-                  placeholder="Enviar mensagem..."
-                  className="flex-1 rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
-                />
-                <button
-                  onClick={() => handleSend()}
-                  disabled={!text.trim() || sending}
-                  className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground disabled:opacity-40 hover:bg-primary/90 transition-colors"
-                >
-                  {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+          {/* GIF picker */}
+          {showGif && (
+            <div className="flex gap-2 overflow-x-auto p-2 rounded-xl bg-muted/50 border border-border">
+              {QUICK_GIFS.map(g => (
+                <button key={g.label} onClick={() => send(`__GIF__:${g.url}`)} className="flex-shrink-0">
+                  <img src={g.url} alt={g.label} className="h-16 w-auto rounded-lg hover:scale-105 transition-transform" />
                 </button>
-              </div>
-            )}
-            {text.length > MAX_MSG * 0.8 && (
-              <p className="text-[10px] text-muted-foreground mt-1 text-right">{text.length}/{MAX_MSG}</p>
-            )}
+              ))}
+            </div>
+          )}
+          <div className="flex gap-2">
+            <button onClick={() => { setShowEmoji(v => !v); setShowGif(false) }}
+              className={`flex-shrink-0 rounded-xl p-2 border transition-colors ${showEmoji ? 'border-primary/40 bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:text-foreground'}`}>
+              <Smile className="h-4 w-4" />
+            </button>
+            <button onClick={() => { setShowGif(v => !v); setShowEmoji(false) }}
+              className={`flex-shrink-0 rounded-xl px-2.5 py-2 border text-xs font-bold transition-colors ${showGif ? 'border-primary/40 bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:text-foreground'}`}>
+              GIF
+            </button>
+            <input
+              value={text} onChange={e => setText(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), send())}
+              placeholder="Escreva sua análise..."
+              className="flex-1 rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
+            <button onClick={() => send()} disabled={!text.trim() || sending}
+              className="flex-shrink-0 rounded-xl bg-primary px-3 py-2 text-primary-foreground disabled:opacity-40 hover:bg-primary/90 transition-colors">
+              {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            </button>
           </div>
+        </div>
+      ) : (
+        <div className="border-t border-border/50 p-3">
+          <a href="/login" className="block w-full text-center text-xs text-muted-foreground hover:text-primary transition-colors py-2">
+            Faça login para participar do chat →
+          </a>
         </div>
       )}
     </div>
