@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { BetWidget } from '@/components/bet-widget'
 import { PriceHistoryChart } from '@/components/market/PriceHistoryChart'
 import { MarketComments } from '@/components/market/MarketComments'
+import { MarketChat } from '@/components/market/MarketChat'
 import { AIAnalysis } from '@/components/market/AIAnalysis'
 import { MarketCountdown } from '@/components/market/MarketCountdown'
 import { MarketContext } from '@/components/market/MarketContext'
@@ -285,6 +286,9 @@ export default async function MarketDetailPage({
               category={market.category || ''}
               optionsData={options.map((o: any) => ({ label: o.label, probability: o.probability, odds: o.odds }))}
             />
+
+            {/* Chat ao vivo */}
+            <MarketChat marketId={market.id} />
 
             {/* Comments */}
             <MarketComments marketId={market.id} />
