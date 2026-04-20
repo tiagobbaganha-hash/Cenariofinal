@@ -16,7 +16,6 @@ import {
   FileText,
   Activity,
   Headphones,
-  Zap,
 
   Menu,
   X,
