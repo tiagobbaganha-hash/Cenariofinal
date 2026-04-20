@@ -29,7 +29,7 @@ export function SiteFooter() {
   return (
     <footer className="mt-24 border-t border-border/60">
       <div className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6">
-        <div className="grid gap-8 md:grid-cols-4">
+        <div className="grid gap-8 sm:grid-cols-2 md:grid-cols-5">
           <div className="md:col-span-2">
             <Link href="/" className="flex items-center gap-2">
               <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/15 text-primary ring-1 ring-primary/30">
@@ -53,6 +53,17 @@ export function SiteFooter() {
               <li><Link href="/mercados" className="text-muted-foreground hover:text-foreground">Mercados</Link></li>
               <li><Link href="/leaderboard" className="text-muted-foreground hover:text-foreground">Leaderboard</Link></li>
               <li><Link href="/comunidade" className="text-muted-foreground hover:text-foreground">Comunidade</Link></li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Suporte
+            </h4>
+            <ul className="mt-3 space-y-2 text-sm">
+              <li><Link href="/ajuda" className="text-muted-foreground hover:text-foreground">Central de Ajuda</Link></li>
+              <li><Link href="/propor-mercado" className="text-muted-foreground hover:text-foreground">Sugerir Mercado</Link></li>
+              <li><Link href="/upgrade" className="text-muted-foreground hover:text-foreground">Planos PRO</Link></li>
             </ul>
           </div>
 
