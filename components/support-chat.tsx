@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { 
   MessageCircle, X, Send, Loader2, ChevronDown,
-  CheckCircle, Clock, Minimize2
+  CheckCircle, Clock, ChevronDown
 } from 'lucide-react'
 
 interface Message {
@@ -208,7 +208,7 @@ export function SupportChat() {
             </div>
             <div className="flex gap-1">
               <button onClick={() => setMinimized(true)} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-white/10 transition-colors">
-                <Minimize2 className="h-3.5 w-3.5" />
+                <ChevronDown className="h-3.5 w-3.5" />
               </button>
               <button onClick={() => setOpen(false)} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-white/10 transition-colors">
                 <X className="h-3.5 w-3.5" />

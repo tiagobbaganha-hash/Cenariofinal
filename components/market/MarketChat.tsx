@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { MessageSquare, Send, Users, Loader2, Smile } from 'lucide-react'
+import { MessageSquare, Send, Users, Loader2, Star } from 'lucide-react'
 
 interface ChatMessage {
   id: string

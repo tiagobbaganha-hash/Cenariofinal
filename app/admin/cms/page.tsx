@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useToast } from '@/hooks/useToast'
-import { FileText, Save, Loader2, Eye, EyeOff, Plus, Trash2, Globe, X } from 'lucide-react'
+import { FileText, Save, Loader2, Eye, EyeOff, Plus, Trash2, ExternalLink, X } from 'lucide-react'
 
 interface CmsPage {
   id: string
@@ -220,7 +220,7 @@ export default function AdminCms() {
             <div className="flex items-center gap-2 flex-shrink-0">
               <a href={`/p/${editing.slug}`} target="_blank"
                 className="flex items-center gap-1.5 rounded-xl border border-border px-3 py-2 text-xs text-muted-foreground hover:text-foreground transition-colors">
-                <Globe className="h-3.5 w-3.5" /> Ver
+                <ExternalLink className="h-3.5 w-3.5" /> Ver
               </a>
               <button
                 onClick={() => setEditing(null)}

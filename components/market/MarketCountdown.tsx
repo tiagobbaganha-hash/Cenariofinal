@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Timer, Lock, CheckCircle } from 'lucide-react'
+import { Clock, Lock, CheckCircle } from 'lucide-react'
 
 interface Props {
   closesAt: string | null
@@ -90,7 +90,7 @@ export function MarketCountdown({ closesAt, resolvesAt, status }: Props) {
     <div className={`rounded-2xl border px-4 py-3 ${uClass}`}>
       <div className="flex items-center gap-2 mb-2">
         {phase === 'betting' ? (
-          <Timer className={`h-4 w-4 ${isUrgent ? 'animate-pulse' : ''}`} />
+          <Clock className={`h-4 w-4 ${isUrgent ? 'animate-pulse' : ''}`} />
         ) : (
           <Lock className="h-4 w-4" />
         )}

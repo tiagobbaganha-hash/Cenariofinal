@@ -1,10 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Cookie, X, ChevronDown, ChevronUp } from 'lucide-react'
+import { ShieldCheck, X, ChevronDown, ChevronUp } from 'lucide-react'
 import Link from 'next/link'
 
-export function CookieBanner() {
+export function ShieldCheckBanner() {
   const [show, setShow] = useState(false)
   const [expanded, setExpanded] = useState(false)
 
@@ -31,7 +31,7 @@ export function CookieBanner() {
         <div className="rounded-2xl border border-border bg-card/95 backdrop-blur-xl shadow-2xl p-5">
           <div className="flex items-start gap-3">
             <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-primary/20">
-              <Cookie className="h-4 w-4 text-primary" />
+              <ShieldCheck className="h-4 w-4 text-primary" />
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-foreground">Este site usa cookies</p>
