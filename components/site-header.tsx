@@ -11,7 +11,8 @@ import { NotificationsDropdown } from '@/components/notifications-dropdown'
 
 const navigation = [
   { label: 'Mercados', href: '/mercados' },
-  { label: '⚡ Ao Vivo', href: '/mercados-rapidos' },
+  { label: '⚡ Rápidos', href: '/mercados-rapidos' },
+  { label: '🔴 Ao Vivo', href: '/ao-vivo' },
   { label: '🔥 Burn', href: '/burn' },
   { label: 'Apostas', href: '/apostas' },
   { label: 'Leaderboard', href: '/leaderboard' },

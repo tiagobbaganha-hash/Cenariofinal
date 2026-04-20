@@ -120,7 +120,7 @@ export default function MercadosRapidosPage() {
           <p className="text-sm text-muted-foreground">Preveja se o preço sobe ou desce em 5 minutos</p>
         </div>
         {isAdmin && (
-          <Link href="/admin/mercados-rapidos/novo"
+          <Link href="/admin/mercados-rapidos"
             className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors">
             <Plus className="h-4 w-4" /> Criar mercado rápido
           </Link>
@@ -141,7 +141,7 @@ export default function MercadosRapidosPage() {
           <p className="text-sm font-medium text-foreground">Nenhum mercado rápido ativo agora</p>
           <p className="text-xs text-muted-foreground">Novos mercados são criados durante o dia. Volte em breve!</p>
           {isAdmin && (
-            <Link href="/admin/mercados-rapidos/novo" className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline mt-2">
+            <Link href="/admin/mercados-rapidos" className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline mt-2">
               <Plus className="h-3.5 w-3.5" /> Criar o primeiro mercado rápido
             </Link>
           )}
