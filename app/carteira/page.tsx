@@ -320,22 +320,29 @@ export default function CarteiraPage() {
 
             {pixCode ? (
               <div className="space-y-4">
-                <p className="text-sm text-muted-foreground">Copie o codigo PIX abaixo e pague no seu banco:</p>
-                <div className="relative">
-                  <textarea 
-                    readOnly 
-                    value={pixCode}
-                    className="w-full h-24 p-3 rounded-lg bg-background border border-border text-xs font-mono"
+                {/* QR Code visual */}
+                <div className="flex flex-col items-center gap-4 p-5 rounded-2xl border border-primary/20 bg-primary/5">
+                  <p className="text-sm font-semibold text-foreground">📱 Escaneie o QR Code</p>
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(pixCode)}&bgcolor=0a0a0a&color=22c55e&format=png`}
+                    alt="QR Code PIX"
+                    className="h-48 w-48 rounded-xl border border-border"
                   />
-                  <Button
-                    size="sm"
-                    className="absolute top-2 right-2"
-                    onClick={() => { navigator.clipboard.writeText(pixCode); setMessage({ type: 'success', text: 'Copiado!' }) }}
-                  >
-                    <Copy className="h-4 w-4" />
-                  </Button>
+                  <p className="text-xs text-muted-foreground text-center">Abra seu banco → PIX → Ler QR Code</p>
                 </div>
-                <p className="text-xs text-muted-foreground">Apos o pagamento, o saldo sera creditado em ate 5 minutos.</p>
+                {/* Código copia e cola */}
+                <div>
+                  <p className="text-xs text-muted-foreground mb-2">Ou copie o código PIX:</p>
+                  <div className="flex gap-2">
+                    <input readOnly value={pixCode} className="flex-1 rounded-xl border border-border bg-background px-3 py-2 text-xs font-mono text-muted-foreground truncate" />
+                    <Button size="sm" className="flex-shrink-0 rounded-xl" onClick={() => { navigator.clipboard.writeText(pixCode); setMessage({ type: 'success', text: '✅ Copiado!' }) }}>
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+                <div className="rounded-xl bg-yellow-500/10 border border-yellow-500/20 p-3 text-xs text-yellow-400">
+                  ⚡ Saldo creditado automaticamente em até 5 minutos após o pagamento.
+                </div>
               </div>
             ) : (
               <div className="space-y-4">

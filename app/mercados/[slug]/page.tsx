@@ -87,8 +87,11 @@ export default async function MarketDetailPage({
   const betCount = (statsData || []).length
 
   const options = Array.isArray(market.options) ? market.options : []
-  const isOpen = market.status_text === 'open' || market.status === 'open'
-  const isResolved = market.status_text === 'resolved' || market.status === 'resolved'
+  // Verificar se está aberto por status OU por closes_at ainda no futuro
+  const closesInFuture = market.closes_at ? new Date(market.closes_at) > new Date() : false
+  const statusIsOpen = market.status_text === 'open' || market.status === 'open'
+  const isOpen = statusIsOpen || (closesInFuture && !market.result_option_id)
+  const isResolved = market.status_text === 'resolved' || market.status === 'resolved' || !!market.result_option_id
   const winnerOptionId = market.result_option_id
   const winnerOption = options.find((o: any) => o.id === winnerOptionId)
 
