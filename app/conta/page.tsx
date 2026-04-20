@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { ThemeSelector } from '@/components/theme-selector'
+const AVATARS = ['🚀','🐂','🦁','🔮','🎯','⚡','🌊','🔥','💎','🦅','🎲','🌙','☀️','🏆','⚔️','🦊','🐉','🌟','💫','🎪']
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
@@ -105,8 +106,8 @@ export default function AccountPage() {
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-center gap-4">
-                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-xl font-bold text-primary ring-2 ring-primary/20">
-                    {(me?.full_name ?? me?.email ?? '?').charAt(0).toUpperCase()}
+                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-3xl ring-2 ring-primary/20">
+                    {['🚀','🐂','🦁','🔮','🎯','⚡','🌊','🔥','💎','🦅'][(me?.id?.charCodeAt(0) ?? 0) % 10]}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="truncate font-semibold">
