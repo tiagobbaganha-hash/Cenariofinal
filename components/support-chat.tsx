@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { 
   MessageCircle, X, Send, Loader2, ChevronDown,
-  CheckCircle, Clock, ChevronDown
+  CheckCircle, Clock
 } from 'lucide-react'
 
 interface Message {
