@@ -15,7 +15,7 @@ import {
   Brain,
   FileText,
   Activity,
-  Headphones,
+  MessageSquare,
 
   Menu,
   X,
@@ -27,7 +27,7 @@ const navItems = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/admin/ai-dashboard', label: 'IA Insights ✨', icon: Brain },
   { href: '/admin/logs', label: 'Logs de Atividade', icon: Activity },
-  { href: '/admin/suporte', label: 'Suporte', icon: Headphones },
+  { href: '/admin/suporte', label: 'Suporte', icon: MessageSquare },
   { href: '/admin/mercados-rapidos', label: 'Mercados Rápidos', icon: Zap },
   { href: '/admin/mercados', label: 'Mercados', icon: TrendingUp },
   { href: '/admin/usuarios', label: 'Usuários', icon: Users },

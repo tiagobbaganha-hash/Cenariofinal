@@ -21,6 +21,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   function apply(t: Theme) {
+    if (typeof window === 'undefined') return
     const root = document.documentElement
     if (t === 'system') {
       const sys = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
