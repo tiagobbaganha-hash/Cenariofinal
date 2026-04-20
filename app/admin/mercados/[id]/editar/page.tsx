@@ -260,9 +260,7 @@ export default function EditarMercado() {
           <h2 className="font-semibold">Opções</h2>
           {options.map((opt, i) => (
             <div key={opt.id || i} className="rounded-xl border border-border bg-background/50 p-3 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-muted-foreground">Opção {i + 1}</span>
-              </div>
+              <span className="text-xs font-semibold text-muted-foreground">Opção {i + 1}</span>
               <input value={opt.label || ''} onChange={e => { const n = [...options]; n[i] = { ...n[i], label: e.target.value }; setOptions(n) }}
                 placeholder="Nome da opção" className="w-full h-10 px-3 rounded-lg bg-background border border-border outline-none text-sm text-foreground" />
               <div className="flex gap-2">
@@ -280,11 +278,14 @@ export default function EditarMercado() {
                   <label className="block text-[10px] text-muted-foreground mb-1">Chave</label>
                   <select value={opt.option_key || 'yes'} onChange={e => { const n = [...options]; n[i] = { ...n[i], option_key: e.target.value }; setOptions(n) }}
                     className="w-full h-10 px-3 rounded-lg bg-background border border-border outline-none text-sm text-foreground">
-                    <option value="yes">yes</option><option value="no">no</option>
-              <input type="number" step="0.01" value={opt.odds} onChange={e => { const n = [...options]; n[i] = { ...n[i], odds: e.target.value }; setOptions(n) }}
-                placeholder="Odds" className="h-10 px-3 rounded-lg bg-background border border-border outline-none" />
-              <input type="number" step="0.01" value={opt.probability} onChange={e => { const n = [...options]; n[i] = { ...n[i], probability: e.target.value }; setOptions(n) }}
-                placeholder="Prob" className="h-10 px-3 rounded-lg bg-background border border-border outline-none" />
+                    <option value="yes">yes</option>
+                    <option value="no">no</option>
+                    <option value="opt1">opt1</option>
+                    <option value="opt2">opt2</option>
+                    <option value="opt3">opt3</option>
+                  </select>
+                </div>
+              </div>
             </div>
           ))}
         </div>

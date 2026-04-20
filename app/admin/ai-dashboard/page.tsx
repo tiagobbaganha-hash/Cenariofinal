@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import type { JSX } from 'react'
 import { Brain, TrendingUp, Users, AlertTriangle, CheckCircle, RefreshCw, Sparkles, Target, Zap, BarChart3, ArrowRight } from 'lucide-react'
 
 interface Insight {
