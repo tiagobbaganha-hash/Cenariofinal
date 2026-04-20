@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { TrendingUp, Twitter, Instagram, Send } from 'lucide-react'
+import { TrendingUp, Send, ExternalLink } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 interface BrandingData {
@@ -68,14 +68,14 @@ export function SiteFooter() {
             <div className="flex gap-2">
               {branding.x_url && (
                 <a href={branding.x_url} target="_blank" rel="noopener noreferrer"
-                  className="flex h-9 w-9 items-center justify-center rounded-xl border border-border text-muted-foreground hover:text-foreground hover:border-primary/30 transition-colors">
-                  <Twitter className="h-4 w-4" />
+                  className="flex items-center gap-1.5 rounded-xl border border-border px-3 py-2 text-xs text-muted-foreground hover:text-foreground hover:border-primary/30 transition-colors">
+                  𝕏
                 </a>
               )}
               {branding.instagram_url && (
                 <a href={branding.instagram_url} target="_blank" rel="noopener noreferrer"
-                  className="flex h-9 w-9 items-center justify-center rounded-xl border border-border text-muted-foreground hover:text-foreground hover:border-primary/30 transition-colors">
-                  <Instagram className="h-4 w-4" />
+                  className="flex items-center gap-1.5 rounded-xl border border-border px-3 py-2 text-xs text-muted-foreground hover:text-foreground hover:border-primary/30 transition-colors">
+                  IG
                 </a>
               )}
               {branding.telegram_url && (

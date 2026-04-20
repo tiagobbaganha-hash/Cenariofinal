@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { ShieldCheck, X, ChevronDown, ChevronUp } from 'lucide-react'
 import Link from 'next/link'
 
-export function ShieldCheckBanner() {
+export function CookieBanner() {
   const [show, setShow] = useState(false)
   const [expanded, setExpanded] = useState(false)
 
