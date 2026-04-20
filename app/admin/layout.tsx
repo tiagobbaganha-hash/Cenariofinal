@@ -12,6 +12,7 @@ import {
   Settings,
   ChevronLeft,
   Zap,
+  DollarSign,
   Brain,
   FileText,
   Activity,

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { ShareBet } from '@/components/market/ShareBet'
 import { createClient } from '@/lib/supabase/client'
 import { 
   TrendingUp, TrendingDown, Trophy, Clock, AlertCircle,

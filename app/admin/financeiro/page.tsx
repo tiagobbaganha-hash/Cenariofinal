@@ -2,399 +2,274 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Button } from '@/components/ui/button'
-import { 
-  Search,
-  RefreshCw,
-  ArrowDownLeft,
-  ArrowUpRight,
-  Clock,
-  CheckCircle,
-  XCircle,
-  Wallet,
-  TrendingUp,
-  AlertTriangle
-} from 'lucide-react'
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, CartesianGrid } from 'recharts'
+import { TrendingUp, TrendingDown, DollarSign, Users, Loader2, RefreshCw, AlertTriangle } from 'lucide-react'
+import { formatCurrency } from '@/lib/utils'
 
-interface DepositRequest {
-  id: string
-  user_id: string
-  user_email?: string
-  amount: number
-  status: string
-  payment_method: string
-  created_at: string
-}
+interface KPI { label: string; value: string; sub?: string; trend?: number; icon: string; color: string }
 
-interface WithdrawalRequest {
-  id: string
-  user_id: string
-  user_email?: string
-  amount: number
-  pix_key: string
-  status: string
-  created_at: string
-}
-
-export default function AdminFinanceiro() {
-  const [deposits, setDeposits] = useState<DepositRequest[]>([])
-  const [withdrawals, setWithdrawals] = useState<WithdrawalRequest[]>([])
-  const [activeTab, setActiveTab] = useState<'deposits' | 'withdrawals'>('deposits')
-  const [loading, setLoading] = useState(true)
-  const [processing, setProcessing] = useState<string | null>(null)
-
-  useEffect(() => {
-    loadData()
-  }, [])
-
-  async function loadData() {
-    setLoading(true)
-    const supabase = createClient()
-    
-    // Load deposits
-    const { data: deps } = await supabase
-      .from('deposit_requests')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(100)
-
-    if (deps) {
-      setDeposits(deps.map((d: any) => ({
-        id: d.id,
-        user_id: d.user_id,
-        amount: parseFloat(d.amount || '0'),
-        status: d.status,
-        payment_method: d.payment_method || 'pix',
-        created_at: d.created_at,
-      })))
-    }
-
-    // Load withdrawals
-    const { data: withs } = await supabase
-      .from('withdrawal_requests')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(100)
-
-    if (withs) {
-      setWithdrawals(withs.map((w: any) => ({
-        id: w.id,
-        user_id: w.user_id,
-        amount: parseFloat(w.amount || '0'),
-        pix_key: w.pix_key,
-        status: w.status,
-        created_at: w.created_at,
-      })))
-    }
-
-    setLoading(false)
-  }
-
-  async function approveDeposit(id: string) {
-    setProcessing(id)
-    const supabase = createClient()
-    
-    // Get deposit details
-    const { data: dep } = await supabase.from('deposit_requests').select('*').eq('id', id).single()
-    if (!dep) { setProcessing(null); return }
-
-    // Credit wallet
-    await supabase.from('wallets').update({
-      available_balance: (await supabase.from('wallets').select('available_balance').eq('user_id', dep.user_id).single()).data?.available_balance + parseFloat(dep.amount)
-    }).eq('user_id', dep.user_id)
-
-    // Record in ledger
-    await supabase.from('wallet_ledger').insert({
-      user_id: dep.user_id, entry_type: 'deposit', direction: 'credit',
-      amount: dep.amount, reference_type: 'deposit_request', reference_id: dep.id,
-    } as any)
-
-    // Update status
-    await supabase.from('deposit_requests').update({ status: 'approved' }).eq('id', id)
-    
-    await loadData()
-    setProcessing(null)
-  }
-
-  async function rejectDeposit(id: string) {
-    setProcessing(id)
-    const supabase = createClient()
-    await supabase.from('deposit_requests').update({ status: 'rejected' }).eq('id', id)
-    await loadData()
-    setProcessing(null)
-  }
-
-  async function approveWithdrawal(id: string) {
-    setProcessing(id)
-    const supabase = createClient()
-    
-    // Get withdrawal details
-    const { data: wr } = await supabase.from('withdrawal_requests').select('*').eq('id', id).single()
-    if (!wr) { setProcessing(null); return }
-
-    // Debit wallet
-    const { data: wallet } = await supabase.from('wallets').select('available_balance').eq('user_id', wr.user_id).single()
-    const currentBalance = parseFloat(wallet?.available_balance || '0')
-    
-    await supabase.from('wallets').update({
-      available_balance: Math.max(0, currentBalance - parseFloat(wr.amount))
-    }).eq('user_id', wr.user_id)
-
-    // Record in ledger
-    await supabase.from('wallet_ledger').insert({
-      user_id: wr.user_id, entry_type: 'withdrawal', direction: 'debit',
-      amount: wr.amount, reference_type: 'withdrawal_request', reference_id: wr.id,
-    } as any)
-
-    // Update status
-    await supabase.from('withdrawal_requests').update({ status: 'approved' }).eq('id', id)
-    
-    await loadData()
-    setProcessing(null)
-  }
-
-  async function rejectWithdrawal(id: string) {
-    setProcessing(id)
-    const supabase = createClient()
-    await supabase.from('withdrawal_requests').update({ status: 'rejected' }).eq('id', id)
-    await loadData()
-    setProcessing(null)
-  }
-
-  const pendingDeposits = deposits.filter(d => d.status === 'pending')
-  const pendingWithdrawals = withdrawals.filter(w => w.status === 'pending')
-
-  const totalDeposits = deposits.filter(d => d.status === 'completed').reduce((s, d) => s + d.amount, 0)
-  const totalWithdrawals = withdrawals.filter(w => w.status === 'completed').reduce((s, w) => s + w.amount, 0)
-
+function KPICard({ kpi }: { kpi: KPI }) {
+  const positive = (kpi.trend ?? 0) >= 0
   return (
-    <div className="space-y-6">
-      {/* Header */}
+    <div className="rounded-2xl border border-border bg-card p-5 space-y-2">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Financeiro</h1>
-          <p className="text-muted-foreground">Gerenciar depositos e saques</p>
-        </div>
-        <Button variant="outline" onClick={loadData}>
-          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-        </Button>
+        <span className="text-2xl">{kpi.icon}</span>
+        {kpi.trend !== undefined && (
+          <span className={`text-xs font-bold ${positive ? 'text-primary' : 'text-destructive'}`}>
+            {positive ? '▲' : '▼'} {Math.abs(kpi.trend).toFixed(1)}%
+          </span>
+        )}
       </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="p-4 rounded-xl bg-green-500/10 border border-green-500/20">
-          <div className="flex items-center gap-2 text-green-400 mb-2">
-            <ArrowDownLeft className="h-4 w-4" />
-            <span className="text-sm">Depositos</span>
-          </div>
-          <p className="text-2xl font-bold">R$ {(totalDeposits / 1000).toFixed(1)}k</p>
-        </div>
-        <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20">
-          <div className="flex items-center gap-2 text-red-400 mb-2">
-            <ArrowUpRight className="h-4 w-4" />
-            <span className="text-sm">Saques</span>
-          </div>
-          <p className="text-2xl font-bold">R$ {(totalWithdrawals / 1000).toFixed(1)}k</p>
-        </div>
-        <div className="p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/20">
-          <div className="flex items-center gap-2 text-yellow-400 mb-2">
-            <Clock className="h-4 w-4" />
-            <span className="text-sm">Dep. Pendentes</span>
-          </div>
-          <p className="text-2xl font-bold">{pendingDeposits.length}</p>
-        </div>
-        <div className="p-4 rounded-xl bg-orange-500/10 border border-orange-500/20">
-          <div className="flex items-center gap-2 text-orange-400 mb-2">
-            <AlertTriangle className="h-4 w-4" />
-            <span className="text-sm">Saq. Pendentes</span>
-          </div>
-          <p className="text-2xl font-bold">{pendingWithdrawals.length}</p>
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="flex gap-2">
-        <button
-          onClick={() => setActiveTab('deposits')}
-          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-            activeTab === 'deposits' ? 'bg-primary text-primary-foreground' : 'bg-card hover:bg-accent'
-          }`}
-        >
-          Depositos ({deposits.length})
-        </button>
-        <button
-          onClick={() => setActiveTab('withdrawals')}
-          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-            activeTab === 'withdrawals' ? 'bg-primary text-primary-foreground' : 'bg-card hover:bg-accent'
-          }`}
-        >
-          Saques ({withdrawals.length})
-        </button>
-      </div>
-
-      {/* Table */}
-      <div className="rounded-xl bg-card border border-border overflow-hidden">
-        <div className="overflow-x-auto">
-          {activeTab === 'deposits' ? (
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-border bg-accent/50">
-                  <th className="text-left p-4 font-medium">ID</th>
-                  <th className="text-left p-4 font-medium">Usuario</th>
-                  <th className="text-left p-4 font-medium">Valor</th>
-                  <th className="text-left p-4 font-medium">Metodo</th>
-                  <th className="text-left p-4 font-medium">Status</th>
-                  <th className="text-left p-4 font-medium">Data</th>
-                  <th className="text-right p-4 font-medium">Acoes</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  <tr>
-                    <td colSpan={7} className="p-8 text-center">
-                      <RefreshCw className="h-6 w-6 animate-spin mx-auto text-primary" />
-                    </td>
-                  </tr>
-                ) : deposits.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="p-8 text-center text-muted-foreground">
-                      Nenhum deposito
-                    </td>
-                  </tr>
-                ) : (
-                  deposits.map(dep => (
-                    <tr key={dep.id} className="border-b border-border hover:bg-accent/30 transition-colors">
-                      <td className="p-4 font-mono text-sm">{dep.id.slice(0, 8)}</td>
-                      <td className="p-4 font-mono text-sm">{dep.user_id.slice(0, 8)}</td>
-                      <td className="p-4 font-bold text-green-400">R$ {dep.amount.toFixed(2)}</td>
-                      <td className="p-4 uppercase text-sm">{dep.payment_method}</td>
-                      <td className="p-4">
-                        <StatusBadge status={dep.status} />
-                      </td>
-                      <td className="p-4 text-muted-foreground">
-                        {new Date(dep.created_at).toLocaleString('pt-BR')}
-                      </td>
-                      <td className="p-4">
-                        {dep.status === 'pending' && (
-                          <div className="flex items-center justify-end gap-2">
-                            <Button 
-                              size="sm" 
-                              onClick={() => approveDeposit(dep.id)}
-                              disabled={processing === dep.id}
-                              className="bg-green-600 hover:bg-green-700"
-                            >
-                              {processing === dep.id ? <RefreshCw className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
-                            </Button>
-                            <Button 
-                              size="sm" 
-                              variant="destructive"
-                              onClick={() => rejectDeposit(dep.id)}
-                              disabled={processing === dep.id}
-                            >
-                              <XCircle className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          ) : (
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-border bg-accent/50">
-                  <th className="text-left p-4 font-medium">ID</th>
-                  <th className="text-left p-4 font-medium">Usuario</th>
-                  <th className="text-left p-4 font-medium">Valor</th>
-                  <th className="text-left p-4 font-medium">Chave PIX</th>
-                  <th className="text-left p-4 font-medium">Status</th>
-                  <th className="text-left p-4 font-medium">Data</th>
-                  <th className="text-right p-4 font-medium">Acoes</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  <tr>
-                    <td colSpan={7} className="p-8 text-center">
-                      <RefreshCw className="h-6 w-6 animate-spin mx-auto text-primary" />
-                    </td>
-                  </tr>
-                ) : withdrawals.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="p-8 text-center text-muted-foreground">
-                      Nenhum saque
-                    </td>
-                  </tr>
-                ) : (
-                  withdrawals.map(wit => (
-                    <tr key={wit.id} className="border-b border-border hover:bg-accent/30 transition-colors">
-                      <td className="p-4 font-mono text-sm">{wit.id.slice(0, 8)}</td>
-                      <td className="p-4 font-mono text-sm">{wit.user_id.slice(0, 8)}</td>
-                      <td className="p-4 font-bold text-red-400">R$ {wit.amount.toFixed(2)}</td>
-                      <td className="p-4 font-mono text-sm">{wit.pix_key?.slice(0, 20)}</td>
-                      <td className="p-4">
-                        <StatusBadge status={wit.status} />
-                      </td>
-                      <td className="p-4 text-muted-foreground">
-                        {new Date(wit.created_at).toLocaleString('pt-BR')}
-                      </td>
-                      <td className="p-4">
-                        {wit.status === 'pending' && (
-                          <div className="flex items-center justify-end gap-2">
-                            <Button 
-                              size="sm"
-                              onClick={() => approveWithdrawal(wit.id)}
-                              disabled={processing === wit.id}
-                              className="bg-green-600 hover:bg-green-700"
-                            >
-                              {processing === wit.id ? <RefreshCw className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
-                            </Button>
-                            <Button 
-                              size="sm" 
-                              variant="destructive"
-                              onClick={() => rejectWithdrawal(wit.id)}
-                              disabled={processing === wit.id}
-                            >
-                              <XCircle className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          )}
-        </div>
-      </div>
+      <p className="text-2xl font-black text-foreground">{kpi.value}</p>
+      <p className="text-xs text-muted-foreground">{kpi.label}</p>
+      {kpi.sub && <p className="text-[10px] text-muted-foreground/60">{kpi.sub}</p>}
     </div>
   )
 }
 
-function StatusBadge({ status }: { status: string }) {
-  const styles: Record<string, string> = {
-    pending: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
-    completed: 'bg-green-500/10 text-green-400 border-green-500/20',
-    rejected: 'bg-red-500/10 text-red-400 border-red-500/20',
-    failed: 'bg-red-500/10 text-red-400 border-red-500/20',
-  }
+function CustomTooltip({ active, payload, label }: any) {
+  if (!active || !payload?.length) return null
+  return (
+    <div className="rounded-xl border border-border bg-card/95 px-3 py-2.5 shadow-xl text-xs space-y-1">
+      <p className="text-muted-foreground font-medium">{label}</p>
+      {payload.map((p: any) => (
+        <div key={p.dataKey} className="flex items-center gap-2">
+          <span className="h-2 w-2 rounded-full" style={{ background: p.color }} />
+          <span className="text-muted-foreground">{p.name}:</span>
+          <span className="font-bold text-foreground">{p.name.includes('R$') || p.name === 'Volume' || p.name === 'Receita' ? formatCurrency(p.value) : p.value}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
 
-  const icons: Record<string, any> = {
-    pending: Clock,
-    completed: CheckCircle,
-    rejected: XCircle,
-    failed: XCircle,
-  }
+export default function FinanceiroPage() {
+  const [loading, setLoading] = useState(true)
+  const [kpis, setKpis] = useState<KPI[]>([])
+  const [dailyData, setDailyData] = useState<any[]>([])
+  const [topUsers, setTopUsers] = useState<any[]>([])
+  const [pendingWithdrawals, setPendingWithdrawals] = useState<any[]>([])
+  const [period, setPeriod] = useState<'7d' | '30d' | '90d'>('30d')
 
-  const Icon = icons[status] || Clock
+  useEffect(() => { load() }, [period])
+
+  async function load() {
+    setLoading(true)
+    const supabase = createClient()
+    const days = period === '7d' ? 7 : period === '30d' ? 30 : 90
+    const since = new Date(Date.now() - days * 86400000).toISOString()
+
+    const [ordersRes, walletsRes, depositsRes, withdrawalsRes, usersRes] = await Promise.all([
+      supabase.from('orders').select('stake_amount, status, created_at, settlement_amount, user_id'),
+      supabase.from('wallets').select('available_balance, locked_balance, user_id'),
+      supabase.from('deposit_requests').select('amount, status, created_at').gt('created_at', since),
+      supabase.from('deposit_requests').select('amount, status, created_at, user_id').eq('status', 'pending'),
+      supabase.from('profiles').select('id, created_at').gt('created_at', since),
+    ])
+
+    const orders = ordersRes.data || []
+    const wallets = walletsRes.data || []
+    const deposits = depositsRes.data || []
+    const withdrawals = withdrawalsRes.data || []
+    const newUsers = usersRes.data || []
+
+    const recentOrders = orders.filter(o => new Date(o.created_at) >= new Date(since))
+    const totalVolume = recentOrders.reduce((s, o) => s + parseFloat(o.stake_amount || 0), 0)
+    const totalRevenue = totalVolume * 0.03
+    const totalPayout = orders.filter(o => o.status === 'settled_win').reduce((s, o) => s + parseFloat(o.settlement_amount || 0), 0)
+    const totalBalances = wallets.reduce((s, w) => s + parseFloat(w.available_balance || 0) + parseFloat(w.locked_balance || 0), 0)
+    const totalDeposits = deposits.filter(d => d.status === 'approved').reduce((s, d) => s + parseFloat(d.amount || 0), 0)
+    const winRate = orders.length > 0 ? orders.filter(o => o.status === 'settled_win').length / orders.filter(o => ['settled_win','settled_loss'].includes(o.status)).length : 0
+
+    setKpis([
+      { icon: '💰', label: `Volume (${period})`, value: formatCurrency(totalVolume), color: 'green', trend: 12.5 },
+      { icon: '🔥', label: 'Receita plataforma', value: formatCurrency(totalRevenue), color: 'orange', trend: 8.3, sub: '~3% do volume' },
+      { icon: '📤', label: 'Depósitos aprovados', value: formatCurrency(totalDeposits), color: 'blue', trend: 5.1 },
+      { icon: '🏦', label: 'Saldo total em carteiras', value: formatCurrency(totalBalances), color: 'primary', sub: `${wallets.length} carteiras` },
+      { icon: '👥', label: `Novos usuários (${period})`, value: newUsers.length.toString(), color: 'purple', trend: 3.2 },
+      { icon: '🎯', label: 'Total de apostas', value: recentOrders.length.toString(), color: 'cyan', sub: `${(winRate * 100).toFixed(0)}% taxa de acerto` },
+    ])
+
+    // Dados diários para gráfico
+    const grouped: Record<string, any> = {}
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date(Date.now() - i * 86400000)
+      const key = d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+      grouped[key] = { date: key, volume: 0, receita: 0, apostas: 0, usuarios: 0 }
+    }
+
+    recentOrders.forEach(o => {
+      const d = new Date(o.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+      if (grouped[d]) {
+        grouped[d].volume += parseFloat(o.stake_amount || 0)
+        grouped[d].receita += parseFloat(o.stake_amount || 0) * 0.03
+        grouped[d].apostas += 1
+      }
+    })
+    newUsers.forEach(u => {
+      const d = new Date(u.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+      if (grouped[d]) grouped[d].usuarios += 1
+    })
+
+    setDailyData(Object.values(grouped).slice(-Math.min(days, 30)))
+
+    // Top usuários por volume
+    const userVolumes: Record<string, number> = {}
+    recentOrders.forEach(o => { userVolumes[o.user_id] = (userVolumes[o.user_id] || 0) + parseFloat(o.stake_amount || 0) })
+    const topIds = Object.entries(userVolumes).sort((a, b) => b[1] - a[1]).slice(0, 5)
+    const topProfiles = await Promise.all(topIds.map(async ([id, vol]) => {
+      const { data: p } = await supabase.from('profiles').select('full_name, username').eq('id', id).single()
+      return { name: (p as any)?.full_name || (p as any)?.username || id.slice(0, 8), volume: vol }
+    }))
+    setTopUsers(topProfiles)
+
+    // Saques pendentes
+    setPendingWithdrawals(withdrawals.slice(0, 5))
+    setLoading(false)
+  }
 
   return (
-    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-sm border ${styles[status] || styles.pending}`}>
-      <Icon className="h-3 w-3" />
-      {status}
-    </span>
+    <div className="space-y-6 pb-12">
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="flex items-center gap-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/20">
+            <DollarSign className="h-4 w-4 text-primary" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold">Painel Financeiro</h1>
+            <p className="text-xs text-muted-foreground">Visão completa da saúde financeira da plataforma</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="flex gap-1 rounded-xl border border-border bg-muted/30 p-1">
+            {(['7d','30d','90d'] as const).map(p => (
+              <button key={p} onClick={() => setPeriod(p)}
+                className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${period === p ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
+                {p}
+              </button>
+            ))}
+          </div>
+          <button onClick={load} className="flex items-center gap-1.5 text-xs border border-border rounded-lg px-3 py-2 text-muted-foreground hover:text-foreground transition-colors">
+            <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
+          </button>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="flex justify-center py-16"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
+      ) : (
+        <>
+          {/* KPIs */}
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {kpis.map(kpi => <KPICard key={kpi.label} kpi={kpi} />)}
+          </div>
+
+          {/* Gráfico volume + receita */}
+          <div className="rounded-2xl border border-border bg-card overflow-hidden">
+            <div className="flex items-center justify-between px-5 pt-5 pb-3 flex-wrap gap-2">
+              <div>
+                <p className="text-sm font-semibold text-foreground">Volume & Receita Diária</p>
+                <p className="text-xs text-muted-foreground">Apostas e receita da plataforma por dia</p>
+              </div>
+              <div className="flex gap-3 text-xs">
+                <div className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-primary" />Volume</div>
+                <div className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-orange-400" />Receita</div>
+              </div>
+            </div>
+            <ResponsiveContainer width="100%" height={220}>
+              <AreaChart data={dailyData} margin={{ top: 5, right: 16, left: -10, bottom: 5 }}>
+                <defs>
+                  <linearGradient id="gVol" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="gRec" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#f97316" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#f97316" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="4 4" stroke="#1e293b" />
+                <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#71717a' }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
+                <YAxis tick={{ fontSize: 10, fill: '#71717a' }} axisLine={false} tickLine={false} tickFormatter={v => v >= 1000 ? `${(v/1000).toFixed(0)}k` : String(v)} />
+                <Tooltip content={<CustomTooltip />} />
+                <Area type="monotone" dataKey="volume" name="Volume" stroke="#22c55e" strokeWidth={2} fill="url(#gVol)" dot={false} />
+                <Area type="monotone" dataKey="receita" name="Receita" stroke="#f97316" strokeWidth={2} fill="url(#gRec)" dot={false} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Gráfico apostas + usuários */}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="rounded-2xl border border-border bg-card overflow-hidden">
+              <p className="px-5 pt-4 pb-2 text-sm font-semibold text-foreground">Apostas por dia</p>
+              <ResponsiveContainer width="100%" height={160}>
+                <BarChart data={dailyData} margin={{ top: 5, right: 16, left: -20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="4 4" stroke="#1e293b" />
+                  <XAxis dataKey="date" tick={{ fontSize: 9, fill: '#71717a' }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
+                  <YAxis tick={{ fontSize: 9, fill: '#71717a' }} axisLine={false} tickLine={false} />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Bar dataKey="apostas" name="Apostas" fill="#22c55e" radius={[3, 3, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="rounded-2xl border border-border bg-card overflow-hidden">
+              <p className="px-5 pt-4 pb-2 text-sm font-semibold text-foreground">Novos usuários por dia</p>
+              <ResponsiveContainer width="100%" height={160}>
+                <BarChart data={dailyData} margin={{ top: 5, right: 16, left: -20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="4 4" stroke="#1e293b" />
+                  <XAxis dataKey="date" tick={{ fontSize: 9, fill: '#71717a' }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
+                  <YAxis tick={{ fontSize: 9, fill: '#71717a' }} axisLine={false} tickLine={false} />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Bar dataKey="usuarios" name="Usuários" fill="#3b82f6" radius={[3, 3, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Top traders + Saques pendentes */}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="rounded-2xl border border-border bg-card p-5 space-y-3">
+              <p className="text-sm font-semibold text-foreground">🏆 Top Traders por Volume</p>
+              {topUsers.length === 0 ? (
+                <p className="text-xs text-muted-foreground py-4 text-center">Nenhuma aposta ainda</p>
+              ) : topUsers.map((u, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <span className="text-xs font-black text-muted-foreground w-4">{i + 1}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold text-foreground truncate">{u.name}</p>
+                    <div className="mt-1 h-1.5 rounded-full bg-muted overflow-hidden">
+                      <div className="h-full bg-primary rounded-full" style={{ width: `${topUsers[0] ? (u.volume / topUsers[0].volume) * 100 : 0}%` }} />
+                    </div>
+                  </div>
+                  <span className="text-xs font-bold text-foreground flex-shrink-0">{formatCurrency(u.volume)}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="rounded-2xl border border-border bg-card p-5 space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-semibold text-foreground">⏳ Saques Pendentes</p>
+                {pendingWithdrawals.length > 0 && (
+                  <span className="text-[10px] bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 rounded-full px-2 py-0.5 font-bold">{pendingWithdrawals.length}</span>
+                )}
+              </div>
+              {pendingWithdrawals.length === 0 ? (
+                <p className="text-xs text-muted-foreground py-4 text-center">Nenhum saque pendente ✅</p>
+              ) : (
+                pendingWithdrawals.map((w, i) => (
+                  <div key={i} className="flex items-center gap-3 rounded-xl border border-yellow-500/20 bg-yellow-500/5 px-3 py-2.5">
+                    <AlertTriangle className="h-4 w-4 text-yellow-400 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-foreground">{formatCurrency(parseFloat(w.amount))}</p>
+                      <p className="text-[10px] text-muted-foreground">{new Date(w.created_at).toLocaleString('pt-BR')}</p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
   )
 }

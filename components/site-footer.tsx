@@ -101,6 +101,7 @@ export function SiteFooter() {
                 { label: 'Comunidade', href: '/comunidade' },
                 { label: 'Sugerir Mercado', href: '/propor-mercado' },
                 { label: '🔥 Transparência', href: '/burn' },
+                { label: '🎁 Indicação', href: '/indicacao' },
                 { label: 'Planos PRO', href: '/upgrade' },
               ].map(l => (
                 <li key={l.href}>
