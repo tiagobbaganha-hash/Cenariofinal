@@ -29,6 +29,7 @@ const navItems = [
   { href: '/admin/logs', label: 'Logs de Atividade', icon: Activity },
   { href: '/admin/suporte', label: 'Suporte', icon: MessageSquare },
   { href: '/admin/mercados-rapidos', label: 'Mercados Rápidos', icon: Zap },
+  { href: '/admin/resolucao', label: 'Resolução Auto', icon: Zap },
   { href: '/admin/mercados', label: 'Mercados', icon: TrendingUp },
   { href: '/admin/usuarios', label: 'Usuários', icon: Users },
   { href: '/admin/financeiro', label: 'Financeiro', icon: Wallet },
