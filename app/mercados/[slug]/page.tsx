@@ -6,6 +6,7 @@ import { PriceHistoryChart } from '@/components/market/PriceHistoryChart'
 import { MarketComments } from '@/components/market/MarketComments'
 import { AIAnalysis } from '@/components/market/AIAnalysis'
 import { MarketCountdown } from '@/components/market/MarketCountdown'
+import { MarketContext } from '@/components/market/MarketContext'
 import { RelatedMarkets } from '@/components/market/RelatedMarkets'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -174,6 +175,15 @@ export default async function MarketDetailPage({
                 <p className="text-pretty text-muted-foreground">{market.description}</p>
               )}
             </div>
+
+            {/* Contexto IA — estilo Palpitada */}
+            <MarketContext
+              marketId={market.id}
+              title={market.title}
+              description={market.description || ''}
+              category={market.category || ''}
+              options={options.map((o: any) => ({ label: o.label, probability: o.probability }))}
+            />
 
             {/* Stats grid */}
             <div className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-border bg-border sm:grid-cols-4">
