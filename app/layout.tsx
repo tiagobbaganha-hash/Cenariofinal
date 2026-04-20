@@ -9,6 +9,7 @@ import { SiteFooter } from '@/components/site-footer'
 import { CookieBanner } from '@/components/cookie-banner'
 import { TermsModal } from '@/components/terms-modal'
 import { ThemeProvider } from '@/components/theme-provider'
+import { SupportChat } from '@/components/support-chat'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -66,6 +67,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <Toaster />
             <CookieBanner />
             <TermsModal />
+            <SupportChat />
           </ToastProvider>
         </ThemeProvider>
       </body>
