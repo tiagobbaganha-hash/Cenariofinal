@@ -6,6 +6,9 @@ import { ToastProvider } from '@/lib/context/ToastContext'
 import { Toaster } from '@/components/ui/toaster'
 import { SiteHeader } from '@/components/site-header'
 import { SiteFooter } from '@/components/site-footer'
+import { CookieBanner } from '@/components/cookie-banner'
+import { TermsModal } from '@/components/terms-modal'
+import { ThemeProvider } from '@/components/theme-provider'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -53,14 +56,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       suppressHydrationWarning
     >
       <body className="min-h-dvh font-sans antialiased">
-        <ToastProvider>
-          <SiteHeader />
-          <main className="min-h-[calc(100dvh-8rem)]">
-            {children}
-          </main>
-          <SiteFooter />
-          <Toaster />
-        </ToastProvider>
+        <ThemeProvider>
+          <ToastProvider>
+            <SiteHeader />
+            <main className="min-h-[calc(100dvh-8rem)]">
+              {children}
+            </main>
+            <SiteFooter />
+            <Toaster />
+            <CookieBanner />
+            <TermsModal />
+          </ToastProvider>
+        </ThemeProvider>
       </body>
     </html>
   )

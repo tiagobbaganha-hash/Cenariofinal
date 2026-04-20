@@ -3,50 +3,65 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
-    /* Palpitada-inspired: Dark with neon green/yellow accents */
-    --background: 220 20% 4%;
-    --foreground: 0 0% 98%;
-    
-    --card: 220 15% 8%;
-    --card-foreground: 0 0% 98%;
-    
-    --popover: 220 15% 10%;
-    --popover-foreground: 0 0% 98%;
-    
-    /* Neon Green - Primary */
-    --primary: 142 90% 50%;
-    --primary-foreground: 220 20% 4%;
-    
-    /* Gold/Yellow - Secondary */
-    --secondary: 45 100% 51%;
-    --secondary-foreground: 220 20% 4%;
-    
-    /* Cyan - Accent */
-    --accent: 187 100% 50%;
-    --accent-foreground: 220 20% 4%;
-    
-    --muted: 220 10% 15%;
-    --muted-foreground: 220 10% 55%;
-    
-    /* Red for NO / bearish */
-    --destructive: 0 90% 55%;
-    --destructive-foreground: 0 0% 98%;
-    
-    --success: 142 90% 50%;
-    --success-foreground: 220 20% 4%;
-    
-    --warning: 45 100% 51%;
-    --warning-foreground: 220 20% 4%;
-    
-    --border: 220 10% 18%;
-    --input: 220 10% 15%;
-    --ring: 142 90% 50%;
-    
-    --radius: 1rem;
-    
-    color-scheme: dark;
-  }
+
+/* ===== TEMA CLARO ===== */
+[data-theme="light"] {
+  --background: 0 0% 98%;
+  --foreground: 220 20% 8%;
+
+  --card: 0 0% 100%;
+  --card-foreground: 220 20% 8%;
+
+  --popover: 0 0% 100%;
+  --popover-foreground: 220 20% 8%;
+
+  --primary: 142 70% 35%;
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 45 100% 45%;
+  --secondary-foreground: 0 0% 100%;
+
+  --accent: 187 80% 40%;
+  --accent-foreground: 0 0% 100%;
+
+  --muted: 220 10% 92%;
+  --muted-foreground: 220 10% 40%;
+
+  --destructive: 0 80% 50%;
+  --destructive-foreground: 0 0% 100%;
+
+  --border: 220 10% 85%;
+  --input: 220 10% 90%;
+  --ring: 142 70% 35%;
+
+  color-scheme: light;
+}
+
+/* ===== TEMA ESCURO (padrão) ===== */
+[data-theme="dark"], :root {
+  --background: 220 20% 4%;
+  --foreground: 0 0% 98%;
+  --card: 220 15% 8%;
+  --card-foreground: 0 0% 98%;
+  --popover: 220 15% 10%;
+  --popover-foreground: 0 0% 98%;
+  --primary: 142 90% 50%;
+  --primary-foreground: 220 20% 4%;
+  --secondary: 45 100% 51%;
+  --secondary-foreground: 220 20% 4%;
+  --accent: 187 100% 50%;
+  --accent-foreground: 220 20% 4%;
+  --muted: 220 10% 15%;
+  --muted-foreground: 220 10% 55%;
+  --destructive: 0 90% 55%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 220 10% 18%;
+  --input: 220 10% 15%;
+  --ring: 142 90% 50%;
+  --radius: 1rem;
+  color-scheme: dark;
+}
+
 }
 
 @layer base {

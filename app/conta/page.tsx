@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { ThemeSelector } from '@/components/theme-selector'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
@@ -125,7 +126,8 @@ export default function AccountPage() {
                   <Button variant="outline" size="sm" className="flex-1">
                     Editar perfil
                   </Button>
-                  <Button variant="ghost" size="icon" onClick={handleSignOut} aria-label="Sair">
+                  <ThemeSelector />
+                <Button variant="ghost" size="icon" onClick={handleSignOut} aria-label="Sair">
                     <LogOut className="h-4 w-4" />
                   </Button>
                 </div>
