@@ -83,7 +83,7 @@ export default function ComunidadePage() {
     const supabase = createClient()
     try {
     const [postsRes, ordersRes, marketsRes, usersRes] = await Promise.all([
-      supabase.from('community_posts').select('id, title, content, is_pinned, created_at, market_id, user_id').order('is_pinned', { ascending: false }).order('created_at', { ascending: false }).limit(30),
+      supabase.from('community_posts').select('id, title, content, created_at, market_id, user_id').order('is_pinned', { ascending: false }).order('created_at', { ascending: false }).limit(30),
       supabase.from('orders').select('user_id, stake_amount, status, created_at, option_id, market_id').order('created_at', { ascending: false }).limit(30),
       supabase.from('markets').select('id, title, slug, status').order('created_at', { ascending: false }).limit(5),
       supabase.from('profiles').select('id', { count: 'exact', head: true }),
@@ -376,7 +376,7 @@ export default function ComunidadePage() {
 
 function PostCard({ post, userId, reactions, onReact }: { post: Post; userId: string | null; reactions: Record<string,boolean>; onReact: (e: string) => void }) {
   const [expanded, setExpanded] = useState(false)
-  const isPinned = post.is_pinned
+  const isPinned = (post as any).is_pinned || false
   const emoji = getEmoji((post as any).user_id || post.author_id || 'default')
 
   return (
