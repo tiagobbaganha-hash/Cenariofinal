@@ -83,7 +83,7 @@ export default function ComunidadePage() {
     const supabase = createClient()
     try {
     const [postsRes, ordersRes, marketsRes, usersRes] = await Promise.all([
-      supabase.from('community_posts').select('id, title, content, created_at, market_id, user_id').order('created_at', { ascending: false }).limit(30),
+      supabase.from('community_posts').select('id, title, content, created_at, market_id, user_id, author_id, is_pinned').order('created_at', { ascending: false }).limit(30),
       supabase.from('orders').select('user_id, stake_amount, status, created_at, option_id, market_id').order('created_at', { ascending: false }).limit(30),
       supabase.from('markets').select('id, title, slug, status').order('created_at', { ascending: false }).limit(5),
       supabase.from('profiles').select('id', { count: 'exact', head: true }),
@@ -122,7 +122,10 @@ export default function ComunidadePage() {
     try {
       const supabase = createClient()
       const { error } = await supabase.from('community_posts').insert({
-        user_id: userId, title, content
+        author_id: userId,
+        user_id: userId,
+        title,
+        content
       })
       if (error) throw error
       toast({ type: 'success', title: '✅ Post publicado!' })

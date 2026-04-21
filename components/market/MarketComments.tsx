@@ -73,6 +73,7 @@ export function MarketComments({ marketId }: { marketId: string }) {
       
       const { error } = await supabase.from('community_comments').insert({
         market_id: marketId,
+        author_id: currentUser.id,
         user_id: currentUser.id,
         content: text.trim(),
       })
