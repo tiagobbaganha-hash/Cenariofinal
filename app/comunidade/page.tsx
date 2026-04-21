@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useRef } from 'react'
+import EmojiPicker, { EmojiClickData, Theme } from 'emoji-picker-react'
 import { createClient } from '@/lib/supabase/client'
 import { useToast } from '@/hooks/useToast'
 import { formatCurrency } from '@/lib/utils'
@@ -47,32 +48,24 @@ const GIFS_CATEGORIES = {
     { label: 'Nope', url: 'https://media.giphy.com/media/3oEduIT4h4QFZH1jaw/giphy.gif' },
   ],
 }
-function EmojiGifPicker({ onEmoji, onGif, compact = false }: { onEmoji: (e: string) => void; onGif: (url: string) => void; compact?: boolean }) {
+function EmojiGifPicker({ onEmoji, onGif, compact = false }: {
+  onEmoji: (e: string) => void
+  onGif: (url: string) => void
+  compact?: boolean
+}) {
   const [tab, setTab] = useState<'emoji' | 'gif'>('emoji')
-  const [emojiCat, setEmojiCat] = useState('🎯 Apostas')
   const [gifSearch, setGifSearch] = useState('')
   const [gifs, setGifs] = useState<any[]>([])
   const [gifLoading, setGifLoading] = useState(false)
   const [open, setOpen] = useState(false)
 
-  // Buscar GIFs no Giphy (API pública com chave pública)
   async function searchGifs(q: string) {
     setGifLoading(true)
     try {
-      const query = q || 'trending mercado financeiro'
-      const res = await fetch(
-        `https://api.giphy.com/v1/gifs/search?api_key=dc6zaTOxFJmzC&q=${encodeURIComponent(query)}&limit=12&rating=g&lang=pt`
-      )
-      const data = await res.json()
-      setGifs(data.data || [])
-    } catch { setGifs([]) }
-    setGifLoading(false)
-  }
-
-  async function loadTrending() {
-    setGifLoading(true)
-    try {
-      const res = await fetch('https://api.giphy.com/v1/gifs/trending?api_key=dc6zaTOxFJmzC&limit=12&rating=g')
+      const url = q
+        ? `https://api.giphy.com/v1/gifs/search?api_key=dc6zaTOxFJmzC&q=${encodeURIComponent(q)}&limit=12&rating=g&lang=pt`
+        : `https://api.giphy.com/v1/gifs/trending?api_key=dc6zaTOxFJmzC&limit=12&rating=g`
+      const res = await fetch(url)
       const data = await res.json()
       setGifs(data.data || [])
     } catch { setGifs([]) }
@@ -80,7 +73,7 @@ function EmojiGifPicker({ onEmoji, onGif, compact = false }: { onEmoji: (e: stri
   }
 
   useEffect(() => {
-    if (open && tab === 'gif' && gifs.length === 0) loadTrending()
+    if (open && tab === 'gif' && gifs.length === 0) searchGifs('')
   }, [open, tab])
 
   if (!open) return (
@@ -97,44 +90,35 @@ function EmojiGifPicker({ onEmoji, onGif, compact = false }: { onEmoji: (e: stri
   )
 
   return (
-    <div className="rounded-2xl border border-border bg-card shadow-lg overflow-hidden">
-      {/* Tabs + Fechar */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-border/50 bg-card/80">
+    <div className="rounded-2xl border border-border bg-card shadow-xl overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between px-3 py-2 border-b border-border/50">
         <div className="flex gap-1">
           {(['emoji', 'gif'] as const).map(t => (
             <button key={t} onClick={() => setTab(t)} type="button"
-              className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all ${tab === t ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
+              className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all ${tab === t ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
               {t === 'emoji' ? '😊 Emoji' : '🎬 GIF'}
             </button>
           ))}
         </div>
         <button onClick={() => setOpen(false)} type="button"
-          className="text-xs text-muted-foreground hover:text-foreground w-6 h-6 flex items-center justify-center rounded-lg hover:bg-accent transition-colors">✕</button>
+          className="text-xs text-muted-foreground hover:text-foreground w-6 h-6 flex items-center justify-center rounded-lg hover:bg-accent">✕</button>
       </div>
 
-      {/* EMOJI */}
+      {/* EMOJI — biblioteca completa com busca */}
       {tab === 'emoji' && (
-        <div>
-          <div className="flex gap-1 overflow-x-auto px-3 py-2 border-b border-border/30 scrollbar-none">
-            {Object.keys(EMOJI_CATEGORIES).map(cat => (
-              <button key={cat} onClick={() => setEmojiCat(cat)} type="button"
-                className={`flex-shrink-0 text-[11px] px-2.5 py-1 rounded-lg transition-all ${emojiCat === cat ? 'bg-primary/20 text-primary font-semibold' : 'text-muted-foreground hover:text-foreground hover:bg-accent'}`}>
-                {cat.split(' ')[0]}
-              </button>
-            ))}
-          </div>
-          <div className="grid grid-cols-9 gap-0.5 p-2 max-h-36 overflow-y-auto">
-            {(EMOJI_CATEGORIES as any)[emojiCat]?.map((e: string) => (
-              <button key={e} onClick={() => { onEmoji(e); setOpen(false) }} type="button"
-                className="text-xl hover:scale-125 transition-transform p-1.5 rounded-lg hover:bg-accent text-center leading-none">
-                {e}
-              </button>
-            ))}
-          </div>
-        </div>
+        <EmojiPicker
+          onEmojiClick={(data: EmojiClickData) => { onEmoji(data.emoji); setOpen(false) }}
+          theme={Theme.DARK}
+          width="100%"
+          height={350}
+          searchPlaceholder="Buscar emoji..."
+          lazyLoadEmojis
+          skinTonesDisabled
+        />
       )}
 
-      {/* GIF */}
+      {/* GIF — Giphy com busca */}
       {tab === 'gif' && (
         <div>
           <div className="flex gap-2 px-3 py-2 border-b border-border/30">
@@ -146,22 +130,24 @@ function EmojiGifPicker({ onEmoji, onGif, compact = false }: { onEmoji: (e: stri
               className="flex-1 rounded-xl border border-border bg-background px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
             <button onClick={() => searchGifs(gifSearch)} type="button"
-              className="rounded-xl bg-primary/20 text-primary border border-primary/30 px-3 py-1.5 text-xs font-semibold hover:bg-primary/30 transition-colors">
+              className="rounded-xl bg-primary/20 text-primary border border-primary/30 px-3 py-1.5 text-xs font-semibold hover:bg-primary/30">
               🔍
             </button>
+            {gifSearch && (
+              <button onClick={() => { setGifSearch(''); searchGifs('') }} type="button"
+                className="rounded-xl border border-border px-2 text-xs text-muted-foreground hover:text-foreground">✕</button>
+            )}
           </div>
-          <div className="grid grid-cols-3 gap-1.5 p-2 max-h-48 overflow-y-auto">
+          <div className="grid grid-cols-3 gap-1.5 p-2 h-52 overflow-y-auto">
             {gifLoading ? (
-              <div className="col-span-3 flex justify-center py-6">
-                <Loader2 className="h-5 w-5 animate-spin text-primary" />
+              <div className="col-span-3 flex items-center justify-center">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
               </div>
             ) : gifs.length === 0 ? (
-              <div className="col-span-3 text-center py-4 text-xs text-muted-foreground">
-                Nenhum GIF encontrado
-              </div>
+              <div className="col-span-3 text-center py-6 text-xs text-muted-foreground">Nenhum GIF encontrado</div>
             ) : gifs.map((g: any) => (
               <button key={g.id} onClick={() => { onGif(g.images.fixed_height.url); setOpen(false) }} type="button"
-                className="relative group rounded-xl overflow-hidden hover:ring-2 hover:ring-primary transition-all aspect-video bg-muted">
+                className="relative group rounded-xl overflow-hidden hover:ring-2 hover:ring-primary transition-all bg-muted aspect-video">
                 <img src={g.images.fixed_height_small.url} alt={g.title}
                   className="w-full h-full object-cover" loading="lazy" />
                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-1">
@@ -170,7 +156,7 @@ function EmojiGifPicker({ onEmoji, onGif, compact = false }: { onEmoji: (e: stri
               </button>
             ))}
           </div>
-          <p className="text-[9px] text-muted-foreground/50 text-center pb-1.5">Powered by GIPHY</p>
+          <p className="text-[9px] text-muted-foreground/50 text-center py-1">Powered by GIPHY</p>
         </div>
       )}
     </div>
