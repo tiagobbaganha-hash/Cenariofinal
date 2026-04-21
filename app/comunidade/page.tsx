@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useRef } from 'react'
-import EmojiPicker, { EmojiClickData, Theme } from 'emoji-picker-react'
+import EmojiPicker from 'emoji-picker-react'
 import { createClient } from '@/lib/supabase/client'
 import { useToast } from '@/hooks/useToast'
 import { formatCurrency } from '@/lib/utils'
@@ -48,10 +48,10 @@ const GIFS_CATEGORIES = {
     { label: 'Nope', url: 'https://media.giphy.com/media/3oEduIT4h4QFZH1jaw/giphy.gif' },
   ],
 }
-function EmojiGifPicker({ onEmoji, onGif, compact = false }: {
+function EmojiGifPicker({ onEmoji, onGif, compact = false }: { 
   onEmoji: (e: string) => void
   onGif: (url: string) => void
-  compact?: boolean
+  compact?: boolean 
 }) {
   const [tab, setTab] = useState<'emoji' | 'gif'>('emoji')
   const [gifSearch, setGifSearch] = useState('')
@@ -59,11 +59,11 @@ function EmojiGifPicker({ onEmoji, onGif, compact = false }: {
   const [gifLoading, setGifLoading] = useState(false)
   const [open, setOpen] = useState(false)
 
-  async function searchGifs(q: string) {
+  async function loadGifs(q?: string) {
     setGifLoading(true)
     try {
       const url = q
-        ? `https://api.giphy.com/v1/gifs/search?api_key=dc6zaTOxFJmzC&q=${encodeURIComponent(q)}&limit=12&rating=g&lang=pt`
+        ? `https://api.giphy.com/v1/gifs/search?api_key=dc6zaTOxFJmzC&q=${encodeURIComponent(q)}&limit=12&rating=g`
         : `https://api.giphy.com/v1/gifs/trending?api_key=dc6zaTOxFJmzC&limit=12&rating=g`
       const res = await fetch(url)
       const data = await res.json()
@@ -73,17 +73,17 @@ function EmojiGifPicker({ onEmoji, onGif, compact = false }: {
   }
 
   useEffect(() => {
-    if (open && tab === 'gif' && gifs.length === 0) searchGifs('')
+    if (open && tab === 'gif' && gifs.length === 0) loadGifs()
   }, [open, tab])
 
   if (!open) return (
     <div className="flex gap-1.5">
       <button type="button" onClick={() => { setTab('emoji'); setOpen(true) }}
-        className="flex items-center gap-1 text-xs text-muted-foreground border border-border rounded-xl px-2.5 py-1.5 hover:text-foreground hover:border-primary/40 transition-colors">
+        className="flex items-center gap-1.5 text-xs text-muted-foreground border border-border rounded-xl px-2.5 py-1.5 hover:text-foreground hover:border-primary/40 transition-colors">
         😊 {!compact && 'Emoji'}
       </button>
       <button type="button" onClick={() => { setTab('gif'); setOpen(true) }}
-        className="flex items-center gap-1 text-xs text-muted-foreground border border-border rounded-xl px-2.5 py-1.5 hover:text-foreground hover:border-primary/40 transition-colors">
+        className="flex items-center gap-1.5 text-xs text-muted-foreground border border-border rounded-xl px-2.5 py-1.5 hover:text-foreground hover:border-primary/40 transition-colors">
         🎬 {!compact && 'GIF'}
       </button>
     </div>
@@ -91,7 +91,6 @@ function EmojiGifPicker({ onEmoji, onGif, compact = false }: {
 
   return (
     <div className="rounded-2xl border border-border bg-card shadow-xl overflow-hidden">
-      {/* Header */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-border/50">
         <div className="flex gap-1">
           {(['emoji', 'gif'] as const).map(t => (
@@ -105,58 +104,47 @@ function EmojiGifPicker({ onEmoji, onGif, compact = false }: {
           className="text-xs text-muted-foreground hover:text-foreground w-6 h-6 flex items-center justify-center rounded-lg hover:bg-accent">✕</button>
       </div>
 
-      {/* EMOJI — biblioteca completa com busca */}
       {tab === 'emoji' && (
         <EmojiPicker
-          onEmojiClick={(data: EmojiClickData) => { onEmoji(data.emoji); setOpen(false) }}
-          theme={Theme.DARK}
-          width="100%"
-          height={350}
+          onEmojiClick={(data: any) => { onEmoji(data.emoji); setOpen(false) }}
           searchPlaceholder="Buscar emoji..."
+          width="100%"
+          height={320}
           lazyLoadEmojis
           skinTonesDisabled
+          theme={"dark" as any}
+          previewConfig={{ showPreview: false }}
         />
       )}
 
-      {/* GIF — Giphy com busca */}
       {tab === 'gif' && (
         <div>
           <div className="flex gap-2 px-3 py-2 border-b border-border/30">
-            <input
-              value={gifSearch}
-              onChange={e => setGifSearch(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && searchGifs(gifSearch)}
-              placeholder="Buscar GIFs..."
-              className="flex-1 rounded-xl border border-border bg-background px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
-            />
-            <button onClick={() => searchGifs(gifSearch)} type="button"
-              className="rounded-xl bg-primary/20 text-primary border border-primary/30 px-3 py-1.5 text-xs font-semibold hover:bg-primary/30">
+            <input value={gifSearch} onChange={e => setGifSearch(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && loadGifs(gifSearch)}
+              placeholder="Buscar GIFs no Giphy..."
+              className="flex-1 rounded-xl border border-border bg-background px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" />
+            <button onClick={() => loadGifs(gifSearch)} type="button"
+              className="rounded-xl bg-primary/20 text-primary border border-primary/30 px-3 py-1.5 text-xs font-semibold hover:bg-primary/30 transition-colors">
               🔍
             </button>
-            {gifSearch && (
-              <button onClick={() => { setGifSearch(''); searchGifs('') }} type="button"
-                className="rounded-xl border border-border px-2 text-xs text-muted-foreground hover:text-foreground">✕</button>
-            )}
           </div>
-          <div className="grid grid-cols-3 gap-1.5 p-2 h-52 overflow-y-auto">
+          <div className="grid grid-cols-3 gap-1.5 p-2 max-h-52 overflow-y-auto">
             {gifLoading ? (
-              <div className="col-span-3 flex items-center justify-center">
-                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              <div className="col-span-3 flex justify-center py-6">
+                <Loader2 className="h-5 w-5 animate-spin text-primary" />
               </div>
-            ) : gifs.length === 0 ? (
-              <div className="col-span-3 text-center py-6 text-xs text-muted-foreground">Nenhum GIF encontrado</div>
             ) : gifs.map((g: any) => (
               <button key={g.id} onClick={() => { onGif(g.images.fixed_height.url); setOpen(false) }} type="button"
-                className="relative group rounded-xl overflow-hidden hover:ring-2 hover:ring-primary transition-all bg-muted aspect-video">
-                <img src={g.images.fixed_height_small.url} alt={g.title}
-                  className="w-full h-full object-cover" loading="lazy" />
-                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-1">
+                className="relative group rounded-xl overflow-hidden hover:ring-2 hover:ring-primary transition-all aspect-video bg-muted">
+                <img src={g.images.fixed_height_small.url} alt={g.title} className="w-full h-full object-cover" loading="lazy" />
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-1">
                   <span className="text-white text-[9px] truncate w-full">{g.title}</span>
                 </div>
               </button>
             ))}
           </div>
-          <p className="text-[9px] text-muted-foreground/50 text-center py-1">Powered by GIPHY</p>
+          <p className="text-[9px] text-muted-foreground/40 text-center pb-1.5">Powered by GIPHY</p>
         </div>
       )}
     </div>
