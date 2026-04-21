@@ -91,6 +91,12 @@ export async function GET(req: NextRequest) {
       if (settled.orders > 0) log.push({ step: 'settled_manual', market: m.title, ...settled })
     }
 
+    // 4. Publicar mercados agendados
+    try {
+      const { data: published } = await db.rpc('publish_scheduled_markets')
+      if (published && published > 0) log.push({ step: 'scheduled_published', count: published })
+    } catch (e: any) { log.push({ step: 'scheduling_error', error: e.message }) }
+
     return NextResponse.json({ ok: true, timestamp: now, processed: log })
 
   } catch (e: any) {

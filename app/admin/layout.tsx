@@ -32,6 +32,7 @@ const navItems = [
   { href: '/admin/mercados-rapidos', label: 'Mercados Rápidos', icon: Zap },
   { href: '/admin/resolucao', label: 'Resolução Auto', icon: Zap },
   { href: '/admin/ao-vivo', label: 'Ao Vivo 🔴', icon: Zap },
+  { href: '/admin/automacao', label: '🤖 Automação', icon: Brain },
   { href: '/admin/mercados', label: 'Mercados', icon: TrendingUp },
   { href: '/admin/usuarios', label: 'Usuários', icon: Users },
   { href: '/admin/financeiro', label: 'Financeiro', icon: Wallet },
