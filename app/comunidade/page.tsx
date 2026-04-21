@@ -197,6 +197,7 @@ export default function ComunidadePage() {
   const [showForm, setShowForm] = useState(false)
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
+  const [selectedGif, setSelectedGif] = useState<string | null>(null)
   const [posting, setPosting] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
   const [userName, setUserName] = useState('Apostador')
@@ -259,15 +260,12 @@ export default function ComunidadePage() {
     setPosting(true)
     try {
       const supabase = createClient()
-      const { error } = await supabase.from('community_posts').insert({
-        author_id: userId,
-        user_id: userId,
-        title,
-        content
-      })
+      const insertData: any = { author_id: userId, user_id: userId, title, content }
+      if (selectedGif) insertData.gif_url = selectedGif
+      const { error } = await supabase.from('community_posts').insert(insertData)
       if (error) throw error
       toast({ type: 'success', title: '✅ Post publicado!' })
-      setTitle(''); setContent(''); setShowForm(false)
+      setTitle(''); setContent(''); setSelectedGif(null); setShowForm(false)
       loadAll()
     } catch (e: any) {
       toast({ type: 'error', title: 'Erro', description: e.message })
@@ -336,7 +334,17 @@ export default function ComunidadePage() {
           <textarea value={content} onChange={e => setContent(e.target.value)} rows={3} placeholder="Compartilhe sua análise, previsão ou dúvida..."
             className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-primary/40" />
           {/* Emoji + GIF picker */}
-          <EmojiGifPicker onEmoji={(e) => setContent(c => c + e)} onGif={(url) => setContent(c => c + ' ' + url + ' ')} />
+          <EmojiGifPicker onEmoji={(e) => setContent(c => c + e)} onGif={(url) => setSelectedGif(url)} />
+          {/* Preview do GIF selecionado */}
+          {selectedGif && (
+            <div className="relative inline-block">
+              <img src={selectedGif} alt="GIF" className="rounded-xl max-h-40 border border-primary/30" />
+              <button onClick={() => setSelectedGif(null)} type="button"
+                className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-destructive text-white text-xs flex items-center justify-center hover:bg-destructive/80 transition-colors">
+                ✕
+              </button>
+            </div>
+          )}
           <div className="flex justify-end gap-2">
             <button onClick={handlePost} disabled={!title.trim() || !content.trim() || posting}
               className="flex items-center gap-2 rounded-xl bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50 hover:bg-primary/90 transition-colors">
@@ -667,6 +675,12 @@ function PostCard({ post, userId, reactions, onReact }: { post: Post; userId: st
         <p className={`text-sm text-muted-foreground leading-relaxed ${!expanded && post.content.length > 150 ? 'line-clamp-3' : ''}`}>
           {post.content}
         </p>
+        {/* GIF do post */}
+        {(post as any).gif_url && (
+          <div className="mt-2 rounded-xl overflow-hidden border border-border">
+            <img src={(post as any).gif_url} alt="GIF" className="max-h-48 w-auto rounded-xl" loading="lazy" />
+          </div>
+        )}
         {post.content.length > 150 && (
           <button onClick={() => setExpanded(v => !v)} className="text-xs text-primary hover:underline mt-1">
             {expanded ? 'Ver menos' : 'Ver mais'}
@@ -682,16 +696,12 @@ function PostCard({ post, userId, reactions, onReact }: { post: Post; userId: st
         )}
 
         {/* Footer */}
-        <div className="mt-4 flex items-center gap-3 flex-wrap">
-          {/* Reações */}
-          <div className="flex gap-1">
-            {REACTIONS.map(r => (
-              <button key={r.emoji} onClick={() => onReact(r.emoji)}
-                className={`flex items-center gap-1 rounded-full border px-2 py-1 text-xs transition-all ${reactions[r.emoji] ? 'border-primary/50 bg-primary/20 text-primary' : 'border-border text-muted-foreground hover:border-primary/30 hover:text-foreground'}`}>
-                {r.emoji}
-              </button>
-            ))}
-          </div>
+        <div className="mt-4 flex items-center gap-3">
+          <button onClick={() => onReact('❤️')}
+            className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all ${reactions['❤️'] ? 'border-rose-500/50 bg-rose-500/10 text-rose-400' : 'border-border text-muted-foreground hover:border-rose-500/30 hover:text-rose-400'}`}>
+            ❤️ <span>{reactions['❤️'] ? 'Curtido' : 'Curtir'}</span>
+          </button>
+          <span className="text-xs text-muted-foreground">{post.comments_count || 0} comentários</span>
         </div>
         {/* Comentários interativos */}
         <PostComments postId={post.id} userId={userId} />

@@ -19,6 +19,14 @@ import {
   ChevronDown
 } from 'lucide-react'
 
+interface MarketOption {
+  id: string
+  label: string
+  odds?: number | null
+  probability?: number | null
+  option_key?: string | null
+}
+
 interface Market {
   id: string
   title: string
@@ -34,6 +42,7 @@ interface Market {
   total_volume?: number
   yes_price?: number
   no_price?: number
+  options?: MarketOption[] | null
 }
 
 export default function MercadosPage() {
@@ -248,6 +257,7 @@ export default function MercadosPage() {
 }
 
 function MarketCard({ market }: { market: Market }) {
+  const options = Array.isArray(market.options) && market.options.length > 0 ? market.options : null
   const yesPrice = market.yes_price ?? (0.4 + Math.random() * 0.3)
   const noPrice = 1 - yesPrice
   const volume = market.total_volume ?? Math.floor(1000 + Math.random() * 50000)
@@ -287,16 +297,33 @@ function MarketCard({ market }: { market: Market }) {
             <span className="flex items-center gap-1"><BarChart3 className="h-4 w-4" /> R$ {(volume / 1000).toFixed(1)}k</span>
             {timeLeft !== null && <span className="flex items-center gap-1"><Clock className="h-4 w-4" /> {timeLeft}d</span>}
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <button className="odds-btn odds-btn-yes">
-              <div className="text-xs opacity-80 mb-1">SIM</div>
-              <div className="text-xl font-bold">{(yesPrice * 100).toFixed(0)}c</div>
-            </button>
-            <button className="odds-btn odds-btn-no">
-              <div className="text-xs opacity-80 mb-1">NAO</div>
-              <div className="text-xl font-bold">{(noPrice * 100).toFixed(0)}c</div>
-            </button>
-          </div>
+          {options ? (
+            /* Opções reais do banco */
+            <div className={options.length === 2 ? 'grid grid-cols-2 gap-3' : 'grid grid-cols-1 gap-2'}>
+              {options.map((opt) => {
+                const isNo = opt.option_key === 'no' || opt.label?.toLowerCase().includes('não') || opt.label?.toLowerCase().includes('nao')
+                const prob = opt.probability ?? 0.5
+                return (
+                  <button key={opt.id} className={'odds-btn ' + (isNo ? 'odds-btn-no' : 'odds-btn-yes')}>
+                    <div className="text-xs opacity-80 mb-1 truncate">{opt.label.toUpperCase()}</div>
+                    <div className="text-xl font-bold">{(prob * 100).toFixed(0)}c</div>
+                  </button>
+                )
+              })}
+            </div>
+          ) : (
+            /* Fallback SIM/NAO */
+            <div className="grid grid-cols-2 gap-3">
+              <button className="odds-btn odds-btn-yes">
+                <div className="text-xs opacity-80 mb-1">SIM</div>
+                <div className="text-xl font-bold">{(yesPrice * 100).toFixed(0)}c</div>
+              </button>
+              <button className="odds-btn odds-btn-no">
+                <div className="text-xs opacity-80 mb-1">NAO</div>
+                <div className="text-xl font-bold">{(noPrice * 100).toFixed(0)}c</div>
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </Link>

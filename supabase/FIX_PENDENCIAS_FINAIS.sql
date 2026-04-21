@@ -273,6 +273,9 @@ END$$;
 SELECT '✅ Realtime ativo' AS passo;
 
 
+-- Adicionar gif_url na tabela community_posts (necessário para GIFs em posts)
+ALTER TABLE community_posts ADD COLUMN IF NOT EXISTS gif_url text;
+
 -- ================================================================
 -- RESULTADO FINAL
 -- ================================================================
