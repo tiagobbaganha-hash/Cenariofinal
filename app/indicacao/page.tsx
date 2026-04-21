@@ -28,7 +28,7 @@ export default function IndicacaoPage() {
 
       const { data: profile } = await supabase.from('profiles')
         .select('username, full_name').eq('id', user.id).single()
-      setUsername((profile as any)?.username || (profile as any)?.full_name?.split(' ')[0] || 'Você')
+      setUsername((profile as any)?.full_name?.split(' ')[0] || (profile as any)?.email?.split('@')[0] || 'Você')
 
       // Buscar indicações (usuários que usaram o código)
       const { data: refs } = await supabase.from('profiles')
@@ -175,7 +175,7 @@ export default function IndicacaoPage() {
                 {['🚀','🐂','🦁','🔮','🎯'][(r.id?.charCodeAt(0) ?? 0) % 5]}
               </div>
               <div className="flex-1">
-                <p className="text-xs font-semibold text-foreground">{r.full_name || r.username || 'Usuário'}</p>
+                <p className="text-xs font-semibold text-foreground">{r.full_name || (r as any).email?.split('@')[0] || 'Usuário'}</p>
                 <p className="text-[10px] text-muted-foreground">{new Date(r.created_at).toLocaleDateString('pt-BR')}</p>
               </div>
               <span className="text-xs font-bold text-primary">+R$10,00</span>

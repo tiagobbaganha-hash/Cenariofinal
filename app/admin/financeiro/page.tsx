@@ -119,7 +119,7 @@ export default function FinanceiroPage() {
     const topIds = Object.entries(userVolumes).sort((a, b) => b[1] - a[1]).slice(0, 5)
     const topProfiles = await Promise.all(topIds.map(async ([id, vol]) => {
       const { data: p } = await supabase.from('profiles').select('full_name, username').eq('id', id).single()
-      return { name: (p as any)?.full_name || (p as any)?.username || id.slice(0, 8), volume: vol }
+      return { name: (p as any)?.full_name || (p as any)?.email?.split('@')[0] || id.slice(0, 8), volume: vol }
     }))
     setTopUsers(topProfiles)
 

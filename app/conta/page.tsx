@@ -155,7 +155,7 @@ export default function AccountPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="truncate font-semibold">
-                      {me?.full_name ?? me?.username ?? 'Sem nome'}
+                      {me?.full_name ?? me?.email?.split('@')[0] ?? 'Sem nome'}
                     </div>
                     <div className="truncate text-sm text-muted-foreground">
                       {me?.email}

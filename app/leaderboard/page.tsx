@@ -86,7 +86,7 @@ function PodiumCard({ row, position }: { row: LeaderboardRow; position: 1|2|3 })
     <div className={`flex flex-col items-center gap-3 ${orders[position]}`}>
       {/* Avatar + Badge */}
       <div className="relative">
-        <Avatar url={row.avatar_url} name={row.name ?? row.username} seed={row.user_id} size="lg" />
+        <Avatar url={row.avatar_url} name={row.name ?? (row as any).full_name} seed={row.user_id} size="lg" />
         <div className="absolute -bottom-1 -right-1 text-xl leading-none">{medals[position]}</div>
         {position === 1 && (
           <div className="absolute -top-3 left-1/2 -translate-x-1/2 text-xl animate-bounce">👑</div>
@@ -95,7 +95,7 @@ function PodiumCard({ row, position }: { row: LeaderboardRow; position: 1|2|3 })
 
       {/* Nome + Nível */}
       <div className="text-center">
-        <p className="text-sm font-bold text-foreground">{row.name ?? row.username ?? 'Apostador'}</p>
+        <p className="text-sm font-bold text-foreground">{row.name ?? (row as any).full_name ?? 'Apostador'}</p>
         <div className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${level.bg} ${level.color}`}>
           {level.emoji} {level.label}
         </div>
@@ -140,14 +140,14 @@ function LeaderRow({ row, rank, isMe }: { row: LeaderboardRow; rank: number; isM
 
       {/* Avatar */}
       <div className="flex-shrink-0">
-        <Avatar url={row.avatar_url} name={row.name ?? row.username} seed={row.user_id} size="md" />
+        <Avatar url={row.avatar_url} name={row.name ?? (row as any).full_name} seed={row.user_id} size="md" />
       </div>
 
       {/* Nome + Nível + Barra */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-sm font-semibold text-foreground truncate">
-            {row.name ?? row.username ?? 'Apostador'}
+            {row.name ?? (row as any).full_name ?? 'Apostador'}
           </span>
           {isMe && <span className="text-[10px] bg-primary/20 text-primary rounded-full px-1.5 py-0.5 font-bold">Você</span>}
           <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] font-bold ${level.bg} ${level.color}`}>
