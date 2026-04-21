@@ -22,6 +22,10 @@ export default function AccountPage() {
   const router = useRouter()
   const { toast } = useToast()
   const [me, setMe] = useState<MeProfile | null>(null)
+  const [editando, setEditando] = useState(false)
+  const [editNome, setEditNome] = useState('')
+  const [editUsername, setEditUsername] = useState('')
+  const [salvando, setSalvando] = useState(false)
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [transactions, setTransactions] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -62,6 +66,18 @@ export default function AccountPage() {
     load()
   }, [router])
 
+  async function handleSalvarPerfil() {
+    setSalvando(true)
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      await supabase.from('profiles').update({ full_name: editNome, username: editUsername }).eq('id', user.id)
+      setMe(prev => prev ? { ...prev, full_name: editNome, username: editUsername } : prev)
+      setEditando(false)
+    }
+    setSalvando(false)
+  }
+
   async function handleSignOut() {
     const supabase = createClient()
     await supabase.auth.signOut()
@@ -90,6 +106,34 @@ export default function AccountPage() {
 
   return (
     <>
+      {/* Modal Editar Perfil */}
+      {editando && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-6 space-y-4 shadow-2xl">
+            <h2 className="text-lg font-bold text-foreground">Editar perfil</h2>
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs text-muted-foreground mb-1.5 block">Nome completo</label>
+                <input value={editNome} onChange={e => setEditNome(e.target.value)}
+                  className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40" />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1.5 block">Username</label>
+                <input value={editUsername} onChange={e => setEditUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                  placeholder="sem espaços ou caracteres especiais"
+                  className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40" />
+              </div>
+            </div>
+            <div className="flex gap-2 pt-2">
+              <button onClick={() => setEditando(false)} className="flex-1 rounded-xl border border-border py-2.5 text-sm text-muted-foreground hover:text-foreground transition-colors">Cancelar</button>
+              <button onClick={handleSalvarPerfil} disabled={salvando}
+                className="flex-1 rounded-xl bg-primary py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-50 hover:bg-primary/90 transition-colors">
+                {salvando ? 'Salvando...' : 'Salvar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <main className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6">
         <header className="mb-8">
@@ -124,7 +168,7 @@ export default function AccountPage() {
                 </div>
 
                 <div className="mt-4 flex gap-2">
-                  <Button variant="outline" size="sm" className="flex-1">
+                  <Button variant="outline" size="sm" className="flex-1" onClick={() => { setEditNome(me?.full_name || ''); setEditUsername(me?.username || ''); setEditando(true) }}>
                     Editar perfil
                   </Button>
                   <ThemeSelector />

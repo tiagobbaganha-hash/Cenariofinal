@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { Menu, X, TrendingUp } from 'lucide-react'
+import { ThemeToggle } from '@/components/theme-toggle'
 import { NotificationsDropdown } from '@/components/notifications-dropdown'
 
 const navigation = [
@@ -148,7 +149,8 @@ export function SiteHeader() {
                   </Button>
                 </Link>
               )}
-              <div className="hidden md:block">
+              <div className="hidden md:flex items-center gap-2">
+                <ThemeToggle />
                 <NotificationsDropdown userId={userId} />
               </div>
               <Link href="/conta">
