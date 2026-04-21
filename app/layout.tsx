@@ -56,6 +56,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={`${inter.variable} ${jetbrainsMono.variable} bg-background`}
       suppressHydrationWarning
     >
+      <script dangerouslySetInnerHTML={{ __html: `
+        (function() {
+          try {
+            var t = localStorage.getItem('cenariox-theme') || 'dark';
+            document.documentElement.classList.add(t);
+          } catch(e) {
+            document.documentElement.classList.add('dark');
+          }
+        })();
+      ` }} />
       <body className="min-h-dvh font-sans antialiased">
         <ThemeProvider>
           <ToastProvider>

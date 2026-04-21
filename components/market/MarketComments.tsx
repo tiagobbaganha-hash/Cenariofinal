@@ -39,14 +39,14 @@ export function MarketComments({ marketId }: { marketId: string }) {
     const supabase = createClient()
     const { data, error: tblErr } = await supabase
       .from('community_comments')
-      .select('id, content, author_id, created_at')
+      .select('id, content, user_id, author_name, created_at')
       .eq('market_id', marketId)
       .order('created_at', { ascending: true })
       .limit(50)
     if (tblErr) { setTableError(true); setLoading(false); return }
 
     if (data) {
-      const authorIds = [...new Set(data.map(c => c.author_id))]
+      const authorIds = [...new Set(data.map(c => c.user_id).filter(Boolean))]
       const { data: profiles } = await supabase
         .from('profiles')
         .select('id, full_name, email')
@@ -56,7 +56,7 @@ export function MarketComments({ marketId }: { marketId: string }) {
 
       setComments(data.map(c => ({
         ...c,
-        author_name: nameMap.get(c.author_id) || 'Anônimo',
+        author_name: c.author_name || nameMap.get(c.user_id) || 'Anônimo',
       })))
     }
     setLoading(false)
@@ -73,7 +73,7 @@ export function MarketComments({ marketId }: { marketId: string }) {
       
       const { error } = await supabase.from('community_comments').insert({
         market_id: marketId,
-        author_id: currentUser.id,
+        user_id: currentUser.id,
         content: text.trim(),
       })
       if (error) throw new Error(error.message)
