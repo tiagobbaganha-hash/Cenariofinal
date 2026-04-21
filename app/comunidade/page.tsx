@@ -47,56 +47,86 @@ const GIFS_CATEGORIES = {
     { label: 'Nope', url: 'https://media.giphy.com/media/3oEduIT4h4QFZH1jaw/giphy.gif' },
   ],
 }
-function EmojiGifPicker({ onEmoji, onGif }: { onEmoji: (e: string) => void; onGif: (url: string) => void }) {
+function EmojiGifPicker({ onEmoji, onGif, compact = false }: { onEmoji: (e: string) => void; onGif: (url: string) => void; compact?: boolean }) {
   const [tab, setTab] = useState<'emoji' | 'gif'>('emoji')
   const [emojiCat, setEmojiCat] = useState('🎯 Apostas')
-  const [gifCat, setGifCat] = useState('📈 Mercado')
+  const [gifSearch, setGifSearch] = useState('')
+  const [gifs, setGifs] = useState<any[]>([])
+  const [gifLoading, setGifLoading] = useState(false)
   const [open, setOpen] = useState(false)
 
+  // Buscar GIFs no Giphy (API pública com chave pública)
+  async function searchGifs(q: string) {
+    setGifLoading(true)
+    try {
+      const query = q || 'trending mercado financeiro'
+      const res = await fetch(
+        `https://api.giphy.com/v1/gifs/search?api_key=dc6zaTOxFJmzC&q=${encodeURIComponent(query)}&limit=12&rating=g&lang=pt`
+      )
+      const data = await res.json()
+      setGifs(data.data || [])
+    } catch { setGifs([]) }
+    setGifLoading(false)
+  }
+
+  async function loadTrending() {
+    setGifLoading(true)
+    try {
+      const res = await fetch('https://api.giphy.com/v1/gifs/trending?api_key=dc6zaTOxFJmzC&limit=12&rating=g')
+      const data = await res.json()
+      setGifs(data.data || [])
+    } catch { setGifs([]) }
+    setGifLoading(false)
+  }
+
+  useEffect(() => {
+    if (open && tab === 'gif' && gifs.length === 0) loadTrending()
+  }, [open, tab])
+
   if (!open) return (
-    <div className="flex gap-2">
-      <button type="button" onClick={() => setOpen(true)}
-        className="flex items-center gap-1.5 text-xs text-muted-foreground border border-border rounded-xl px-3 py-2 hover:text-foreground hover:border-primary/40 transition-colors">
-        😊 Emoji
+    <div className="flex gap-1.5">
+      <button type="button" onClick={() => { setTab('emoji'); setOpen(true) }}
+        className="flex items-center gap-1 text-xs text-muted-foreground border border-border rounded-xl px-2.5 py-1.5 hover:text-foreground hover:border-primary/40 transition-colors">
+        😊 {!compact && 'Emoji'}
       </button>
       <button type="button" onClick={() => { setTab('gif'); setOpen(true) }}
-        className="flex items-center gap-1.5 text-xs text-muted-foreground border border-border rounded-xl px-3 py-2 hover:text-foreground hover:border-primary/40 transition-colors">
-        🎬 GIF
+        className="flex items-center gap-1 text-xs text-muted-foreground border border-border rounded-xl px-2.5 py-1.5 hover:text-foreground hover:border-primary/40 transition-colors">
+        🎬 {!compact && 'GIF'}
       </button>
     </div>
   )
 
   return (
-    <div className="rounded-2xl border border-border bg-card overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-border/50">
+    <div className="rounded-2xl border border-border bg-card shadow-lg overflow-hidden">
+      {/* Tabs + Fechar */}
+      <div className="flex items-center justify-between px-3 py-2 border-b border-border/50 bg-card/80">
         <div className="flex gap-1">
           {(['emoji', 'gif'] as const).map(t => (
             <button key={t} onClick={() => setTab(t)} type="button"
-              className={`px-3 py-1 text-xs font-semibold rounded-lg transition-colors ${tab === t ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
+              className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all ${tab === t ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
               {t === 'emoji' ? '😊 Emoji' : '🎬 GIF'}
             </button>
           ))}
         </div>
-        <button onClick={() => setOpen(false)} type="button" className="text-muted-foreground hover:text-foreground p-1">✕</button>
+        <button onClick={() => setOpen(false)} type="button"
+          className="text-xs text-muted-foreground hover:text-foreground w-6 h-6 flex items-center justify-center rounded-lg hover:bg-accent transition-colors">✕</button>
       </div>
 
+      {/* EMOJI */}
       {tab === 'emoji' && (
         <div>
-          {/* Categorias emoji */}
           <div className="flex gap-1 overflow-x-auto px-3 py-2 border-b border-border/30 scrollbar-none">
             {Object.keys(EMOJI_CATEGORIES).map(cat => (
               <button key={cat} onClick={() => setEmojiCat(cat)} type="button"
-                className={`flex-shrink-0 text-xs px-2.5 py-1 rounded-lg transition-colors ${emojiCat === cat ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
+                className={`flex-shrink-0 text-[11px] px-2.5 py-1 rounded-lg transition-all ${emojiCat === cat ? 'bg-primary/20 text-primary font-semibold' : 'text-muted-foreground hover:text-foreground hover:bg-accent'}`}>
                 {cat.split(' ')[0]}
               </button>
             ))}
           </div>
-          {/* Grid de emojis */}
-          <div className="grid grid-cols-8 gap-1 p-3 max-h-32 overflow-y-auto">
+          <div className="grid grid-cols-9 gap-0.5 p-2 max-h-36 overflow-y-auto">
             {(EMOJI_CATEGORIES as any)[emojiCat]?.map((e: string) => (
               <button key={e} onClick={() => { onEmoji(e); setOpen(false) }} type="button"
-                className="text-xl hover:scale-125 transition-transform p-1 rounded-lg hover:bg-accent">
+                className="text-xl hover:scale-125 transition-transform p-1.5 rounded-lg hover:bg-accent text-center leading-none">
                 {e}
               </button>
             ))}
@@ -104,136 +134,43 @@ function EmojiGifPicker({ onEmoji, onGif }: { onEmoji: (e: string) => void; onGi
         </div>
       )}
 
+      {/* GIF */}
       {tab === 'gif' && (
         <div>
-          {/* Categorias GIF */}
-          <div className="flex gap-1 overflow-x-auto px-3 py-2 border-b border-border/30 scrollbar-none">
-            {Object.keys(GIFS_CATEGORIES).map(cat => (
-              <button key={cat} onClick={() => setGifCat(cat)} type="button"
-                className={`flex-shrink-0 text-xs px-2.5 py-1 rounded-lg transition-colors ${gifCat === cat ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
-                {cat.split(' ')[0]} {cat.split(' ').slice(1).join(' ')}
-              </button>
-            ))}
+          <div className="flex gap-2 px-3 py-2 border-b border-border/30">
+            <input
+              value={gifSearch}
+              onChange={e => setGifSearch(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && searchGifs(gifSearch)}
+              placeholder="Buscar GIFs..."
+              className="flex-1 rounded-xl border border-border bg-background px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
+            <button onClick={() => searchGifs(gifSearch)} type="button"
+              className="rounded-xl bg-primary/20 text-primary border border-primary/30 px-3 py-1.5 text-xs font-semibold hover:bg-primary/30 transition-colors">
+              🔍
+            </button>
           </div>
-          {/* Grid de GIFs */}
-          <div className="grid grid-cols-2 gap-2 p-3 max-h-48 overflow-y-auto">
-            {(GIFS_CATEGORIES as any)[gifCat]?.map((g: any) => (
-              <button key={g.label} onClick={() => { onGif(g.url); setOpen(false) }} type="button"
-                className="relative group rounded-xl overflow-hidden hover:ring-2 hover:ring-primary transition-all">
-                <img src={g.url} alt={g.label} className="w-full h-24 object-cover" />
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <span className="text-white text-xs font-bold">{g.label}</span>
+          <div className="grid grid-cols-3 gap-1.5 p-2 max-h-48 overflow-y-auto">
+            {gifLoading ? (
+              <div className="col-span-3 flex justify-center py-6">
+                <Loader2 className="h-5 w-5 animate-spin text-primary" />
+              </div>
+            ) : gifs.length === 0 ? (
+              <div className="col-span-3 text-center py-4 text-xs text-muted-foreground">
+                Nenhum GIF encontrado
+              </div>
+            ) : gifs.map((g: any) => (
+              <button key={g.id} onClick={() => { onGif(g.images.fixed_height.url); setOpen(false) }} type="button"
+                className="relative group rounded-xl overflow-hidden hover:ring-2 hover:ring-primary transition-all aspect-video bg-muted">
+                <img src={g.images.fixed_height_small.url} alt={g.title}
+                  className="w-full h-full object-cover" loading="lazy" />
+                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-1">
+                  <span className="text-white text-[9px] truncate w-full">{g.title}</span>
                 </div>
               </button>
             ))}
           </div>
-        </div>
-      )}
-    </div>
-  )
-}
-
-function PostComments({ postId, userId }: { postId: string; userId: string | null }) {
-  const [comments, setComments] = useState<any[]>([])
-  const [text, setText] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [posting, setPosting] = useState(false)
-  const [open, setOpen] = useState(false)
-
-  async function loadComments() {
-    setLoading(true)
-    const supabase = createClient()
-    const { data } = await supabase
-      .from('community_comments')
-      .select('id, content, author_name, author_id, created_at')
-      .eq('market_id', postId)
-      .order('created_at', { ascending: true })
-      .limit(20)
-    setComments(data || [])
-    setLoading(false)
-  }
-
-  async function postComment() {
-    if (!text.trim() || !userId) return
-    setPosting(true)
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { setPosting(false); return }
-    const { data: profile } = await supabase.from('profiles').select('full_name, email').eq('id', user.id).single()
-    const authorName = (profile as any)?.full_name || (profile as any)?.email?.split('@')[0] || 'Anônimo'
-    const { error } = await supabase.from('community_comments').insert({
-      market_id: postId,
-      author_id: user.id,
-      user_id: user.id,
-      content: text.trim(),
-      author_name: authorName,
-    })
-    if (!error) { setText(''); loadComments() }
-    setPosting(false)
-  }
-
-  function timeAgo(iso: string) {
-    const diff = Date.now() - new Date(iso).getTime()
-    if (diff < 60000) return 'agora'
-    if (diff < 3600000) return `${Math.floor(diff/60000)}m`
-    if (diff < 86400000) return `${Math.floor(diff/3600000)}h`
-    return `${Math.floor(diff/86400000)}d`
-  }
-
-  return (
-    <div className="mt-3 border-t border-border/50 pt-3">
-      <button onClick={() => { setOpen(v => !v); if (!open) loadComments() }}
-        className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
-        <MessageSquare className="h-3.5 w-3.5" />
-        {open ? 'Fechar comentários' : `Ver comentários (${comments.length || '...'})`}
-      </button>
-
-      {open && (
-        <div className="mt-3 space-y-3">
-          {loading ? (
-            <div className="flex justify-center py-3"><Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /></div>
-          ) : comments.length === 0 ? (
-            <p className="text-xs text-muted-foreground text-center py-2">Sem comentários ainda</p>
-          ) : (
-            <div className="space-y-2">
-              {comments.map(cm => {
-                const isGif = cm.content?.includes('giphy.com')
-                return (
-                  <div key={cm.id} className="flex items-start gap-2">
-                    <div className="text-sm flex-shrink-0">{getEmoji(cm.author_id || cm.author_name)}</div>
-                    <div className="flex-1 min-w-0 rounded-xl bg-muted/50 px-3 py-2">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-[11px] font-semibold text-foreground">{cm.author_name || 'Anônimo'}</span>
-                        <span className="text-[9px] text-muted-foreground">{timeAgo(cm.created_at)}</span>
-                      </div>
-                      {isGif ? (
-                        <img src={cm.content.trim()} alt="GIF" className="rounded-lg max-h-32 max-w-full" />
-                      ) : (
-                        <p className="text-xs text-foreground break-words">{cm.content}</p>
-                      )}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          )}
-
-          {userId ? (
-            <div className="flex gap-2">
-              <input value={text} onChange={e => setText(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), postComment())}
-                placeholder="Escreva um comentário..."
-                className="flex-1 rounded-xl border border-border bg-background px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" />
-              <button onClick={postComment} disabled={!text.trim() || posting}
-                className="flex-shrink-0 rounded-xl bg-primary px-3 py-2 text-primary-foreground disabled:opacity-40 hover:bg-primary/90 transition-colors">
-                {posting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
-              </button>
-            </div>
-          ) : (
-            <p className="text-xs text-muted-foreground text-center">
-              <Link href="/login" className="text-primary hover:underline">Faça login</Link> para comentar
-            </p>
-          )}
+          <p className="text-[9px] text-muted-foreground/50 text-center pb-1.5">Powered by GIPHY</p>
         </div>
       )}
     </div>
