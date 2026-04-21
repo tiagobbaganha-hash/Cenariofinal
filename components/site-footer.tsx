@@ -119,7 +119,6 @@ export function SiteFooter() {
                 { label: 'O que é Mercado Preditivo?', href: '/p/o-que-e' },
                 { label: 'Como Funciona o CenárioX', href: '/p/como-funciona' },
                 { label: 'É Legal no Brasil?', href: '/p/legalidade' },
-                { label: 'Dúvidas Frequentes', href: '/ajuda' },
                 { label: 'Central de Ajuda', href: '/ajuda' },
                 { label: 'Sobre Nós', href: '/p/sobre' },
               ].map(l => (
@@ -143,10 +142,9 @@ export function SiteFooter() {
               ) : (
                 <>
                   {[
-                    { label: 'Política de Privacidade', href: '/p/privacidade' },
                     { label: 'Termos de Uso', href: '/p/termos' },
+                    { label: 'Privacidade', href: '/p/privacidade' },
                     { label: 'Aviso de Riscos', href: '/p/riscos' },
-                    { label: 'Regras da Plataforma', href: '/p/regras' },
                   ].map(l => (
                     <li key={l.href}>
                       <Link href={l.href} className="text-muted-foreground hover:text-foreground transition-colors">{l.label}</Link>

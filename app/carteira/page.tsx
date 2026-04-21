@@ -118,8 +118,8 @@ export default function CarteiraPage() {
         setHasMore(txs.length > 20)
         setTransactions(txs.slice(0, 20).map((t: any) => ({
           id: t.id,
-          type: t.entry_type ?? 'adjustment',
-          entry_type: t.entry_type ?? 'adjustment',
+          type: t.entry_type || (t.direction === 'credit' ? 'deposit' : 'debit'),
+          entry_type: t.entry_type || (t.direction === 'credit' ? 'deposit' : 'debit'),
           amount: parseFloat(t.amount || '0'),
           direction: t.direction === 'credit' ? 'credit' : 'debit',
           description: getDescription(t.entry_type),
@@ -137,35 +137,44 @@ export default function CarteiraPage() {
     loadData()
   }, [router])
 
-  function getDescription(type: string): string {
+  function getDescription(type: string | null | undefined): string {
+    if (!type) return 'Transação'
     const map: Record<string, string> = {
       deposit: 'Depósito via PIX',
-      withdrawal: 'Saque',
+      deposit_pix: 'Depósito via PIX',
+      withdrawal: 'Saque PIX',
       withdrawal_fee: 'Taxa de saque',
-      bet_lock: 'Aposta reservada',
-      bet_stake: 'Aposta confirmada',
-      bet_settle_win: 'Ganho de aposta ✓',
+      bet_lock: 'Aposta realizada',
+      bet_stake: 'Aposta realizada',
+      bet_place: 'Aposta realizada',
+      bet_settle_win: '🏆 Aposta ganha!',
       bet_settle_loss: 'Aposta perdida',
+      bet_sell: 'Posição vendida',
       bet_cancel: 'Aposta cancelada',
       bet_refund: 'Reembolso de aposta',
       refund: 'Reembolso',
       bonus: 'Bônus creditado',
       referral_commission: 'Comissão de indicação',
-      influencer_commission: 'Comissão de influencer',
+      influencer_commission: 'Comissão influencer',
       adjustment: 'Ajuste manual',
       platform_fee: 'Taxa da plataforma',
+      credit: 'Crédito',
+      debit: 'Débito',
     }
-    return map[type] || type?.replace(/_/g, ' ') || 'Transação'
+    return map[type] || type.replace(/_/g, ' ').replace(/\w/g, l => l.toUpperCase()) || 'Transação'
   }
 
-  function getTxIcon(type: string) {
-    if (type === 'deposit') return '💰'
-    if (type === 'withdrawal' || type === 'withdrawal_fee') return '📤'
-    if (type?.includes('bet_settle_win') || type === 'refund') return '🏆'
-    if (type?.includes('bet_settle_loss')) return '📉'
-    if (type?.includes('bet')) return '🎯'
-    if (type?.includes('commission')) return '💸'
+  function getTxIcon(type: string | null | undefined) {
+    if (!type) return '💳'
+    if (type.includes('deposit')) return '💰'
+    if (type.includes('withdrawal') || type.includes('withdrawal_fee')) return '📤'
+    if (type.includes('bet_settle_win') || type === 'refund') return '🏆'
+    if (type.includes('bet_settle_loss')) return '❌'
+    if (type.includes('bet_sell')) return '💱'
+    if (type.includes('bet')) return '🎯'
+    if (type.includes('commission')) return '💸'
     if (type === 'bonus') return '🎁'
+    if (type === 'adjustment') return '⚙️'
     return '💳'
   }
 
