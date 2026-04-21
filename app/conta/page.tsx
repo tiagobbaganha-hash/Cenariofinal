@@ -1,7 +1,7 @@
 'use client'
+import { ThemeToggle } from '@/components/theme-toggle'
 
 import Link from 'next/link'
-import { ThemeSelector } from '@/components/theme-selector'
 const AVATARS = ['🚀','🐂','🦁','🔮','🎯','⚡','🌊','🔥','💎','🦅','🎲','🌙','☀️','🏆','⚔️','🦊','🐉','🌟','💫','🎪']
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
@@ -171,7 +171,7 @@ export default function AccountPage() {
                   <Button variant="outline" size="sm" className="flex-1" onClick={() => { setEditNome(me?.full_name || ''); setEditUsername(me?.username || ''); setEditando(true) }}>
                     Editar perfil
                   </Button>
-                  <ThemeSelector />
+                  <ThemeToggle />
                 <Button variant="ghost" size="icon" onClick={handleSignOut} aria-label="Sair">
                     <LogOut className="h-4 w-4" />
                   </Button>

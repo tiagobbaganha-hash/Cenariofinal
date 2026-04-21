@@ -133,29 +133,20 @@ export function SiteFooter() {
           <div>
             <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4">Legal</h4>
             <ul className="space-y-2.5 text-sm">
-              {legalPages.length > 0 ? (
-                legalPages.map(p => (
-                  <li key={p.slug}>
-                    <Link href={`/p/${p.slug}`} className="text-muted-foreground hover:text-foreground transition-colors">{p.title}</Link>
-                  </li>
-                ))
-              ) : (
-                <>
-                  {[
-                    { label: 'Termos de Uso', href: '/p/termos' },
-                    { label: 'Privacidade', href: '/p/privacidade' },
-                    { label: 'Aviso de Riscos', href: '/p/riscos' },
-                  ].map(l => (
-                    <li key={l.href}>
-                      <Link href={l.href} className="text-muted-foreground hover:text-foreground transition-colors">{l.label}</Link>
-                    </li>
-                  ))}
-                </>
-              )}
+              {[
+                { label: 'Termos de Uso', href: '/p/termos' },
+                { label: 'Política de Privacidade', href: '/p/privacidade' },
+                { label: 'Aviso de Riscos', href: '/p/riscos' },
+                { label: 'Regras da Plataforma', href: '/p/regras' },
+              ].map(l => (
+                <li key={l.href}>
+                  <Link href={l.href} className="text-muted-foreground hover:text-foreground transition-colors">{l.label}</Link>
+                </li>
+              ))}
               {branding.support_email && (
-                <li>
-                  <a href={`mailto:${branding.support_email}`} className="text-muted-foreground hover:text-foreground transition-colors">
-                    {branding.support_email}
+                <li className="pt-2">
+                  <a href={`mailto:${branding.support_email}`} className="text-muted-foreground hover:text-foreground transition-colors text-xs">
+                    ✉️ {branding.support_email}
                   </a>
                 </li>
               )}
