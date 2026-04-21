@@ -315,6 +315,13 @@ export function BetWidget({ marketId, marketSlug, options, isOpen }: BetWidgetPr
                 <Lock className="h-4 w-4" /> Entrar para apostar
               </Button>
             ) : (
+              {/* Preview AMM */}
+              {stake > 0 && chosen && (
+                <div className="rounded-xl border border-primary/20 bg-primary/5 px-3 py-2 text-xs text-muted-foreground flex items-center justify-between">
+                  <span>Odds atuais</span>
+                  <span className="text-primary font-bold">{Number(chosen.odds).toFixed(2)}x</span>
+                </div>
+              )}
               <Button size="lg" className="w-full gap-2" onClick={handleBet} disabled={loading || stake <= 0 || !chosen}>
                 {loading ? <><Loader2 className="h-4 w-4 animate-spin" /> Processando...</> : <><Zap className="h-4 w-4" /> Confirmar aposta</>}
               </Button>
