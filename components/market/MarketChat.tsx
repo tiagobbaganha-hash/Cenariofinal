@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Send, Smile, Loader2 } from 'lucide-react'
 
-interface Message { id: string; user_id: string; message: string; created_at: string; username?: string }
+interface Message { id: string; user_id: string; message: string; created_at: string; full_name?: string }
 
 const AVATARS = ['🚀','🐂','🦁','🔮','🎯','⚡','🌊','🔥','💎','🦅','🎲','🌙','☀️','🏆','⚔️','🦊','🐉','🌟','💫','🎪']
 const QUICK_EMOJIS = ['🔥','💯','🎯','📈','📉','🚀','💎','🤔','👍','👎','😂','🏆']

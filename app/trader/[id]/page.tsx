@@ -29,7 +29,7 @@ export default function TraderPage() {
     async function load() {
       const supabase = createClient()
       const [profileRes, ordersRes] = await Promise.all([
-        supabase.from('profiles').select('id, full_name, username, created_at, avatar_url').eq('id', traderId).single(),
+        supabase.from('profiles').select('id, full_name, email, created_at, avatar_url').eq('id', traderId).single(),
         supabase.from('orders').select('id, stake_amount, potential_payout, status, created_at, settlement_amount, option_id').eq('user_id', traderId).order('created_at', { ascending: false }).limit(20),
       ])
 
@@ -45,7 +45,7 @@ export default function TraderPage() {
       const winRate = (wins.length + losses.length) > 0 ? wins.length / (wins.length + losses.length) : 0
       const totalBets = allOrders.length
 
-      setTrader({ ...profile, name: profile.full_name || profile.username || 'Trader', totalBets, totalStaked, totalWon, pnl, winRate, wins: wins.length, losses: losses.length })
+      setTrader({ ...profile, name: profile.full_name || profile.email?.split("@")[0] || 'Trader', totalBets, totalStaked, totalWon, pnl, winRate, wins: wins.length, losses: losses.length })
       setOrders(allOrders.slice(0, 10))
       setLoading(false)
     }

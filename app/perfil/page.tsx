@@ -94,10 +94,10 @@ export default function PerfilPage() {
       setUserId(user.id)
       setSelectedAvatar(user.id.charCodeAt(0) % AVATARS.length)
 
-      const { data: p } = await supabase.from('profiles').select('*').eq('id', user.id).single()
+      const { data: p } = await supabase.from('profiles').select('id, full_name, email, phone, cpf, birth_date, address, kyc_status, city, state').eq('id', user.id).single()
       if (p) {
         setNome((p as any).full_name || '')
-        setUsername((p as any).username || '')
+        // username não existe, usar email
         setPhone((p as any).phone || '')
         setCpf((p as any).cpf || '')
         setBirthDate((p as any).birth_date || '')
@@ -136,7 +136,7 @@ export default function PerfilPage() {
     const supabase = createClient()
     await supabase.from('profiles').update({
       full_name: nome,
-      username: username.toLowerCase().replace(/[^a-z0-9_]/g, ''),
+
       phone,
       cpf: cpf.replace(/\D/g, ''),
       birth_date: birthDate || null,
@@ -278,12 +278,7 @@ export default function PerfilPage() {
               <Field label="Nome completo">
                 <input className={inp} value={nome} onChange={e => setNome(e.target.value)} placeholder="Seu nome completo" />
               </Field>
-              <Field label="Username">
-                <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">@</span>
-                  <input className={inp + " pl-8"} value={username} onChange={e => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))} placeholder="seu_usuario" />
-                </div>
-              </Field>
+
               <Field label="CPF">
                 <input className={inp} value={cpf} onChange={e => setCpf(formatCpf(e.target.value))} placeholder="000.000.000-00" inputMode="numeric" />
               </Field>

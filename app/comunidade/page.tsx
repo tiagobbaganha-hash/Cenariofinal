@@ -70,8 +70,8 @@ export default function ComunidadePage() {
     supabase.auth.getUser().then(({ data }) => {
       if (data.user) {
         setUserId(data.user.id)
-        supabase.from('profiles').select('full_name, username').eq('id', data.user.id).single()
-          .then(({ data: p }) => setUserName((p as any)?.username || (p as any)?.full_name?.split(' ')[0] || 'Apostador'))
+        supabase.from('profiles').select('full_name, email').eq('id', data.user.id).single()
+          .then(({ data: p }) => setUserName((p as any)?.email?.split("@")[0] || (p as any)?.full_name?.split(' ')[0] || 'Apostador'))
           .catch(() => {})
       }
     })
