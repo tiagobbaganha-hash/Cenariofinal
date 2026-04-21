@@ -81,8 +81,9 @@ export default function ComunidadePage() {
   async function loadAll() {
     setLoading(true)
     const supabase = createClient()
+    try {
     const [postsRes, ordersRes, marketsRes, usersRes] = await Promise.all([
-      supabase.from('v_community_posts').select('*').order('is_pinned', { ascending: false }).order('created_at', { ascending: false }).limit(30),
+      supabase.from('community_posts').select('id, title, content, is_pinned, created_at, market_id, user_id').order('is_pinned', { ascending: false }).order('created_at', { ascending: false }).limit(30),
       supabase.from('orders').select('user_id, stake_amount, status, created_at, option_id, market_id').order('created_at', { ascending: false }).limit(30),
       supabase.from('markets').select('id, title, slug, status').order('created_at', { ascending: false }).limit(5),
       supabase.from('profiles').select('id', { count: 'exact', head: true }),
@@ -112,6 +113,7 @@ export default function ComunidadePage() {
       volume: totalVol,
     })
     setLoading(false)
+    } catch (err) { console.error('Comunidade error:', err); setLoading(false) }
   }
 
   async function handlePost() {
@@ -375,7 +377,7 @@ export default function ComunidadePage() {
 function PostCard({ post, userId, reactions, onReact }: { post: Post; userId: string | null; reactions: Record<string,boolean>; onReact: (e: string) => void }) {
   const [expanded, setExpanded] = useState(false)
   const isPinned = post.is_pinned
-  const emoji = getEmoji(post.author_id || post.author_name)
+  const emoji = getEmoji((post as any).user_id || post.author_id || 'default')
 
   return (
     <div className={`rounded-2xl border bg-card overflow-hidden transition-all ${isPinned ? 'border-primary/30 bg-primary/5' : 'border-border hover:border-primary/20'}`}>
@@ -392,7 +394,7 @@ function PostCard({ post, userId, reactions, onReact }: { post: Post; userId: st
             {emoji}
           </div>
           <div className="flex-1 min-w-0">
-            <span className="text-xs font-semibold text-foreground">{post.author_name}</span>
+            <span className="text-xs font-semibold text-foreground">{post.author_name || 'Trader'}</span>
             <span className="text-[10px] text-muted-foreground ml-2">{timeAgo(post.created_at)}</span>
           </div>
           {post.market_slug && (
