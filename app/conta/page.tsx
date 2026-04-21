@@ -168,9 +168,9 @@ export default function AccountPage() {
                 </div>
 
                 <div className="mt-4 flex gap-2">
-                  <Button variant="outline" size="sm" className="flex-1" onClick={() => { setEditNome(me?.full_name || ''); setEditUsername(me?.username || ''); setEditando(true) }}>
+                  <Link href="/perfil" className="flex-1 flex items-center justify-center rounded-lg border border-input bg-background px-3 py-2 text-sm font-medium hover:bg-accent transition-colors">
                     Editar perfil
-                  </Button>
+                  </Link>
                   <ThemeToggle />
                 <Button variant="ghost" size="icon" onClick={handleSignOut} aria-label="Sair">
                     <LogOut className="h-4 w-4" />
