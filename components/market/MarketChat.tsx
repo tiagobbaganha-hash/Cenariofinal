@@ -91,7 +91,7 @@ export function MarketChat({ marketId }: { marketId: string }) {
           </div>
         ) : messages.map(m => {
           const isMe = m.user_id === userId
-          const emoji = AVATARS[m.user_id.charCodeAt(0) % AVATARS.length]
+          const emoji = m.user_id ? AVATARS[m.user_id.charCodeAt(0) % AVATARS.length] : '🎯'
           const isGif = m.message.startsWith('__GIF__:')
           const gifUrl = isGif ? m.message.replace('__GIF__:', '') : null
 

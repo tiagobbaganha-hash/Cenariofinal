@@ -62,7 +62,7 @@ export default function TraderPage() {
   )
 
   const level = getLevel(trader.totalBets)
-  const emoji = AVATARS[traderId.charCodeAt(0) % AVATARS.length]
+  const emoji = traderId ? AVATARS[traderId.charCodeAt(0) % AVATARS.length] : '🎯'
   const pnlPositive = trader.pnl >= 0
   const memberSince = new Date(trader.created_at).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
 

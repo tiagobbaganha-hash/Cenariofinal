@@ -14,7 +14,7 @@ import {
 const AVATARS = ['🚀','🐂','🦁','🔮','🎯','⚡','🌊','🔥','💎','🦅','🎲','🌙','☀️','🏆','⚔️','🦊','🐉','🌟','💫','🎪']
 const REACTIONS = [{ emoji: '🔥', label: 'Fogo' }, { emoji: '💯', label: 'Certo' }, { emoji: '🚀', label: 'Lua' }, { emoji: '👍', label: 'Like' }, { emoji: '🤔', label: 'Hmm' }]
 
-function getEmoji(id: string) { return AVATARS[id.charCodeAt(0) % AVATARS.length] }
+function getEmoji(id: string | null | undefined) { if (!id) return '🎯'; return AVATARS[id.charCodeAt(0) % AVATARS.length] }
 
 interface Post {
   id: string
@@ -237,7 +237,7 @@ export default function ComunidadePage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-foreground">
-                      <span className="font-semibold">{AVATARS[act.user_id.charCodeAt(0) % AVATARS.length]} Trader</span>
+                      <span className="font-semibold">{getEmoji(act.user_id)} Trader</span>
                       {' '}<span className="text-muted-foreground">{act.text}</span>
                       {act.value && <span className={`font-bold ml-1 ${act.type === 'win' ? 'text-primary' : 'text-foreground'}`}>{act.type === 'win' && '🏆 '}{formatCurrency(act.value)}</span>}
                     </p>

@@ -37,7 +37,7 @@ const AVATARS = [
 
 function Avatar({ url, name, seed, size = 'md' }: { url?: string|null; name?: string|null; seed: string; size?: 'sm'|'md'|'lg'|'xl' }) {
   const sizeMap = { sm: 'h-8 w-8 text-sm', md: 'h-10 w-10 text-base', lg: 'h-14 w-14 text-xl', xl: 'h-20 w-20 text-3xl' }
-  const emoji = AVATARS[seed.charCodeAt(0) % AVATARS.length]
+  const emoji = seed ? AVATARS[seed.charCodeAt(0) % AVATARS.length] : '🎯'
   const initials = (name || seed || '?').slice(0, 2).toUpperCase()
 
   if (url) {

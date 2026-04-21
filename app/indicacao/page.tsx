@@ -172,7 +172,7 @@ export default function IndicacaoPage() {
           {referrals.map(r => (
             <div key={r.id} className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3">
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/15 text-lg">
-                {['🚀','🐂','🦁','🔮','🎯'][r.id.charCodeAt(0) % 5]}
+                {['🚀','🐂','🦁','🔮','🎯'][(r.id?.charCodeAt(0) ?? 0) % 5]}
               </div>
               <div className="flex-1">
                 <p className="text-xs font-semibold text-foreground">{r.full_name || r.username || 'Usuário'}</p>
