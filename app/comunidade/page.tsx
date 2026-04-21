@@ -537,6 +537,126 @@ export default function ComunidadePage() {
   )
 }
 
+function PostComments({ postId, userId }: { postId: string; userId: string | null }) {
+  const [comments, setComments] = useState<any[]>([])
+  const [text, setText] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [posting, setPosting] = useState(false)
+  const [open, setOpen] = useState(false)
+  const [count, setCount] = useState(0)
+
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.from('community_comments').select('id', { count: 'exact', head: true })
+      .eq('post_id', postId).then(({ count: n }) => setCount(n || 0))
+  }, [postId])
+
+  async function loadComments() {
+    setLoading(true)
+    const supabase = createClient()
+    const { data } = await supabase
+      .from('community_comments')
+      .select('id, content, author_name, author_id, user_id, created_at')
+      .eq('post_id', postId)
+      .order('created_at', { ascending: true })
+      .limit(50)
+    setComments(data || [])
+    setLoading(false)
+  }
+
+  async function sendComment(content: string) {
+    const msg = content || text.trim()
+    if (!msg || !userId) return
+    setPosting(true)
+    try {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      const { data: profile } = await supabase.from('profiles').select('full_name, email').eq('id', user.id).single()
+      const authorName = (profile as any)?.full_name || (profile as any)?.email?.split('@')[0] || 'Anônimo'
+      const { error } = await supabase.from('community_comments').insert({
+        post_id: postId,
+        author_id: user.id,
+        user_id: user.id,
+        content: msg,
+        author_name: authorName,
+      })
+      if (!error) { setText(''); setCount(n => n + 1); loadComments() }
+      else console.error('Erro comentário:', error)
+    } finally { setPosting(false) }
+  }
+
+  function timeAgo(iso: string) {
+    const diff = Date.now() - new Date(iso).getTime()
+    if (diff < 60000) return 'agora'
+    if (diff < 3600000) return `${Math.floor(diff/60000)}m`
+    if (diff < 86400000) return `${Math.floor(diff/3600000)}h`
+    return `${Math.floor(diff/86400000)}d`
+  }
+
+  return (
+    <div className="mt-3 border-t border-border/40 pt-3">
+      <button onClick={() => { setOpen(v => !v); if (!open) loadComments() }}
+        className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
+        <MessageSquare className="h-3.5 w-3.5" />
+        {open ? 'Fechar comentários' : `💬 ${count} comentário${count !== 1 ? 's' : ''}`}
+      </button>
+
+      {open && (
+        <div className="mt-3 space-y-3">
+          {loading ? (
+            <div className="flex justify-center py-3"><Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /></div>
+          ) : comments.length === 0 ? (
+            <p className="text-xs text-muted-foreground text-center py-2">Seja o primeiro a comentar!</p>
+          ) : (
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {comments.map(cm => {
+                const isGif = cm.content?.match(/https?:\/\/media\.giphy\.com/i)
+                return (
+                  <div key={cm.id} className="flex items-start gap-2">
+                    <div className="text-sm flex-shrink-0 mt-0.5">{getEmoji(cm.author_id || cm.user_id)}</div>
+                    <div className="flex-1 min-w-0 rounded-2xl bg-muted/40 px-3 py-2">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-[11px] font-bold text-foreground">{cm.author_name || 'Anônimo'}</span>
+                        <span className="text-[9px] text-muted-foreground">{timeAgo(cm.created_at)}</span>
+                      </div>
+                      {isGif ? (
+                        <img src={cm.content.trim()} alt="GIF" className="rounded-xl max-h-40 max-w-full" />
+                      ) : (
+                        <p className="text-xs text-foreground break-words leading-relaxed">{cm.content}</p>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
+          {userId ? (
+            <div className="space-y-2">
+              <EmojiGifPicker onEmoji={(e) => sendComment(e)} onGif={(url) => sendComment(url)} compact />
+              <div className="flex gap-2">
+                <input value={text} onChange={e => setText(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), sendComment(text))}
+                  placeholder="Comentar..."
+                  className="flex-1 rounded-xl border border-border bg-background px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" />
+                <button onClick={() => sendComment(text)} disabled={!text.trim() || posting}
+                  className="flex-shrink-0 rounded-xl bg-primary px-3 py-2 text-primary-foreground disabled:opacity-40 hover:bg-primary/90 transition-colors">
+                  {posting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground text-center">
+              <Link href="/login" className="text-primary hover:underline">Faça login</Link> para comentar
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function PostCard({ post, userId, reactions, onReact }: { post: Post; userId: string | null; reactions: Record<string,boolean>; onReact: (e: string) => void }) {
   const [expanded, setExpanded] = useState(false)
   const isPinned = (post as any).is_pinned || false
