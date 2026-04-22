@@ -95,8 +95,8 @@ export default function AoVivoPage() {
       setBalance(parseFloat((w as any)?.available_balance || 0))
     }
 
-    // Buscar mercados ao vivo (market_type = 'live')
-    const { data } = await supabase
+    // Buscar mercados ao vivo
+    const { data, error } = await supabase
       .from('markets')
       .select(`*, market_options(id, label, option_key, probability, odds)`)
       .eq('market_type', 'live')
@@ -104,6 +104,7 @@ export default function AoVivoPage() {
       .order('created_at', { ascending: false })
       .limit(20)
 
+    if (error) console.error('Ao-vivo load error:', error)
     if (data) {
       setMarkets(data.map((m: any) => ({ ...m, options: m.market_options || [] })))
     }
