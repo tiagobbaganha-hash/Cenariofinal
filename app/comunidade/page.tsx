@@ -125,7 +125,7 @@ function EmojiGifPicker({ onEmoji, onGif, compact = false }: {
   const [gifCategory, setGifCategory] = useState('📈 Mercado')
   const [gifSearch, setGifSearch] = useState('')
   const gifCategories = Object.keys(GIF_DB)
-  const   const currentGifs = gifSearch.trim()
+  const currentGifs = gifSearch.trim()
     ? Object.values(GIF_DB).flat().filter(g => g.title.toLowerCase().includes(gifSearch.toLowerCase()))
     : (GIF_DB[gifCategory] || [])
 
