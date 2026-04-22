@@ -54,7 +54,6 @@ function EmojiGifPicker({ onEmoji, onGif, compact = false }: {
   compact?: boolean 
 }) {
   const [tab, setTab] = useState<'emoji' | 'gif'>('emoji')
-  const [gifSearch, setGifSearch] = useState('')
   const [open, setOpen] = useState(false)
 
   // GIFs via Tenor API (chave demo pública)
