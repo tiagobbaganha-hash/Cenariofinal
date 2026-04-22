@@ -95,18 +95,29 @@ export default function AoVivoPage() {
       setBalance(parseFloat((w as any)?.available_balance || 0))
     }
 
-    // Buscar mercados ao vivo
-    const { data, error } = await supabase
+    // Buscar mercados ao vivo — query simples sem nested select
+    const { data: mData, error: mErr } = await supabase
       .from('markets')
-      .select(`*, market_options(id, label, option_key, probability, odds)`)
+      .select('*')
       .eq('market_type', 'live')
-      .in('status', ['open', 'closed'])
+      .in('status', ['open', 'closed', 'resolved'])
       .order('created_at', { ascending: false })
       .limit(20)
 
-    if (error) console.error('Ao-vivo load error:', error)
-    if (data) {
-      setMarkets(data.map((m: any) => ({ ...m, options: m.market_options || [] })))
+    if (mErr) console.error('Ao-vivo markets error:', mErr)
+
+    if (mData && mData.length > 0) {
+      // Buscar options separadamente
+      const ids = mData.map((m: any) => m.id)
+      const { data: opts } = await supabase
+        .from('market_options')
+        .select('id, market_id, label, option_key, probability, odds')
+        .in('market_id', ids)
+
+      setMarkets(mData.map((m: any) => ({
+        ...m,
+        options: (opts || []).filter((o: any) => o.market_id === m.id)
+      })))
     }
     setLoading(false)
   }, [])
