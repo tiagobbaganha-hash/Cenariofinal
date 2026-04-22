@@ -7,12 +7,16 @@ function getDb(token?: string) {
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
   if (serviceKey) {
-    // Com service role: pleno acesso
     return createClient(url, serviceKey)
   }
-  // Sem service role: usa anon key com JWT do usuário no header
+  // Setar apikey E Authorization explicitamente para garantir que ambos chegam ao Supabase
   return createClient(url, anonKey, {
-    global: { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+    global: {
+      headers: {
+        apikey: anonKey,
+        Authorization: token ? `Bearer ${token}` : `Bearer ${anonKey}`,
+      }
+    }
   })
 }
 

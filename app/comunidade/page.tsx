@@ -228,7 +228,6 @@ export default function ComunidadePage() {
         setUserId(data.user.id)
         supabase.from('profiles').select('full_name, email').eq('id', data.user.id).single()
           .then(({ data: p }) => setUserName((p as any)?.email?.split("@")[0] || (p as any)?.full_name?.split(' ')[0] || 'Apostador'))
-          .catch(() => {})
       }
     })
     loadAll()
