@@ -102,26 +102,33 @@ export default function AdminRapidMarketsPage() {
     }
     try {
       const supa = createClient()
-      const { data: { session } } = await supa.auth.getSession()
-      const tok = session?.access_token || ''
-      const res = await fetch('/api/admin/rapid-markets', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${tok}` },
-        body: JSON.stringify({
-          asset: form.asset,
-          asset_symbol: selectedAsset.symbol,
-          price_at_creation: currentPrice.value,
-          duration_minutes: parseInt(form.duration),
-          up_label: form.up_label,
-          down_label: form.down_label,
-          custom_title: form.custom_title || null,
-          asset_source: selectedAsset.source,
-        })
-      })
-      const data = await res.json()
-      if (data.error) throw new Error(data.error)
+      const asset_symbol = selectedAsset.symbol
+      const duration_minutes = parseInt(form.duration)
+      const now = new Date()
+      const closesAt = new Date(now.getTime() + duration_minutes * 60000)
+      const resolvesAt = new Date(closesAt.getTime() + 60000)
+      const slug = `${asset_symbol.toLowerCase()}-${Date.now().toString(36)}`
+      const title = form.custom_title || `${asset_symbol} (${duration_minutes}min): ${form.up_label || 'Sobe'} ou ${form.down_label || 'Desce'}?`
+
+      const { data: market, error: mErr } = await supa.from('markets').insert({
+        title, slug,
+        description: `Preço inicial: R$ ${currentPrice.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+        category: 'Cripto', status: 'open', market_type: 'rapid',
+        closes_at: closesAt.toISOString(),
+        resolves_at: resolvesAt.toISOString(),
+        rapid_config: { asset: form.asset, asset_symbol, vs_currency: 'brl', duration_minutes, price_at_creation: currentPrice.value },
+      }).select().single()
+
+      if (mErr) throw new Error(mErr.message)
+
+      const { error: oErr } = await supa.from('market_options').insert([
+        { market_id: market.id, label: form.up_label || 'Sobe', option_key: 'yes', probability: 0.50, odds: 1.90, sort_order: 0, is_active: true },
+        { market_id: market.id, label: form.down_label || 'Desce', option_key: 'no', probability: 0.50, odds: 1.90, sort_order: 1, is_active: true },
+      ])
+      if (oErr) throw new Error(oErr.message)
+
       const priceStr = currentPrice.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })
-      setMsg(`✅ Mercado criado! ${selectedAsset.symbol} a R$ ${priceStr} por ${form.duration} min`)
+      setMsg(`✅ Mercado criado! ${asset_symbol} a R$ ${priceStr} por ${duration_minutes} min`)
       loadMarkets()
     } catch (e: any) { setMsg(`❌ ${e.message}`) }
     finally { setCreating(false) }
