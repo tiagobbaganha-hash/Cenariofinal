@@ -77,17 +77,24 @@ export default async function MarketDetailPage({
   const market = await getMarket(params.slug)
   if (!market) return notFound()
 
-  // Load market stats
+  // Load market stats + options direto do banco
   const supabase = createClient()
-  const { data: statsData } = await supabase
-    .from('orders')
-    .select('stake_amount')
-    .eq('market_id', market.id)
+  const [{ data: statsData }, { data: liveOptions }] = await Promise.all([
+    supabase.from('orders').select('stake_amount').eq('market_id', market.id),
+    supabase.from('market_options')
+      .select('id, label, odds, probability, option_key, sort_order, is_active')
+      .eq('market_id', market.id)
+      .eq('is_active', true)
+      .order('sort_order'),
+  ])
   
   const totalVolume = (statsData || []).reduce((sum: number, o: any) => sum + parseFloat(o.stake_amount || '0'), 0)
   const betCount = (statsData || []).length
 
-  const options = Array.isArray(market.options) ? market.options : []
+  // Usar options do banco direto (garante IDs corretos para apostas)
+  const options = liveOptions && liveOptions.length > 0
+    ? liveOptions
+    : (Array.isArray(market.options) ? market.options : [])
   // Verificar se está aberto por status OU por closes_at ainda no futuro
   const closesInFuture = market.closes_at ? new Date(market.closes_at) > new Date() : false
   const statusIsOpen = market.status_text === 'open' || market.status === 'open'

@@ -251,9 +251,11 @@ interface Post {
   author_id?: string
   title: string
   content: string
+  gif_url?: string | null
   market_title: string | null
   market_slug?: string | null
   comments_count: number
+  likes_count: number
   created_at: string
   is_pinned: boolean
 }
@@ -321,20 +323,44 @@ export default function ComunidadePage() {
 
     const rawPosts = (postsRes.data || []) as Post[]
 
-    // Buscar contagem real de comentários para cada post
     if (rawPosts.length > 0) {
       const postIds = rawPosts.map(p => p.id)
+      const { data: { user } } = await supabase.auth.getUser()
+
+      // Contar comentários
       const { data: commentCounts } = await supabase
-        .from('community_comments')
-        .select('post_id')
-        .in('post_id', postIds)
-      
-      const countMap: Record<string, number> = {}
+        .from('community_comments').select('post_id').in('post_id', postIds)
+      const commentMap: Record<string, number> = {}
       for (const c of (commentCounts || [])) {
-        countMap[(c as any).post_id] = (countMap[(c as any).post_id] || 0) + 1
+        commentMap[(c as any).post_id] = (commentMap[(c as any).post_id] || 0) + 1
       }
-      
-      setPosts(rawPosts.map(p => ({ ...p, comments_count: countMap[p.id] || 0 })))
+
+      // Contar likes
+      const { data: likeCounts } = await supabase
+        .from('post_likes').select('post_id').in('post_id', postIds)
+      const likeMap: Record<string, number> = {}
+      for (const l of (likeCounts || [])) {
+        likeMap[(l as any).post_id] = (likeMap[(l as any).post_id] || 0) + 1
+      }
+
+      // Likes do usuário atual
+      if (user) {
+        const { data: myLikes } = await supabase
+          .from('post_likes').select('post_id')
+          .in('post_id', postIds).eq('user_id', user.id)
+        const myLikeSet = new Set((myLikes || []).map((l: any) => l.post_id))
+        const newReactions: Record<string, Record<string, boolean>> = {}
+        for (const pid of postIds) {
+          newReactions[pid] = { '❤️': myLikeSet.has(pid) }
+        }
+        setReactions(newReactions)
+      }
+
+      setPosts(rawPosts.map(p => ({
+        ...p,
+        comments_count: commentMap[p.id] || 0,
+        likes_count: likeMap[p.id] || 0,
+      })))
     } else {
       setPosts(rawPosts)
     }
@@ -381,7 +407,39 @@ export default function ComunidadePage() {
     } finally { setPosting(false) }
   }
 
+  async function toggleLike(postId: string) {
+    if (!userId) return
+    const supabase = createClient()
+    const already = reactions[postId]?.['❤️']
+    // Otimista: atualiza UI na hora
+    setReactions(prev => ({
+      ...prev,
+      [postId]: { ...(prev[postId] || {}), '❤️': !already }
+    }))
+    setPosts(prev => prev.map(p => p.id === postId
+      ? { ...p, likes_count: Math.max(0, (p.likes_count || 0) + (already ? -1 : 1)) }
+      : p
+    ))
+    // Persiste no banco
+    try {
+      if (already) {
+        await supabase.from('post_likes').delete()
+          .eq('post_id', postId).eq('user_id', userId)
+      } else {
+        await supabase.from('post_likes').insert({ post_id: postId, user_id: userId })
+          .select().single()
+      }
+    } catch (_) {
+      // Reverter se erro
+      setReactions(prev => ({
+        ...prev,
+        [postId]: { ...(prev[postId] || {}), '❤️': already }
+      }))
+    }
+  }
+
   function toggleReaction(postId: string, emoji: string) {
+    if (emoji === '❤️') { toggleLike(postId); return }
     setReactions(prev => ({
       ...prev,
       [postId]: { ...(prev[postId] || {}), [emoji]: !(prev[postId]?.[emoji]) }
@@ -872,9 +930,9 @@ function PostCard({ post, userId, reactions, onReact }: { post: Post; userId: st
         <div className="mt-4 flex items-center gap-3">
           <button onClick={() => onReact('❤️')}
             className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all ${reactions['❤️'] ? 'border-rose-500/50 bg-rose-500/10 text-rose-400' : 'border-border text-muted-foreground hover:border-rose-500/30 hover:text-rose-400'}`}>
-            ❤️ <span>{reactions['❤️'] ? 'Curtido' : 'Curtir'}</span>
+            ❤️ <span>{post.likes_count || 0}</span>
           </button>
-          <span className="text-xs text-muted-foreground">{post.comments_count || 0} comentários</span>
+          <span className="text-xs text-muted-foreground">💬 {post.comments_count || 0}</span>
         </div>
         {/* Comentários interativos */}
         <PostComments postId={post.id} userId={userId} />

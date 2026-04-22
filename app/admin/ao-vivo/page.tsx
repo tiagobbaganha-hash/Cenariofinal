@@ -35,9 +35,18 @@ export default function AdminAoVivoPage() {
     duration_hours: '2',
     options: ['Time A vence', 'Empate', 'Time B vence'],
     is_live: true,
+    image_url: '',
+    influencer_code: '',
   })
+  const [influencers, setInfluencers] = useState<{id:string,name:string,referral_code:string}[]>([])
 
-  useEffect(() => { loadMarkets() }, [])
+  useEffect(() => {
+    loadMarkets()
+    // Carregar influencers para vincular ao mercado
+    createClient().from('influencers').select('id, name, referral_code').eq('is_active', true).then(({ data }) => {
+      setInfluencers(data || [])
+    })
+  }, [])
 
   async function loadMarkets() {
     setLoading(true)
@@ -61,6 +70,13 @@ export default function AdminAoVivoPage() {
       const closesAt = new Date(Date.now() + parseFloat(form.duration_hours) * 3600000)
       const slug = form.title.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').slice(0, 60) + '-' + Date.now().toString(36)
 
+      // Buscar id do influencer pelo código se informado
+      let influencer_id = null
+      if (form.influencer_code) {
+        const { data: inf } = await supabase.from('influencers').select('id').eq('referral_code', form.influencer_code).single()
+        influencer_id = inf?.id || null
+      }
+
       const { data: market, error } = await supabase.from('markets').insert({
         title: form.title,
         description: form.description || null,
@@ -68,6 +84,8 @@ export default function AdminAoVivoPage() {
         slug,
         status: 'open',
         market_type: 'live',
+        image_url: form.image_url || null,
+        influencer_id: influencer_id,
         closes_at: closesAt.toISOString(),
         resolves_at: new Date(closesAt.getTime() + 3600000).toISOString(),
         live_config: {
@@ -134,6 +152,30 @@ export default function AdminAoVivoPage() {
         </div>
       </div>
 
+      {/* Diferença: Ao Vivo vs Rápido */}
+      <div className="rounded-2xl border border-border bg-card/50 p-4 grid sm:grid-cols-2 gap-3 text-sm">
+        <div className="space-y-1">
+          <p className="font-semibold flex items-center gap-2">🔴 Mercado Ao Vivo</p>
+          <ul className="text-xs text-muted-foreground space-y-1">
+            <li>• Evento em andamento (jogo, show, política)</li>
+            <li>• Admin controla o placar/contexto em tempo real</li>
+            <li>• Opções livres: times, candidatos, participantes</li>
+            <li>• Duração em horas — resolução manual pelo admin</li>
+            <li>• Ex: "Quem marca o próximo gol?" durante um jogo</li>
+          </ul>
+        </div>
+        <div className="space-y-1">
+          <p className="font-semibold flex items-center gap-2">⚡ Mercado Rápido</p>
+          <ul className="text-xs text-muted-foreground space-y-1">
+            <li>• Ligado a preço de ativo via API (cripto, commodities)</li>
+            <li>• Sempre "Sobe ou Desce?" em X minutos</li>
+            <li>• Resolução 100% automática pelo preço real</li>
+            <li>• Duração em minutos (5, 10, 30...)</li>
+            <li>• Ex: "BTC sobe ou desce nos próximos 5 min?"</li>
+          </ul>
+        </div>
+      </div>
+
       {/* Templates rápidos */}
       <div className="rounded-2xl border border-border bg-card p-5 space-y-3">
         <p className="text-sm font-semibold text-foreground">⚡ Templates rápidos</p>
@@ -157,6 +199,18 @@ export default function AdminAoVivoPage() {
           <div className="sm:col-span-2">
             <label className="block text-xs text-muted-foreground mb-1.5">Pergunta do mercado *</label>
             <input className={inp} placeholder="Ex: Quem vai marcar o próximo gol?" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} />
+          </div>
+          <div className="sm:col-span-2">
+            <label className="block text-xs text-muted-foreground mb-1.5">URL da imagem de capa</label>
+            <input className={inp} placeholder="https://..." value={form.image_url} onChange={e => setForm(f => ({ ...f, image_url: e.target.value }))} />
+            {form.image_url && <img src={form.image_url} alt="preview" className="mt-2 h-24 w-full object-cover rounded-xl border border-border" />}
+          </div>
+          <div>
+            <label className="block text-xs text-muted-foreground mb-1.5">Influencer (opcional)</label>
+            <select className={inp} value={form.influencer_code} onChange={e => setForm(f => ({ ...f, influencer_code: e.target.value }))}>
+              <option value="">Sem influencer</option>
+              {influencers.map(inf => <option key={inf.id} value={inf.referral_code}>{inf.name} (@{inf.referral_code})</option>)}
+            </select>
           </div>
           <div>
             <label className="block text-xs text-muted-foreground mb-1.5">Nome do evento *</label>
