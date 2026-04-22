@@ -3,14 +3,8 @@ import { createClient } from '@supabase/supabase-js'
 
 const SUPABASE_URL = 'https://slxzmyiwcsjyahahkppe.supabase.co'
 const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNseHpteWl3Y3NqeWFoYWhrcHBlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzExNjExOTMsImV4cCI6MjA4NjczNzE5M30.S_r0W7rJ-KapNXO-Lkb_ggL6jUob0fUeR9nuwZH3Bn4'
-const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || ANON_KEY
-
 function getDb(userToken?: string) {
-  // Com service role: pleno acesso, sem RLS
-  if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    return createClient(SUPABASE_URL, SERVICE_KEY)
-  }
-  // Sem service role: usa anon key + JWT do usuário
+  // Sempre usa anon key + JWT do usuário (ignora service role env — pode estar desatualizada)
   return createClient(SUPABASE_URL, ANON_KEY, {
     global: {
       headers: {
