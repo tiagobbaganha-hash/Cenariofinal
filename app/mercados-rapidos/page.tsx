@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Zap, TrendingUp, TrendingDown, RefreshCw, Plus } from 'lucide-react'
 import { RapidMarketCard } from '@/components/market/RapidMarketCard'
 import { RapidPriceBar } from '@/components/market/RapidPriceBar'
+import { LivePriceChart } from '@/components/market/LivePriceChart'
 import Link from 'next/link'
 
 interface RapidMarket {
@@ -152,12 +153,22 @@ export default function MercadosRapidosPage() {
             Ao vivo — {openMarkets.length} mercado{openMarkets.length !== 1 ? 's' : ''}
           </p>
           {openMarkets.map(market => (
-            <RapidMarketCard
-              key={market.id}
-              market={market}
-              livePrice={prices[market.rapid_config?.asset]}
-              onExpired={loadMarkets}
-            />
+            <div key={market.id} className="space-y-2">
+              {/* Gráfico de preço ao vivo */}
+              {market.rapid_config?.asset && prices[market.rapid_config.asset] && (
+                <LivePriceChart
+                  assetId={market.rapid_config.asset}
+                  assetSymbol={market.rapid_config.asset_symbol || market.rapid_config.asset.toUpperCase()}
+                  initialPrice={market.rapid_config.price_at_creation || prices[market.rapid_config.asset]?.brl || 0}
+                  closesAt={market.closes_at}
+                />
+              )}
+              <RapidMarketCard
+                market={market}
+                livePrice={prices[market.rapid_config?.asset]}
+                onExpired={loadMarkets}
+              />
+            </div>
           ))}
         </div>
       )}
