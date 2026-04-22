@@ -1,29 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-function getDb(token?: string) {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+const SUPABASE_URL = 'https://slxzmyiwcsjyahahkppe.supabase.co'
+const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNseHpteWl3Y3NqeWFoYWhrcHBlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzExNjExOTMsImV4cCI6MjA4NjczNzE5M30.S_r0W7rJ-KapNXO-Lkb_ggL6jUob0fUeR9nuwZH3Bn4'
+const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || ANON_KEY
 
-  if (serviceKey) {
-    return createClient(url, serviceKey)
+function getDb(userToken?: string) {
+  // Com service role: pleno acesso, sem RLS
+  if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    return createClient(SUPABASE_URL, SERVICE_KEY)
   }
-  // Setar apikey E Authorization explicitamente para garantir que ambos chegam ao Supabase
-  return createClient(url, anonKey, {
+  // Sem service role: usa anon key + JWT do usuário
+  return createClient(SUPABASE_URL, ANON_KEY, {
     global: {
       headers: {
-        apikey: anonKey,
-        Authorization: token ? `Bearer ${token}` : `Bearer ${anonKey}`,
+        apikey: ANON_KEY,
+        Authorization: userToken ? `Bearer ${userToken}` : `Bearer ${ANON_KEY}`,
       }
     }
   })
 }
 
-async function verifyUser(token: string | null) {
-  if (!token) return null
+function decodeJWT(token: string) {
   try {
-    // Decodificar JWT sem verificação (confiamos no Supabase para validar no banco)
     const parts = token.split('.')
     if (parts.length !== 3) return null
     const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')))
@@ -35,24 +34,25 @@ async function verifyUser(token: string | null) {
 export async function POST(req: NextRequest) {
   try {
     const token = req.headers.get('authorization')?.replace('Bearer ', '') || null
-    const user = await verifyUser(token)
-    if (!user) return NextResponse.json({ error: 'Não autorizado — faça login' }, { status: 401 })
-    const db = getDb(token || undefined)
+    const user = token ? decodeJWT(token) : null
+    if (!user) return NextResponse.json({ error: 'Faça login para criar mercados' }, { status: 401 })
 
+    const db = getDb(token || undefined)
     const body = await req.json()
-    const { asset, asset_symbol, price_at_creation, duration_minutes, up_label, down_label } = body
+    const { asset, asset_symbol, price_at_creation, duration_minutes, up_label, down_label, question } = body
 
     const now = new Date()
     const closesAt = new Date(now.getTime() + duration_minutes * 60000)
     const resolvesAt = new Date(closesAt.getTime() + 60000)
     const slug = `${asset_symbol.toLowerCase()}-${Date.now().toString(36)}`
-    const title = `${asset_symbol} (${duration_minutes}min): ${up_label || 'Sobe'} ou ${down_label || 'Desce'}?`
+    const title = question || `${asset_symbol} (${duration_minutes}min): ${up_label || 'Sobe'} ou ${down_label || 'Desce'}?`
 
     const { data: market, error: mErr } = await db.from('markets').insert({
       title, slug,
       description: `Preço inicial: R$ ${Number(price_at_creation).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
       category: 'Cripto', status: 'open', market_type: 'rapid',
-      closes_at: closesAt.toISOString(), resolves_at: resolvesAt.toISOString(),
+      closes_at: closesAt.toISOString(),
+      resolves_at: resolvesAt.toISOString(),
       rapid_config: { asset, asset_symbol, vs_currency: 'brl', duration_minutes, price_at_creation },
     }).select().single()
 
@@ -69,40 +69,20 @@ export async function POST(req: NextRequest) {
     if (oErr) return NextResponse.json({ error: oErr.message }, { status: 500 })
     return NextResponse.json({ market, success: true })
   } catch (e: any) {
-    console.error('Rapid market error:', e)
     return NextResponse.json({ error: e.message }, { status: 500 })
   }
 }
 
-export async function PATCH(req: NextRequest) {
+export async function GET(req: NextRequest) {
   try {
-    const token = req.headers.get('authorization')?.replace('Bearer ', '')
-    const db = getDb(token)
-    const { data: { user } } = await db.auth.getUser(token)
-    if (!user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
-
-    const { market_id } = await req.json()
-    const { data: market } = await db.from('markets').select('id, rapid_config, status').eq('id', market_id).single()
-    if (!market || market.status === 'resolved') return NextResponse.json({ message: 'Já resolvido' })
-
-    const cfg = market.rapid_config as any
-    if (!cfg?.asset) return NextResponse.json({ error: 'Config inválida' }, { status: 400 })
-
-    const r = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${cfg.asset}&vs_currencies=brl`, { cache: 'no-store' })
-    const pd = await r.json()
-    const currentPrice: number = pd[cfg.asset]?.brl
-    if (!currentPrice) return NextResponse.json({ error: 'Preço indisponível' }, { status: 500 })
-
-    const priceRose = currentPrice > cfg.price_at_creation
-    const { data: winOpt } = await db.from('market_options').select('id').eq('market_id', market_id).eq('option_key', priceRose ? 'yes' : 'no').single()
-    if (!winOpt) return NextResponse.json({ error: 'Opção não encontrada' }, { status: 500 })
-
-    await db.from('markets').update({
-      status: 'resolved', result_option_id: winOpt.id,
-      rapid_config: { ...cfg, final_price: currentPrice, resolved_at: new Date().toISOString() }
-    }).eq('id', market_id)
-
-    return NextResponse.json({ resolved: true, winner: priceRose ? 'Subiu' : 'Desceu', initial: cfg.price_at_creation, final: currentPrice })
+    const db = getDb()
+    const { data, error } = await db.from('markets')
+      .select('id, title, slug, status, closes_at, rapid_config, market_options(id, label, odds, probability)')
+      .eq('market_type', 'rapid')
+      .order('created_at', { ascending: false })
+      .limit(20)
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ markets: data })
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 })
   }
