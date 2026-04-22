@@ -28,26 +28,7 @@ const EMOJI_CATEGORIES = {
   '🐂 Mercado': ['🐂','🐻','📊','📉','📈','💹','🏦','💳','🪙','⚡','🌙','☀️'],
 }
 
-const GIFS_CATEGORIES = {
-  '📈 Mercado': [
-    { label: 'Stonks', url: 'https://media.giphy.com/media/XNBcChLQt3beckMGhZ/giphy.gif' },
-    { label: 'Moon', url: 'https://media.giphy.com/media/YnkMcHgNIMW4Yfmjxr/giphy.gif' },
-    { label: 'Gains', url: 'https://media.giphy.com/media/l0MYB8Ory7Hqefo9a/giphy.gif' },
-    { label: 'Loss', url: 'https://media.giphy.com/media/3o7ZeTmU77UlPyeR2w/giphy.gif' },
-  ],
-  '🎉 Comemoração': [
-    { label: 'Hype', url: 'https://media.giphy.com/media/l41Ymrnk3UYOAJ1rO/giphy.gif' },
-    { label: 'Isso!', url: 'https://media.giphy.com/media/OkJat1YNdoD3W/giphy.gif' },
-    { label: 'Yes!', url: 'https://media.giphy.com/media/3o7TKnCdBx5cMg0qti/giphy.gif' },
-    { label: 'Party', url: 'https://media.giphy.com/media/26ufdipQqU2lhNA4g/giphy.gif' },
-  ],
-  '😂 Memes': [
-    { label: 'Bruh', url: 'https://media.giphy.com/media/l3q2K5jinAlChoCLS/giphy.gif' },
-    { label: 'Wait', url: 'https://media.giphy.com/media/xT5LMHxhOfscxPfIfm/giphy.gif' },
-    { label: 'Facepalm', url: 'https://media.giphy.com/media/XsUtdIeJ0MWMo/giphy.gif' },
-    { label: 'Nope', url: 'https://media.giphy.com/media/3oEduIT4h4QFZH1jaw/giphy.gif' },
-  ],
-}
+
 function EmojiGifPicker({ onEmoji, onGif, compact = false }: {
   onEmoji: (e: string) => void
   onGif: (url: string) => void

@@ -64,8 +64,18 @@ export function BetWidget({ marketId, marketSlug, options, isOpen }: BetWidgetPr
   }, [])
 
   useEffect(() => {
-    if (tab === 'vender' && authed && userId) loadPositions()
+    if (tab === 'vender' && authed && userId) {
+      loadPositions()
+    }
   }, [tab, authed, userId])
+
+  // Recarregar posições quando volta para aba vender
+  useEffect(() => {
+    if (tab === 'vender' && userId) {
+      const timer = setTimeout(() => loadPositions(), 500)
+      return () => clearTimeout(timer)
+    }
+  }, [tab])
 
   async function loadPositions() {
     setLoadingPositions(true)
