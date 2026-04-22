@@ -631,6 +631,7 @@ export default function ComunidadePage() {
 function PostComments({ postId, userId }: { postId: string; userId: string | null }) {
   const [comments, setComments] = useState<any[]>([])
   const [text, setText] = useState('')
+  const [commentGif, setCommentGif] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [posting, setPosting] = useState(false)
   const [open, setOpen] = useState(false)
@@ -666,14 +667,42 @@ function PostComments({ postId, userId }: { postId: string; userId: string | nul
       const { data: profile } = await supabase.from('profiles').select('full_name, email').eq('id', user.id).single()
       const authorName = (profile as any)?.full_name || (profile as any)?.email?.split('@')[0] || 'Anônimo'
       const { error } = await supabase.from('community_comments').insert({
-        post_id: postId,
-        author_id: user.id,
-        user_id: user.id,
-        content: msg,
-        author_name: authorName,
+        post_id: postId, author_id: user.id, user_id: user.id,
+        content: msg, author_name: authorName,
       })
       if (!error) { setText(''); setCount(n => n + 1); loadComments() }
       else console.error('Erro comentário:', error)
+    } finally { setPosting(false) }
+  }
+
+  // Envia comentário com texto + GIF juntos
+  async function sendCommentFull() {
+    const msg = text.trim()
+    if (!msg && !commentGif) return
+    if (!userId) return
+    setPosting(true)
+    try {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      const { data: profile } = await supabase.from('profiles').select('full_name, email').eq('id', user.id).single()
+      const authorName = (profile as any)?.full_name || (profile as any)?.email?.split('@')[0] || 'Anônimo'
+      // Se tem texto e GIF, envia dois comentários (texto + gif separados)
+      if (msg) {
+        await supabase.from('community_comments').insert({
+          post_id: postId, author_id: user.id, user_id: user.id,
+          content: msg, author_name: authorName,
+        })
+      }
+      if (commentGif) {
+        await supabase.from('community_comments').insert({
+          post_id: postId, author_id: user.id, user_id: user.id,
+          content: commentGif, author_name: authorName,
+        })
+      }
+      setText(''); setCommentGif(null)
+      setCount(n => n + (msg ? 1 : 0) + (commentGif ? 1 : 0))
+      loadComments()
     } finally { setPosting(false) }
   }
 
@@ -725,13 +754,48 @@ function PostComments({ postId, userId }: { postId: string; userId: string | nul
 
           {userId ? (
             <div className="space-y-2">
-              <EmojiGifPicker onEmoji={(e) => sendComment(e)} onGif={(url) => sendComment(url)} compact />
-              <div className="flex gap-2">
-                <input value={text} onChange={e => setText(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), sendComment(text))}
-                  placeholder="Comentar..."
-                  className="flex-1 rounded-xl border border-border bg-background px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" />
-                <button onClick={() => sendComment(text)} disabled={!text.trim() || posting}
+              {/* Campo de comentário com emoji/GIF inserindo no texto */}
+              <div className="flex gap-2 items-end">
+                <div className="flex-1 space-y-1">
+                  {commentGif && (
+                    <div className="relative inline-block">
+                      <img src={commentGif} alt="GIF" className="rounded-xl max-h-24 border border-primary/30" />
+                      <button onClick={() => setCommentGif(null)} type="button"
+                        className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-destructive text-white text-[10px] flex items-center justify-center">✕</button>
+                    </div>
+                  )}
+                  <div className="flex gap-1 items-center">
+                    <EmojiGifPicker
+                      onEmoji={(e) => setText(t => t + e)}
+                      onGif={(url) => { setCommentGif(url) }}
+                      compact
+                    />
+                    {/* Upload de GIF/imagem do dispositivo */}
+                    <label className="cursor-pointer flex items-center gap-1 text-xs text-muted-foreground border border-border rounded-xl px-2 py-1.5 hover:border-primary/40 hover:text-foreground transition-colors">
+                      📎
+                      <input type="file" accept="image/gif,image/png,image/jpeg,image/webp" className="hidden"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0]
+                          if (!file) return
+                          const supabase = createClient()
+                          const ext = file.name.split('.').pop()
+                          const path = `comments/${Date.now()}.${ext}`
+                          const { data, error } = await supabase.storage.from('community').upload(path, file, { upsert: true })
+                          if (!error && data) {
+                            const { data: urlData } = supabase.storage.from('community').getPublicUrl(path)
+                            setCommentGif(urlData.publicUrl)
+                          }
+                          e.target.value = ''
+                        }}
+                      />
+                    </label>
+                  </div>
+                  <input value={text} onChange={e => setText(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), sendCommentFull())}
+                    placeholder="Comentar..."
+                    className="w-full rounded-xl border border-border bg-background px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" />
+                </div>
+                <button onClick={sendCommentFull} disabled={(!text.trim() && !commentGif) || posting}
                   className="flex-shrink-0 rounded-xl bg-primary px-3 py-2 text-primary-foreground disabled:opacity-40 hover:bg-primary/90 transition-colors">
                   {posting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
                 </button>

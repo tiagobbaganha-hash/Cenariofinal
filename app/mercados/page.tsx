@@ -62,23 +62,38 @@ export default function MercadosPage() {
       const { data: { user } } = await supabase.auth.getUser()
       setUser(user)
 
-      const { data } = await supabase
-        .from('v_front_markets_v5')
-        .select('*')
+      // Busca mercados + opções diretamente (não depende de view)
+      const { data: rawMarkets } = await supabase
+        .from('markets')
+        .select('id, slug, title, category, status, image_url, featured, closes_at, total_volume, influencer_id')
+        .in('status', ['open', 'closed'])
         .order('featured', { ascending: false })
         .order('created_at', { ascending: false })
         .limit(100)
 
-      if (data) {
-        setMarkets(data)
-      } else {
-        // Fallback
-        const { data: fallback } = await supabase
-          .from('markets')
-          .select('*')
-          .eq('status', 'open')
-          .limit(100)
-        if (fallback) setMarkets(fallback)
+      if (rawMarkets && rawMarkets.length > 0) {
+        // Buscar todas as opções dos mercados retornados
+        const ids = rawMarkets.map((m: any) => m.id)
+        const { data: allOptions } = await supabase
+          .from('market_options')
+          .select('id, market_id, label, odds, probability, option_key, sort_order')
+          .in('market_id', ids)
+          .eq('is_active', true)
+          .order('sort_order', { ascending: true })
+
+        // Agrupar opções por market_id
+        const optMap: Record<string, any[]> = {}
+        for (const opt of (allOptions || [])) {
+          if (!optMap[opt.market_id]) optMap[opt.market_id] = []
+          optMap[opt.market_id].push(opt)
+        }
+
+        // Montar mercados com options
+        const markets = rawMarkets.map((m: any) => ({
+          ...m,
+          options: optMap[m.id] || [],
+        }))
+        setMarkets(markets)
       }
       setLoading(false)
     }
@@ -297,31 +312,45 @@ function MarketCard({ market }: { market: Market }) {
             <span className="flex items-center gap-1"><BarChart3 className="h-4 w-4" /> R$ {(volume / 1000).toFixed(1)}k</span>
             {timeLeft !== null && <span className="flex items-center gap-1"><Clock className="h-4 w-4" /> {timeLeft}d</span>}
           </div>
-          {options ? (
+          {options && options.length > 0 ? (
             /* Opções reais do banco */
-            <div className={options.length === 2 ? 'grid grid-cols-2 gap-3' : 'grid grid-cols-1 gap-2'}>
-              {options.map((opt) => {
-                const isNo = opt.option_key === 'no' || opt.label?.toLowerCase().includes('não') || opt.label?.toLowerCase().includes('nao')
-                const prob = opt.probability ?? 0.5
+            <div className={
+              options.length === 2 ? 'grid grid-cols-2 gap-2' :
+              options.length === 3 ? 'grid grid-cols-3 gap-1.5' :
+              options.length === 4 ? 'grid grid-cols-2 gap-1.5' :
+              'grid grid-cols-2 gap-1.5'
+            }>
+              {options.slice(0, 6).map((opt, i) => {
+                const isNo = opt.option_key === 'no' || opt.label?.toLowerCase() === 'não' || opt.label?.toLowerCase() === 'nao'
+                const prob = typeof opt.probability === 'number' ? opt.probability : 0.5
+                const colors = [
+                  'bg-emerald-500/20 border-emerald-500/40 text-emerald-400',
+                  'bg-rose-500/20 border-rose-500/40 text-rose-400',
+                  'bg-blue-500/20 border-blue-500/40 text-blue-400',
+                  'bg-amber-500/20 border-amber-500/40 text-amber-400',
+                  'bg-purple-500/20 border-purple-500/40 text-purple-400',
+                  'bg-cyan-500/20 border-cyan-500/40 text-cyan-400',
+                ]
+                const colorClass = isNo ? colors[1] : colors[i % colors.length]
                 return (
-                  <button key={opt.id} className={'odds-btn ' + (isNo ? 'odds-btn-no' : 'odds-btn-yes')}>
-                    <div className="text-xs opacity-80 mb-1 truncate">{opt.label.toUpperCase()}</div>
-                    <div className="text-xl font-bold">{(prob * 100).toFixed(0)}c</div>
-                  </button>
+                  <div key={opt.id} className={`rounded-xl border px-2 py-2 text-center ${colorClass}`}>
+                    <div className="text-[10px] font-semibold opacity-80 truncate mb-0.5">{opt.label}</div>
+                    <div className="text-base font-bold">{(prob * 100).toFixed(0)}%</div>
+                  </div>
                 )
               })}
             </div>
           ) : (
             /* Fallback SIM/NAO */
-            <div className="grid grid-cols-2 gap-3">
-              <button className="odds-btn odds-btn-yes">
-                <div className="text-xs opacity-80 mb-1">SIM</div>
-                <div className="text-xl font-bold">{(yesPrice * 100).toFixed(0)}c</div>
-              </button>
-              <button className="odds-btn odds-btn-no">
-                <div className="text-xs opacity-80 mb-1">NAO</div>
-                <div className="text-xl font-bold">{(noPrice * 100).toFixed(0)}c</div>
-              </button>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="rounded-xl border bg-emerald-500/20 border-emerald-500/40 px-2 py-2 text-center">
+                <div className="text-[10px] font-semibold text-emerald-400 opacity-80 mb-0.5">SIM</div>
+                <div className="text-base font-bold text-emerald-400">{(yesPrice * 100).toFixed(0)}%</div>
+              </div>
+              <div className="rounded-xl border bg-rose-500/20 border-rose-500/40 px-2 py-2 text-center">
+                <div className="text-[10px] font-semibold text-rose-400 opacity-80 mb-0.5">NÃO</div>
+                <div className="text-base font-bold text-rose-400">{(noPrice * 100).toFixed(0)}%</div>
+              </div>
             </div>
           )}
         </div>
