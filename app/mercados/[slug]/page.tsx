@@ -9,6 +9,7 @@ import { AIAnalysis } from '@/components/market/AIAnalysis'
 import { MarketCountdown } from '@/components/market/MarketCountdown'
 import { MarketContext } from '@/components/market/MarketContext'
 import { RelatedMarkets } from '@/components/market/RelatedMarkets'
+import { MarketLive } from '@/components/market/MarketLive'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import type { FrontMarket } from '@/lib/types'
@@ -190,17 +191,7 @@ export default async function MarketDetailPage({
             />
 
             {/* Stats grid */}
-            <div className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-border bg-border sm:grid-cols-4">
-              <MiniStat
-                icon={TrendingUp}
-                label="Volume total"
-                value={formatCurrency(totalVolume)}
-              />
-              <MiniStat
-                icon={Users}
-                label="Apostas"
-                value={String(betCount)}
-              />
+            <div className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-border bg-border">
               <MiniStat
                 icon={Calendar}
                 label="Abre"
@@ -213,51 +204,24 @@ export default async function MarketDetailPage({
               />
             </div>
 
-            {/* Options breakdown */}
+            {/* Opções ao vivo — atualiza automaticamente */}
             <Card>
               <CardContent className="p-5">
-                <h2 className="text-lg font-semibold">Opções</h2>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Escolha uma opção abaixo para visualizar o mercado.
-                </p>
-                <div className="space-y-3">
-                  {options.map((opt: any) => {
-                    const probability = opt.probability ?? 0
-                    const isNo = opt.option_key === 'no' || opt.label?.toLowerCase() === 'não'
-                    const isWinner = isResolved && opt.id === winnerOptionId
-                    return (
-                      <div
-                        key={opt.id}
-                        className={`rounded-lg border p-4 ${
-                          isWinner 
-                            ? 'border-green-500/40 bg-green-500/5 ring-1 ring-green-500/20' 
-                            : 'border-border bg-background/40'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="font-medium flex items-center gap-2">
-                            {opt.label}
-                            {isWinner && <span className="text-xs text-green-400 font-bold">VENCEDOR</span>}
-                          </span>
-                          <div className="flex items-center gap-3">
-                            <span className="font-mono text-sm tabular-nums text-muted-foreground">
-                              {Number(opt.odds ?? 0).toFixed(2)}x
-                            </span>
-                            <span className="font-mono text-sm font-semibold tabular-nums">
-                              {(probability * 100).toFixed(1)}%
-                            </span>
-                          </div>
-                        </div>
-                        <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-                          <div
-                            className={isNo ? 'h-full bg-destructive' : 'h-full bg-primary'}
-                            style={{ width: `${Math.min(100, probability * 100)}%` }}
-                          />
-                        </div>
-                      </div>
-                    )
-                  })}
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold">Opções</h2>
+                  <span className="flex items-center gap-1.5 text-xs text-emerald-400 font-medium">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    Ao vivo
+                  </span>
                 </div>
+                <MarketLive
+                  marketId={market.id}
+                  initialOptions={options as any}
+                  initialVolume={totalVolume}
+                  initialBetCount={betCount}
+                  isResolved={isResolved}
+                  winnerOptionId={winnerOptionId}
+                />
               </CardContent>
             </Card>
 

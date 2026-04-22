@@ -235,40 +235,53 @@ export function BetWidget({ marketId, marketSlug, options, isOpen }: BetWidgetPr
         {/* ===== TAB: COMPRAR ===== */}
         {tab === 'comprar' && (
           <>
-            {/* Opções */}
+            {/* PASSO 1: Escolher opção */}
             <div className="space-y-2">
-              <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Escolha</label>
-              <div className={cn('grid gap-2', options.length === 2 ? 'grid-cols-2' : 'grid-cols-1')}>
-                {options.map((opt) => {
+              <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                1. O que você está comprando?
+              </label>
+              <div className={cn(
+                'grid gap-2',
+                options.length === 2 ? 'grid-cols-2' :
+                options.length === 3 ? 'grid-cols-3' : 'grid-cols-2'
+              )}>
+                {options.map((opt, i) => {
                   const active = selectedOption === opt.id
                   const isNo = opt.option_key === 'no' || opt.label.toLowerCase() === 'não'
+                  const COLORS = [
+                    { active: 'border-emerald-500 bg-emerald-500/15 text-emerald-400', bar: 'bg-emerald-500' },
+                    { active: 'border-rose-500 bg-rose-500/15 text-rose-400',          bar: 'bg-rose-500'    },
+                    { active: 'border-blue-500 bg-blue-500/15 text-blue-400',          bar: 'bg-blue-500'    },
+                    { active: 'border-amber-500 bg-amber-500/15 text-amber-400',       bar: 'bg-amber-500'   },
+                    { active: 'border-purple-500 bg-purple-500/15 text-purple-400',    bar: 'bg-purple-500'  },
+                    { active: 'border-cyan-500 bg-cyan-500/15 text-cyan-400',          bar: 'bg-cyan-500'    },
+                  ]
+                  const c = isNo ? COLORS[1] : COLORS[i % COLORS.length]
                   return (
-                    <button
-                      key={opt.id}
-                      type="button"
-                      onClick={() => setSelectedOption(opt.id)}
+                    <button key={opt.id} type="button" onClick={() => setSelectedOption(opt.id)}
                       className={cn(
-                        'relative rounded-lg border px-4 py-3 text-left transition-all',
-                        active
-                          ? isNo ? 'border-destructive bg-destructive/10' : 'border-primary bg-primary/10'
-                          : 'border-border bg-background hover:bg-accent/50'
+                        'relative rounded-xl border px-3 py-3 text-left transition-all',
+                        active ? c.active : 'border-border bg-background hover:bg-accent/40'
                       )}
                     >
-                      <div className="flex items-center justify-between">
-                        <span className={cn('font-medium', active && isNo && 'text-destructive', active && !isNo && 'text-primary')}>
+                      <div className="flex items-start justify-between gap-1 mb-1.5">
+                        <span className={cn('font-semibold text-sm leading-tight', active ? '' : 'text-foreground')}>
                           {opt.label}
                         </span>
-                        <span className="font-mono text-sm tabular-nums text-muted-foreground">
+                        <span className="font-mono text-xs tabular-nums text-muted-foreground flex-shrink-0">
                           {Number(opt.odds ?? 0).toFixed(2)}x
                         </span>
                       </div>
                       {opt.probability != null && (
-                        <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-muted">
-                          <div
-                            className={cn('h-full transition-all', isNo ? 'bg-destructive' : 'bg-primary')}
-                            style={{ width: `${Math.min(100, Number(opt.probability) * 100)}%` }}
-                          />
-                        </div>
+                        <>
+                          <div className="h-1 w-full overflow-hidden rounded-full bg-muted mb-1">
+                            <div className={cn('h-full transition-all', active ? c.bar : 'bg-muted-foreground/40')}
+                              style={{ width: `${Math.min(100, Number(opt.probability) * 100)}%` }} />
+                          </div>
+                          <span className="text-[10px] text-muted-foreground">
+                            {(Number(opt.probability) * 100).toFixed(0)}% de chance
+                          </span>
+                        </>
                       )}
                     </button>
                   )
@@ -276,35 +289,51 @@ export function BetWidget({ marketId, marketSlug, options, isOpen }: BetWidgetPr
               </div>
             </div>
 
-            {/* Valor */}
+            {/* PASSO 2: Valor */}
             <div className="space-y-2">
-              <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Valor da aposta</label>
+              <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                2. Quanto você quer apostar?
+              </label>
               <div className="relative">
                 <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">R$</span>
                 <Input type="number" inputMode="decimal" min="0" step="0.01" value={amount}
                   onChange={(e) => setAmount(e.target.value)} placeholder="0,00"
                   className="pl-10 h-12 text-lg font-mono tabular-nums" />
               </div>
-              <div className="flex gap-2">
-                {[10, 50, 100, 500].map((v) => (
+              <div className="flex gap-1.5">
+                {[10, 25, 50, 100].map((v) => (
                   <button key={v} type="button" onClick={() => setAmount(String(v))}
-                    className="flex-1 rounded-md border border-border bg-background px-2 py-1 text-xs font-medium text-muted-foreground hover:border-primary/50 hover:text-foreground transition-colors">
+                    className="flex-1 rounded-lg border border-border bg-background px-2 py-1.5 text-xs font-semibold text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors">
                     R$ {v}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Resumo */}
+            {/* PASSO 3: Resumo claro do que está comprando */}
             {stake > 0 && chosen && (
-              <div className="rounded-lg border border-border bg-background/50 p-3 space-y-1.5 text-sm">
-                <div className="flex items-center justify-between text-muted-foreground">
-                  <span>Retorno potencial</span>
-                  <span className="font-mono tabular-nums text-foreground">{formatCurrency(potentialReturn)}</span>
+              <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-2">
+                <p className="text-xs font-semibold text-primary uppercase tracking-wider">Resumo da compra</p>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Posição em</span>
+                  <span className="font-bold text-foreground">{chosen.label}</span>
                 </div>
-                <div className="flex items-center justify-between text-muted-foreground">
-                  <span>Lucro estimado</span>
-                  <span className="font-mono tabular-nums text-primary">+{formatCurrency(profit)}</span>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Você paga</span>
+                  <span className="font-mono font-bold text-foreground">{formatCurrency(stake)}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Se acertar, recebe</span>
+                  <span className="font-mono font-bold text-emerald-400">{formatCurrency(potentialReturn)}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Lucro potencial</span>
+                  <span className="font-mono font-bold text-emerald-400">+{formatCurrency(profit)}</span>
+                </div>
+                <div className="h-px bg-border/50" />
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>Odds</span>
+                  <span className="font-mono font-semibold text-primary">{Number(chosen.odds).toFixed(2)}x</span>
                 </div>
               </div>
             )}
@@ -315,17 +344,12 @@ export function BetWidget({ marketId, marketSlug, options, isOpen }: BetWidgetPr
                 <Lock className="h-4 w-4" /> Entrar para apostar
               </Button>
             ) : (
-              <>
-                {stake > 0 && chosen && (
-                  <div className="rounded-xl border border-primary/20 bg-primary/5 px-3 py-2 text-xs text-muted-foreground flex items-center justify-between">
-                    <span>Odds atuais</span>
-                    <span className="text-primary font-bold">{Number(chosen.odds).toFixed(2)}x</span>
-                  </div>
-                )}
-                <Button size="lg" className="w-full gap-2" onClick={handleBet} disabled={loading || stake <= 0 || !chosen}>
-                  {loading ? <><Loader2 className="h-4 w-4 animate-spin" /> Processando...</> : <><Zap className="h-4 w-4" /> Confirmar aposta</>}
-                </Button>
-              </>
+              <Button size="lg" className="w-full gap-2 text-base" onClick={handleBet}
+                disabled={loading || stake <= 0 || !chosen}>
+                {loading
+                  ? <><Loader2 className="h-4 w-4 animate-spin" /> Processando...</>
+                  : <><Zap className="h-4 w-4" /> Comprar {chosen?.label || 'opção'}</>}
+              </Button>
             )}
           </>
         )}

@@ -39,10 +39,20 @@ interface LivePrice {
 }
 
 const ASSETS = [
-  { id: 'bitcoin', symbol: 'BTC', name: 'Bitcoin', icon: '₿', color: 'text-orange-400' },
-  { id: 'ethereum', symbol: 'ETH', name: 'Ethereum', icon: 'Ξ', color: 'text-blue-400' },
-  { id: 'solana', symbol: 'SOL', name: 'Solana', icon: '◎', color: 'text-purple-400' },
+  { id: 'bitcoin',        symbol: 'BTC',  name: 'Bitcoin',   icon: '₿',  color: 'text-orange-400',  category: 'Crypto'      },
+  { id: 'ethereum',       symbol: 'ETH',  name: 'Ethereum',  icon: 'Ξ',  color: 'text-blue-400',    category: 'Crypto'      },
+  { id: 'solana',         symbol: 'SOL',  name: 'Solana',    icon: '◎',  color: 'text-purple-400',  category: 'Crypto'      },
+  { id: 'binancecoin',    symbol: 'BNB',  name: 'BNB',       icon: '◆',  color: 'text-yellow-400',  category: 'Crypto'      },
+  { id: 'ripple',         symbol: 'XRP',  name: 'XRP',       icon: '✦',  color: 'text-cyan-400',    category: 'Crypto'      },
+  { id: 'cardano',        symbol: 'ADA',  name: 'Cardano',   icon: '₳',  color: 'text-sky-400',     category: 'Crypto'      },
+  { id: 'dogecoin',       symbol: 'DOGE', name: 'Dogecoin',  icon: 'Ð',  color: 'text-amber-400',   category: 'Crypto'      },
+  { id: 'gold',           symbol: 'GOLD', name: 'Ouro',      icon: '🥇', color: 'text-yellow-300',  category: 'Commodity'   },
+  { id: 'silver',         symbol: 'SILV', name: 'Prata',     icon: '🥈', color: 'text-slate-300',   category: 'Commodity'   },
 ]
+
+// CoinGecko suporta: bitcoin, ethereum, solana, binancecoin, ripple, cardano, dogecoin
+// Para ouro/prata usamos IDs: gold, silver
+const COINGECKO_IDS = 'bitcoin,ethereum,solana,binancecoin,ripple,cardano,dogecoin,gold,silver'
 
 export default function MercadosRapidosPage() {
   const [markets, setMarkets] = useState<RapidMarket[]>([])
@@ -53,9 +63,8 @@ export default function MercadosRapidosPage() {
 
   const fetchPrices = useCallback(async () => {
     try {
-      const ids = ASSETS.map(a => a.id).join(',')
       const res = await fetch(
-        `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=brl,usd&include_24hr_change=true`,
+        `https://api.coingecko.com/api/v3/simple/price?ids=${COINGECKO_IDS}&vs_currencies=brl,usd&include_24hr_change=true`,
         { cache: 'no-store' }
       )
       if (res.ok) {
@@ -63,11 +72,7 @@ export default function MercadosRapidosPage() {
         const formatted: LivePrice = {}
         for (const [key, val] of Object.entries(data)) {
           const v = val as any
-          formatted[key] = {
-            brl: v.brl,
-            usd: v.usd,
-            brl_24h_change: v.brl_24h_change,
-          }
+          formatted[key] = { brl: v.brl, usd: v.usd, brl_24h_change: v.brl_24h_change }
         }
         setPrices(formatted)
       }
