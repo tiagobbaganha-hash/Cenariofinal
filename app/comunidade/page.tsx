@@ -55,26 +55,41 @@ function EmojiGifPicker({ onEmoji, onGif, compact = false }: {
 }) {
   const [tab, setTab] = useState<'emoji' | 'gif'>('emoji')
   const [gifSearch, setGifSearch] = useState('')
-  const [gifs, setGifs] = useState<any[]>([])
-  const [gifLoading, setGifLoading] = useState(false)
   const [open, setOpen] = useState(false)
 
-  async function loadGifs(q?: string) {
-    setGifLoading(true)
-    try {
-      const url = q
-        ? `https://api.giphy.com/v1/gifs/search?api_key=dc6zaTOxFJmzC&q=${encodeURIComponent(q)}&limit=12&rating=g`
-        : `https://api.giphy.com/v1/gifs/trending?api_key=dc6zaTOxFJmzC&limit=12&rating=g`
-      const res = await fetch(url)
-      const data = await res.json()
-      setGifs(data.data || [])
-    } catch { setGifs([]) }
-    setGifLoading(false)
+  // GIFs estáticos organizados por categoria (sem depender de API externa)
+  const GIF_LIBRARY: Record<string, {id:string, title:string, url:string, thumb:string}[]> = {
+    '📈 Mercado': [
+      {id:'g1',title:'Stonks',url:'https://media.giphy.com/media/XNBcChLQt3beckMGhZ/giphy.gif',thumb:'https://media.giphy.com/media/XNBcChLQt3beckMGhZ/giphy.gif'},
+      {id:'g2',title:'To the Moon',url:'https://media.giphy.com/media/YnkMcHgNIMW4Yfmjxr/giphy.gif',thumb:'https://media.giphy.com/media/YnkMcHgNIMW4Yfmjxr/giphy.gif'},
+      {id:'g3',title:'Gains',url:'https://media.giphy.com/media/l0MYB8Ory7Hqefo9a/giphy.gif',thumb:'https://media.giphy.com/media/l0MYB8Ory7Hqefo9a/giphy.gif'},
+      {id:'g4',title:'Loss',url:'https://media.giphy.com/media/3o7ZeTmU77UlPyeR2w/giphy.gif',thumb:'https://media.giphy.com/media/3o7ZeTmU77UlPyeR2w/giphy.gif'},
+      {id:'g5',title:'Money Rain',url:'https://media.giphy.com/media/26tPplGWjN0xLybiU/giphy.gif',thumb:'https://media.giphy.com/media/26tPplGWjN0xLybiU/giphy.gif'},
+      {id:'g6',title:'Bull Run',url:'https://media.giphy.com/media/xT9IgzoKnwFNmISR8I/giphy.gif',thumb:'https://media.giphy.com/media/xT9IgzoKnwFNmISR8I/giphy.gif'},
+    ],
+    '🎉 Reações': [
+      {id:'g7',title:'Hype',url:'https://media.giphy.com/media/l41Ymrnk3UYOAJ1rO/giphy.gif',thumb:'https://media.giphy.com/media/l41Ymrnk3UYOAJ1rO/giphy.gif'},
+      {id:'g8',title:'Yes!',url:'https://media.giphy.com/media/3o7TKnCdBx5cMg0qti/giphy.gif',thumb:'https://media.giphy.com/media/3o7TKnCdBx5cMg0qti/giphy.gif'},
+      {id:'g9',title:'Party',url:'https://media.giphy.com/media/26ufdipQqU2lhNA4g/giphy.gif',thumb:'https://media.giphy.com/media/26ufdipQqU2lhNA4g/giphy.gif'},
+      {id:'g10',title:'Win',url:'https://media.giphy.com/media/rY93u9tQbybks/giphy.gif',thumb:'https://media.giphy.com/media/rY93u9tQbybks/giphy.gif'},
+      {id:'g11',title:'LFG',url:'https://media.giphy.com/media/S9i8jJxTvAKVHVMvvW/giphy.gif',thumb:'https://media.giphy.com/media/S9i8jJxTvAKVHVMvvW/giphy.gif'},
+      {id:'g12',title:'Isso!',url:'https://media.giphy.com/media/OkJat1YNdoD3W/giphy.gif',thumb:'https://media.giphy.com/media/OkJat1YNdoD3W/giphy.gif'},
+    ],
+    '😂 Memes': [
+      {id:'g13',title:'Bruh',url:'https://media.giphy.com/media/l3q2K5jinAlChoCLS/giphy.gif',thumb:'https://media.giphy.com/media/l3q2K5jinAlChoCLS/giphy.gif'},
+      {id:'g14',title:'Wait',url:'https://media.giphy.com/media/xT5LMHxhOfscxPfIfm/giphy.gif',thumb:'https://media.giphy.com/media/xT5LMHxhOfscxPfIfm/giphy.gif'},
+      {id:'g15',title:'Facepalm',url:'https://media.giphy.com/media/XsUtdIeJ0MWMo/giphy.gif',thumb:'https://media.giphy.com/media/XsUtdIeJ0MWMo/giphy.gif'},
+      {id:'g16',title:'Nope',url:'https://media.giphy.com/media/3oEduIT4h4QFZH1jaw/giphy.gif',thumb:'https://media.giphy.com/media/3oEduIT4h4QFZH1jaw/giphy.gif'},
+      {id:'g17',title:'Really?',url:'https://media.giphy.com/media/5t9wJjyHAOxvnxcPNk/giphy.gif',thumb:'https://media.giphy.com/media/5t9wJjyHAOxvnxcPNk/giphy.gif'},
+      {id:'g18',title:'Crying',url:'https://media.giphy.com/media/ISOckXUybVfQ4/giphy.gif',thumb:'https://media.giphy.com/media/ISOckXUybVfQ4/giphy.gif'},
+    ],
   }
 
-  useEffect(() => {
-    if (open && tab === 'gif' && gifs.length === 0) loadGifs()
-  }, [open, tab])
+  const [gifCategory, setGifCategory] = useState('📈 Mercado')
+  const gifCategories = Object.keys(GIF_LIBRARY)
+  const currentGifs = GIF_LIBRARY[gifCategory] || []
+
+  useEffect(() => {}, [open, tab])
 
   if (!open) return (
     <div className="flex gap-1.5">
@@ -119,32 +134,27 @@ function EmojiGifPicker({ onEmoji, onGif, compact = false }: {
 
       {tab === 'gif' && (
         <div>
-          <div className="flex gap-2 px-3 py-2 border-b border-border/30">
-            <input value={gifSearch} onChange={e => setGifSearch(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && loadGifs(gifSearch)}
-              placeholder="Buscar GIFs no Giphy..."
-              className="flex-1 rounded-xl border border-border bg-background px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" />
-            <button onClick={() => loadGifs(gifSearch)} type="button"
-              className="rounded-xl bg-primary/20 text-primary border border-primary/30 px-3 py-1.5 text-xs font-semibold hover:bg-primary/30 transition-colors">
-              🔍
-            </button>
+
+          {/* Tabs de categoria */}
+          <div className="flex gap-1 px-2 py-1.5 border-b border-border/30 overflow-x-auto">
+            {gifCategories.map(cat => (
+              <button key={cat} onClick={() => setGifCategory(cat)} type="button"
+                className={`px-2.5 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${gifCategory === cat ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
+                {cat}
+              </button>
+            ))}
           </div>
-          <div className="grid grid-cols-3 gap-1.5 p-2 max-h-52 overflow-y-auto">
-            {gifLoading ? (
-              <div className="col-span-3 flex justify-center py-6">
-                <Loader2 className="h-5 w-5 animate-spin text-primary" />
-              </div>
-            ) : gifs.map((g: any) => (
-              <button key={g.id} onClick={() => { onGif(g.images.fixed_height.url); setOpen(false) }} type="button"
+          <div className="grid grid-cols-3 gap-1.5 p-2 max-h-48 overflow-y-auto">
+            {currentGifs.map((g) => (
+              <button key={g.id} onClick={() => { onGif(g.url); setOpen(false) }} type="button"
                 className="relative group rounded-xl overflow-hidden hover:ring-2 hover:ring-primary transition-all aspect-video bg-muted">
-                <img src={g.images.fixed_height_small.url} alt={g.title} className="w-full h-full object-cover" loading="lazy" />
+                <img src={g.thumb} alt={g.title} className="w-full h-full object-cover" loading="lazy" />
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-1">
                   <span className="text-white text-[9px] truncate w-full">{g.title}</span>
                 </div>
               </button>
             ))}
           </div>
-          <p className="text-[9px] text-muted-foreground/40 text-center pb-1.5">Powered by GIPHY</p>
         </div>
       )}
     </div>
@@ -222,13 +232,31 @@ export default function ComunidadePage() {
     const supabase = createClient()
     try {
     const [postsRes, ordersRes, marketsRes, usersRes] = await Promise.all([
-      supabase.from('community_posts').select('id, title, content, created_at, market_id, user_id, author_id, is_pinned').order('created_at', { ascending: false }).limit(30),
+      supabase.from('community_posts').select('id, title, content, gif_url, created_at, market_id, user_id, author_id, is_pinned').order('created_at', { ascending: false }).limit(30),
       supabase.from('orders').select('user_id, stake_amount, status, created_at, option_id, market_id').order('created_at', { ascending: false }).limit(30),
       supabase.from('markets').select('id, title, slug, status').order('created_at', { ascending: false }).limit(5),
       supabase.from('profiles').select('id', { count: 'exact', head: true }),
     ])
 
-    setPosts((postsRes.data || []) as Post[])
+    const rawPosts = (postsRes.data || []) as Post[]
+
+    // Buscar contagem real de comentários para cada post
+    if (rawPosts.length > 0) {
+      const postIds = rawPosts.map(p => p.id)
+      const { data: commentCounts } = await supabase
+        .from('community_comments')
+        .select('post_id')
+        .in('post_id', postIds)
+      
+      const countMap: Record<string, number> = {}
+      for (const c of (commentCounts || [])) {
+        countMap[(c as any).post_id] = (countMap[(c as any).post_id] || 0) + 1
+      }
+      
+      setPosts(rawPosts.map(p => ({ ...p, comments_count: countMap[p.id] || 0 })))
+    } else {
+      setPosts(rawPosts)
+    }
 
     // Montar feed de atividade a partir de ordens reais
     const acts: Activity[] = []
