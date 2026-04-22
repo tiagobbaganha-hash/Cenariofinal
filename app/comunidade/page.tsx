@@ -57,39 +57,49 @@ function EmojiGifPicker({ onEmoji, onGif, compact = false }: {
   const [gifSearch, setGifSearch] = useState('')
   const [open, setOpen] = useState(false)
 
-  // GIFs estáticos organizados por categoria (sem depender de API externa)
-  const GIF_LIBRARY: Record<string, {id:string, title:string, url:string, thumb:string}[]> = {
-    '📈 Mercado': [
-      {id:'g1',title:'Stonks',url:'https://media.giphy.com/media/XNBcChLQt3beckMGhZ/giphy.gif',thumb:'https://media.giphy.com/media/XNBcChLQt3beckMGhZ/giphy.gif'},
-      {id:'g2',title:'To the Moon',url:'https://media.giphy.com/media/YnkMcHgNIMW4Yfmjxr/giphy.gif',thumb:'https://media.giphy.com/media/YnkMcHgNIMW4Yfmjxr/giphy.gif'},
-      {id:'g3',title:'Gains',url:'https://media.giphy.com/media/l0MYB8Ory7Hqefo9a/giphy.gif',thumb:'https://media.giphy.com/media/l0MYB8Ory7Hqefo9a/giphy.gif'},
-      {id:'g4',title:'Loss',url:'https://media.giphy.com/media/3o7ZeTmU77UlPyeR2w/giphy.gif',thumb:'https://media.giphy.com/media/3o7ZeTmU77UlPyeR2w/giphy.gif'},
-      {id:'g5',title:'Money Rain',url:'https://media.giphy.com/media/26tPplGWjN0xLybiU/giphy.gif',thumb:'https://media.giphy.com/media/26tPplGWjN0xLybiU/giphy.gif'},
-      {id:'g6',title:'Bull Run',url:'https://media.giphy.com/media/xT9IgzoKnwFNmISR8I/giphy.gif',thumb:'https://media.giphy.com/media/xT9IgzoKnwFNmISR8I/giphy.gif'},
-    ],
-    '🎉 Reações': [
-      {id:'g7',title:'Hype',url:'https://media.giphy.com/media/l41Ymrnk3UYOAJ1rO/giphy.gif',thumb:'https://media.giphy.com/media/l41Ymrnk3UYOAJ1rO/giphy.gif'},
-      {id:'g8',title:'Yes!',url:'https://media.giphy.com/media/3o7TKnCdBx5cMg0qti/giphy.gif',thumb:'https://media.giphy.com/media/3o7TKnCdBx5cMg0qti/giphy.gif'},
-      {id:'g9',title:'Party',url:'https://media.giphy.com/media/26ufdipQqU2lhNA4g/giphy.gif',thumb:'https://media.giphy.com/media/26ufdipQqU2lhNA4g/giphy.gif'},
-      {id:'g10',title:'Win',url:'https://media.giphy.com/media/rY93u9tQbybks/giphy.gif',thumb:'https://media.giphy.com/media/rY93u9tQbybks/giphy.gif'},
-      {id:'g11',title:'LFG',url:'https://media.giphy.com/media/S9i8jJxTvAKVHVMvvW/giphy.gif',thumb:'https://media.giphy.com/media/S9i8jJxTvAKVHVMvvW/giphy.gif'},
-      {id:'g12',title:'Isso!',url:'https://media.giphy.com/media/OkJat1YNdoD3W/giphy.gif',thumb:'https://media.giphy.com/media/OkJat1YNdoD3W/giphy.gif'},
-    ],
-    '😂 Memes': [
-      {id:'g13',title:'Bruh',url:'https://media.giphy.com/media/l3q2K5jinAlChoCLS/giphy.gif',thumb:'https://media.giphy.com/media/l3q2K5jinAlChoCLS/giphy.gif'},
-      {id:'g14',title:'Wait',url:'https://media.giphy.com/media/xT5LMHxhOfscxPfIfm/giphy.gif',thumb:'https://media.giphy.com/media/xT5LMHxhOfscxPfIfm/giphy.gif'},
-      {id:'g15',title:'Facepalm',url:'https://media.giphy.com/media/XsUtdIeJ0MWMo/giphy.gif',thumb:'https://media.giphy.com/media/XsUtdIeJ0MWMo/giphy.gif'},
-      {id:'g16',title:'Nope',url:'https://media.giphy.com/media/3oEduIT4h4QFZH1jaw/giphy.gif',thumb:'https://media.giphy.com/media/3oEduIT4h4QFZH1jaw/giphy.gif'},
-      {id:'g17',title:'Really?',url:'https://media.giphy.com/media/5t9wJjyHAOxvnxcPNk/giphy.gif',thumb:'https://media.giphy.com/media/5t9wJjyHAOxvnxcPNk/giphy.gif'},
-      {id:'g18',title:'Crying',url:'https://media.giphy.com/media/ISOckXUybVfQ4/giphy.gif',thumb:'https://media.giphy.com/media/ISOckXUybVfQ4/giphy.gif'},
-    ],
+  // GIFs via Tenor API (chave demo pública)
+  const TENOR_KEY = 'LIVDSRZULELA'
+  const TENOR_SEARCHES: Record<string, string> = {
+    '📈 Mercado': 'stonks money',
+    '🚀 Hype': 'lets go hype',
+    '🎉 Festa': 'celebrating party',
+    '😂 Memes': 'funny meme',
+    '😮 Surpresa': 'shocked surprised',
+    '👍 Top': 'thumbs up great',
+    '💀 Perdeu': 'fail lose crying',
+    '🔥 Fire': 'fire amazing',
   }
 
   const [gifCategory, setGifCategory] = useState('📈 Mercado')
-  const gifCategories = Object.keys(GIF_LIBRARY)
-  const currentGifs = GIF_LIBRARY[gifCategory] || []
+  const [tenorGifs, setTenorGifs] = useState<{id:string,title:string,url:string,thumb:string}[]>([])
+  const [tenorLoading, setTenorLoading] = useState(false)
+  const [gifSearch, setGifSearch] = useState('')
+  const gifCategories = Object.keys(TENOR_SEARCHES)
 
-  useEffect(() => {}, [open, tab])
+  async function loadTenorGifs(query: string) {
+    setTenorLoading(true)
+    try {
+      const q = encodeURIComponent(query)
+      const res = await fetch(`https://tenor.googleapis.com/v2/search?q=${q}&key=${TENOR_KEY}&limit=20&media_filter=gif`)
+      const data = await res.json()
+      const results = (data.results || []).map((r: any) => ({
+        id: r.id,
+        title: r.title || query,
+        url: r.media_formats?.gif?.url || r.media_formats?.tinygif?.url || '',
+        thumb: r.media_formats?.tinygif?.url || r.media_formats?.gif?.url || '',
+      })).filter((g: any) => g.url)
+      setTenorGifs(results)
+    } catch { setTenorGifs([]) }
+    setTenorLoading(false)
+  }
+
+  useEffect(() => {
+    if (open && tab === 'gif') {
+      loadTenorGifs(gifSearch || TENOR_SEARCHES[gifCategory] || gifCategory)
+    }
+  }, [open, tab, gifCategory])
+
+  const currentGifs = tenorGifs
 
   if (!open) return (
     <div className="flex gap-1.5">
@@ -135,26 +145,45 @@ function EmojiGifPicker({ onEmoji, onGif, compact = false }: {
       {tab === 'gif' && (
         <div>
 
-          {/* Tabs de categoria */}
-          <div className="flex gap-1 px-2 py-1.5 border-b border-border/30 overflow-x-auto">
-            {gifCategories.map(cat => (
-              <button key={cat} onClick={() => setGifCategory(cat)} type="button"
-                className={`px-2.5 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${gifCategory === cat ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
-                {cat}
+          {/* Busca + Tabs de categoria */}
+          <div className="px-2 py-1.5 border-b border-border/30 space-y-1.5">
+            <div className="flex gap-1.5">
+              <input value={gifSearch} onChange={e => setGifSearch(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && loadTenorGifs(gifSearch)}
+                placeholder="Buscar GIFs..."
+                className="flex-1 rounded-lg border border-border bg-background px-2.5 py-1 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40" />
+              <button onClick={() => loadTenorGifs(gifSearch)} type="button"
+                className="rounded-lg bg-primary/20 text-primary px-2.5 py-1 text-xs font-semibold hover:bg-primary/30 transition-colors">
+                🔍
               </button>
-            ))}
+            </div>
+            <div className="flex gap-1 overflow-x-auto pb-0.5">
+              {gifCategories.map(cat => (
+                <button key={cat} onClick={() => setGifCategory(cat)} type="button"
+                  className={`px-2 py-0.5 rounded-lg text-[10px] font-medium whitespace-nowrap transition-all flex-shrink-0 ${gifCategory === cat ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
+                  {cat}
+                </button>
+              ))}
+            </div>
           </div>
-          <div className="grid grid-cols-3 gap-1.5 p-2 max-h-48 overflow-y-auto">
-            {currentGifs.map((g) => (
+          <div className="grid grid-cols-4 gap-1 p-2 max-h-48 overflow-y-auto">
+            {tenorLoading ? (
+              <div className="col-span-4 flex justify-center py-4">
+                <Loader2 className="h-5 w-5 animate-spin text-primary" />
+              </div>
+            ) : currentGifs.length === 0 ? (
+              <div className="col-span-4 text-center py-4 text-xs text-muted-foreground">Nenhum GIF encontrado</div>
+            ) : currentGifs.map((g) => (
               <button key={g.id} onClick={() => { onGif(g.url); setOpen(false) }} type="button"
-                className="relative group rounded-xl overflow-hidden hover:ring-2 hover:ring-primary transition-all aspect-video bg-muted">
+                className="relative group rounded-lg overflow-hidden hover:ring-2 hover:ring-primary transition-all aspect-video bg-muted">
                 <img src={g.thumb} alt={g.title} className="w-full h-full object-cover" loading="lazy" />
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-1">
-                  <span className="text-white text-[9px] truncate w-full">{g.title}</span>
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-0.5">
+                  <span className="text-white text-[8px] truncate w-full">{g.title}</span>
                 </div>
               </button>
             ))}
           </div>
+          <p className="text-[9px] text-muted-foreground/40 text-center pb-1">Powered by Tenor</p>
         </div>
       )}
     </div>
