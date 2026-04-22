@@ -2,22 +2,38 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
 function getDb(token?: string) {
-  // Usar service role se disponível, senão anon key com token do usuário
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  const opts = (!process.env.SUPABASE_SERVICE_ROLE_KEY && token)
-    ? { global: { headers: { Authorization: `Bearer ${token}` } } }
-    : {}
-  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, key, opts)
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+
+  if (serviceKey) {
+    // Com service role: pleno acesso
+    return createClient(url, serviceKey)
+  }
+  // Sem service role: usa anon key com JWT do usuário no header
+  return createClient(url, anonKey, {
+    global: { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+  })
+}
+
+async function verifyUser(token: string | null) {
+  if (!token) return null
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  // Criar cliente com o token do usuário para verificar sessão
+  const db = createClient(url, anonKey, {
+    global: { headers: { Authorization: `Bearer ${token}` } }
+  })
+  const { data: { user } } = await db.auth.getUser()
+  return user
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const token = req.headers.get('authorization')?.replace('Bearer ', '')
-    const db = getDb(token)
-
-    // Verificar autenticação
-    const { data: { user } } = await db.auth.getUser(token)
+    const token = req.headers.get('authorization')?.replace('Bearer ', '') || null
+    const user = await verifyUser(token)
     if (!user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+    const db = getDb(token || undefined)
 
     const body = await req.json()
     const { asset, asset_symbol, price_at_creation, duration_minutes, up_label, down_label } = body

@@ -61,31 +61,17 @@ export default function MercadosRapidosPage() {
   const [priceLoading, setPriceLoading] = useState(true)
 
   const fetchPrices = useCallback(async () => {
-    const result: LivePrice = {}
     try {
-      const cgRes = await fetch(
-        `https://api.coingecko.com/api/v3/simple/price?ids=${COINGECKO_IDS}&vs_currencies=brl,usd&include_24hr_change=true`,
-        { cache: 'no-store' }
-      )
-      if (cgRes.ok) {
-        const data = await cgRes.json()
-        for (const [key, val] of Object.entries(data)) {
-          const v = val as any
-          result[key] = { brl: v.brl, usd: v.usd, brl_24h_change: v.brl_24h_change }
+      const res = await fetch('/api/prices', { cache: 'no-store' })
+      if (res.ok) {
+        const data = await res.json()
+        const result: LivePrice = {}
+        for (const [id, v] of Object.entries(data as any)) {
+          result[id] = { brl: (v as any).value, usd: 0, brl_24h_change: (v as any).change }
         }
+        setPrices(result)
       }
     } catch (_) {}
-    try {
-      const awRes = await fetch('https://economia.awesomeapi.com.br/json/last/USD-BRL,EUR-BRL,XAU-BRL,WTI-BRL', { cache: 'no-store' })
-      if (awRes.ok) {
-        const data = await awRes.json()
-        if (data.USDBRL) result['USD'] = { brl: parseFloat(data.USDBRL.bid), usd: 1, brl_24h_change: parseFloat(data.USDBRL.pctChange||'0') }
-        if (data.EURBRL) result['EUR'] = { brl: parseFloat(data.EURBRL.bid), usd: 0, brl_24h_change: parseFloat(data.EURBRL.pctChange||'0') }
-        if (data.XAUBRL) result['GOLD'] = { brl: parseFloat(data.XAUBRL.bid), usd: 0, brl_24h_change: parseFloat(data.XAUBRL.pctChange||'0') }
-        if (data.WTIBRL) result['WTI'] = { brl: parseFloat(data.WTIBRL.bid), usd: 0, brl_24h_change: parseFloat(data.WTIBRL.pctChange||'0') }
-      }
-    } catch (_) {}
-    setPrices(result)
     setPriceLoading(false)
   }, [])
 

@@ -10,6 +10,7 @@ import { CookieBanner } from '@/components/cookie-banner'
 import { TermsModal } from '@/components/terms-modal'
 import { ThemeProvider } from '@/components/theme-provider'
 import { SupportChat } from '@/components/support-chat'
+import { GlobalLiveChat } from '@/components/global-live-chat'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -60,9 +61,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         (function() {
           try {
             var t = localStorage.getItem('cenariox-theme') || 'dark';
-            document.documentElement.classList.add(t);
+            document.documentElement.setAttribute('data-theme', t);
           } catch(e) {
-            document.documentElement.classList.add('dark');
+            document.documentElement.setAttribute('data-theme', 'dark');
           }
         })();
       ` }} />
@@ -78,6 +79,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <CookieBanner />
             <TermsModal />
             <SupportChat />
+            <GlobalLiveChat />
           </ToastProvider>
         </ThemeProvider>
       </body>

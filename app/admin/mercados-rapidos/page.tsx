@@ -73,48 +73,18 @@ export default function AdminRapidMarketsPage() {
 
   const fetchAllPrices = useCallback(async () => {
     setPriceLoading(true)
-    const result: Record<string, { value: number; change: number }> = {}
-
     try {
-      // 1. CoinGecko — cripto
-      const ids = ASSET_GROUPS[0].assets.map(a => a.id).join(',')
-      const cgRes = await fetch(
-        `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=brl&include_24hr_change=true`,
-        { cache: 'no-store' }
-      )
-      if (cgRes.ok) {
-        const data = await cgRes.json()
-        for (const a of ASSET_GROUPS[0].assets) {
-          if (data[a.id]) result[a.id] = { value: data[a.id].brl, change: data[a.id].brl_24h_change || 0 }
-        }
-      }
-    } catch (_) {}
-
-    try {
-      // 2. AwesomeAPI — dólar, euro, ouro, petróleo
-      const res = await fetch('https://economia.awesomeapi.com.br/json/last/USD-BRL,EUR-BRL,XAU-BRL,WTI-BRL', { cache: 'no-store' })
+      // Proxy interno — evita CORS e rate limit do browser
+      const res = await fetch('/api/prices', { cache: 'no-store' })
       if (res.ok) {
         const data = await res.json()
-        if (data.USDBRL) result['USD'] = { value: parseFloat(data.USDBRL.bid), change: parseFloat(data.USDBRL.pctChange || '0') }
-        if (data.EURBRL) result['EUR'] = { value: parseFloat(data.EURBRL.bid), change: parseFloat(data.EURBRL.pctChange || '0') }
-        if (data.XAUBRL) result['GOLD'] = { value: parseFloat(data.XAUBRL.bid), change: parseFloat(data.XAUBRL.pctChange || '0') }
-        if (data.WTIBRL) result['WTI'] = { value: parseFloat(data.WTIBRL.bid), change: parseFloat(data.WTIBRL.pctChange || '0') }
-      }
-    } catch (_) {}
-
-    try {
-      // 3. HG Brasil — B3 (usa token gratuito público de demonstração)
-      const res = await fetch('https://api.hgbrasil.com/finance/stock_price?key=demo&symbol=IBOV,PETR4,VALE3,BBDC4', { cache: 'no-store' })
-      if (res.ok) {
-        const data = await res.json()
-        const results = data.results || {}
-        for (const sym of ['IBOV', 'PETR4', 'VALE3', 'BBDC4']) {
-          if (results[sym]) result[sym] = { value: results[sym].price || 0, change: results[sym].change_percent || 0 }
+        const result: Record<string, { value: number; change: number }> = {}
+        for (const [id, v] of Object.entries(data as any)) {
+          result[id] = { value: (v as any).value, change: (v as any).change }
         }
+        setPrices(result)
       }
     } catch (_) {}
-
-    setPrices(result)
     setPriceLoading(false)
   }, [])
 

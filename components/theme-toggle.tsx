@@ -17,13 +17,7 @@ export function ThemeToggle({ className = '' }: { className?: string }) {
 
   function apply(t: 'dark' | 'light') {
     const root = document.documentElement
-    if (t === 'dark') {
-      root.classList.add('dark')
-      root.classList.remove('light')
-    } else {
-      root.classList.remove('dark')
-      root.classList.add('light')
-    }
+    root.setAttribute('data-theme', t)
   }
 
   function toggle() {
