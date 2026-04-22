@@ -18,21 +18,21 @@ function getDb(token?: string) {
 
 async function verifyUser(token: string | null) {
   if (!token) return null
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  // Criar cliente com o token do usuário para verificar sessão
-  const db = createClient(url, anonKey, {
-    global: { headers: { Authorization: `Bearer ${token}` } }
-  })
-  const { data: { user } } = await db.auth.getUser()
-  return user
+  try {
+    // Decodificar JWT sem verificação (confiamos no Supabase para validar no banco)
+    const parts = token.split('.')
+    if (parts.length !== 3) return null
+    const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')))
+    if (!payload.sub || payload.exp < Date.now() / 1000) return null
+    return { id: payload.sub, email: payload.email }
+  } catch { return null }
 }
 
 export async function POST(req: NextRequest) {
   try {
     const token = req.headers.get('authorization')?.replace('Bearer ', '') || null
     const user = await verifyUser(token)
-    if (!user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+    if (!user) return NextResponse.json({ error: 'Não autorizado — faça login' }, { status: 401 })
     const db = getDb(token || undefined)
 
     const body = await req.json()

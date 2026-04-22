@@ -9,7 +9,7 @@ export function ThemeToggle({ className = '' }: { className?: string }) {
 
   useEffect(() => {
     setMounted(true)
-    const saved = localStorage.getItem('cenariox-theme') as 'dark' | 'light' | null
+    const saved = localStorage.getItem('cx_theme') as 'dark' | 'light' | null
     const initial = saved || 'dark'
     apply(initial)
     setTheme(initial)
@@ -23,7 +23,7 @@ export function ThemeToggle({ className = '' }: { className?: string }) {
   function toggle() {
     const next = theme === 'dark' ? 'light' : 'dark'
     setTheme(next)
-    localStorage.setItem('cenariox-theme', next)
+    localStorage.setItem('cx_theme', next)
     apply(next)
   }
 

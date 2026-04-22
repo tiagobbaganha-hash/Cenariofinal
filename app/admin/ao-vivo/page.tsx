@@ -112,8 +112,8 @@ export default function AdminAoVivoPage() {
       )
 
       toast({ type: 'success', title: '✅ Mercado ao vivo criado!' })
-      setForm(f => ({ ...f, title: '', description: '', event_name: '', current_score: '', period: '' }))
-      loadMarkets()
+      setForm(f => ({ ...f, title: '', description: '', event_name: '', current_score: '', period: '', image_url: '', influencer_code: '' }))
+      await loadMarkets()
     } catch (e: any) {
       toast({ type: 'error', title: 'Erro', description: e.message })
     } finally { setCreating(false) }

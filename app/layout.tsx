@@ -60,7 +60,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <script dangerouslySetInnerHTML={{ __html: `
         (function() {
           try {
-            var t = localStorage.getItem('cenariox-theme') || 'dark';
+            var t = localStorage.getItem('cx_theme') || 'dark';
             document.documentElement.setAttribute('data-theme', t);
           } catch(e) {
             document.documentElement.setAttribute('data-theme', 'dark');
