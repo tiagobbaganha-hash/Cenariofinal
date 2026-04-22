@@ -56,49 +56,111 @@ function EmojiGifPicker({ onEmoji, onGif, compact = false }: {
   const [tab, setTab] = useState<'emoji' | 'gif'>('emoji')
   const [open, setOpen] = useState(false)
 
-  // GIFs via Tenor API (chave demo pública)
-  const TENOR_KEY = 'LIVDSRZULELA'
-  const TENOR_SEARCHES: Record<string, string> = {
-    '📈 Mercado': 'stonks money',
-    '🚀 Hype': 'lets go hype',
-    '🎉 Festa': 'celebrating party',
-    '😂 Memes': 'funny meme',
-    '😮 Surpresa': 'shocked surprised',
-    '👍 Top': 'thumbs up great',
-    '💀 Perdeu': 'fail lose crying',
-    '🔥 Fire': 'fire amazing',
+  // GIFs: links diretos media.giphy.com (sem API key — puro CDN)
+  type Gif = { id: string; title: string; url: string }
+  const GIF_DB: Record<string, Gif[]> = {
+    '📈 Mercado': [
+      {id:'m1',title:'Stonks',url:'https://media.giphy.com/media/XNBcChLQt3beckMGhZ/giphy.gif'},
+      {id:'m2',title:'To the Moon',url:'https://media.giphy.com/media/YnkMcHgNIMW4Yfmjxr/giphy.gif'},
+      {id:'m3',title:'Money Rain',url:'https://media.giphy.com/media/26tPplGWjN0xLybiU/giphy.gif'},
+      {id:'m4',title:'Bull Run',url:'https://media.giphy.com/media/xT9IgzoKnwFNmISR8I/giphy.gif'},
+      {id:'m5',title:'Gains',url:'https://media.giphy.com/media/l0MYB8Ory7Hqefo9a/giphy.gif'},
+      {id:'m6',title:'Loss',url:'https://media.giphy.com/media/3o7ZeTmU77UlPyeR2w/giphy.gif'},
+      {id:'m7',title:'Money',url:'https://media.giphy.com/media/67ThRZlYBvibtdF9JH/giphy.gif'},
+      {id:'m8',title:'Bear',url:'https://media.giphy.com/media/l2JhpjWPccQtartio/giphy.gif'},
+      {id:'m9',title:'Chart Up',url:'https://media.giphy.com/media/feN0YJbVs0fwA/giphy.gif'},
+      {id:'m10',title:'Crypto',url:'https://media.giphy.com/media/WFZvB7VIXBgiz3oDXE/giphy.gif'},
+      {id:'m11',title:'Rich',url:'https://media.giphy.com/media/3oEjHAUOqG3lSS0f1C/giphy.gif'},
+      {id:'m12',title:'Broke',url:'https://media.giphy.com/media/l2YWuMPCsJ1y1KCCI/giphy.gif'},
+    ],
+    '🚀 Hype': [
+      {id:'h1',title:'LFG',url:'https://media.giphy.com/media/S9i8jJxTvAKVHVMvvW/giphy.gif'},
+      {id:'h2',title:'Hype',url:'https://media.giphy.com/media/l41Ymrnk3UYOAJ1rO/giphy.gif'},
+      {id:'h3',title:'Yes!',url:'https://media.giphy.com/media/3o7TKnCdBx5cMg0qti/giphy.gif'},
+      {id:'h4',title:'Isso!',url:'https://media.giphy.com/media/OkJat1YNdoD3W/giphy.gif'},
+      {id:'h5',title:'Win',url:'https://media.giphy.com/media/rY93u9tQbybks/giphy.gif'},
+      {id:'h6',title:'Lets Go',url:'https://media.giphy.com/media/5L57g5ek3OaNa/giphy.gif'},
+      {id:'h7',title:'Pump',url:'https://media.giphy.com/media/26BRv0ThflsHCqDrG/giphy.gif'},
+      {id:'h8',title:'Champion',url:'https://media.giphy.com/media/26FL4KZPYHA0iIoJi/giphy.gif'},
+      {id:'h9',title:'Goat',url:'https://media.giphy.com/media/l0MYuHMSCDQDBdm36/giphy.gif'},
+      {id:'h10',title:'Fire',url:'https://media.giphy.com/media/l46Cy1rHbQ92uuLXa/giphy.gif'},
+      {id:'h11',title:'Amazing',url:'https://media.giphy.com/media/26gsccje7r2LQAA12/giphy.gif'},
+      {id:'h12',title:'Acertou',url:'https://media.giphy.com/media/3o7TKF1fSIs1R19B8k/giphy.gif'},
+    ],
+    '🎉 Festa': [
+      {id:'f1',title:'Party',url:'https://media.giphy.com/media/26ufdipQqU2lhNA4g/giphy.gif'},
+      {id:'f2',title:'Confetti',url:'https://media.giphy.com/media/g9582DNuQppxC/giphy.gif'},
+      {id:'f3',title:'Dancing',url:'https://media.giphy.com/media/13HgwGsXF0aiGY/giphy.gif'},
+      {id:'f4',title:'Celebrate',url:'https://media.giphy.com/media/artj92V8o75VPL7AeQ/giphy.gif'},
+      {id:'f5',title:'Trophy',url:'https://media.giphy.com/media/xT0xeuOy2Fcl9vDGiA/giphy.gif'},
+      {id:'f6',title:'Happy',url:'https://media.giphy.com/media/ZdUnQS4AXEl1AERdil/giphy.gif'},
+      {id:'f7',title:'Fireworks',url:'https://media.giphy.com/media/26tOZ42Mg6pbTUPHW/giphy.gif'},
+      {id:'f8',title:'Woohoo',url:'https://media.giphy.com/media/3ohzdIuqJoo8QdKlnW/giphy.gif'},
+      {id:'f9',title:'Dance',url:'https://media.giphy.com/media/l3V0dy1zzyjbYTQQM/giphy.gif'},
+      {id:'f10',title:'Weekend',url:'https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif'},
+    ],
+    '😂 Memes': [
+      {id:'mm1',title:'Bruh',url:'https://media.giphy.com/media/l3q2K5jinAlChoCLS/giphy.gif'},
+      {id:'mm2',title:'Facepalm',url:'https://media.giphy.com/media/XsUtdIeJ0MWMo/giphy.gif'},
+      {id:'mm3',title:'Nope',url:'https://media.giphy.com/media/3oEduIT4h4QFZH1jaw/giphy.gif'},
+      {id:'mm4',title:'Wait',url:'https://media.giphy.com/media/xT5LMHxhOfscxPfIfm/giphy.gif'},
+      {id:'mm5',title:'Really?',url:'https://media.giphy.com/media/5t9wJjyHAOxvnxcPNk/giphy.gif'},
+      {id:'mm6',title:'Not My Problem',url:'https://media.giphy.com/media/LRVnPYqM8DLag/giphy.gif'},
+      {id:'mm7',title:'Crying',url:'https://media.giphy.com/media/ISOckXUybVfQ4/giphy.gif'},
+      {id:'mm8',title:'Awkward',url:'https://media.giphy.com/media/l1J9EdzfOSgfyueLm/giphy.gif'},
+      {id:'mm9',title:'SMH',url:'https://media.giphy.com/media/3o6MbnqLhX5tJ5gXSk/giphy.gif'},
+      {id:'mm10',title:'No',url:'https://media.giphy.com/media/3oEjHEkzCTyFQhE4qQ/giphy.gif'},
+      {id:'mm11',title:'Ok',url:'https://media.giphy.com/media/l3q2Z6S6n38zjPswo/giphy.gif'},
+      {id:'mm12',title:'Confused',url:'https://media.giphy.com/media/8abAbOrQ9rvLG/giphy.gif'},
+    ],
+    '😮 Surpresa': [
+      {id:'s1',title:'OMG',url:'https://media.giphy.com/media/5VKbvrjxpVJCM/giphy.gif'},
+      {id:'s2',title:'Shocked',url:'https://media.giphy.com/media/xT9IgG50Lg7rusRgqU/giphy.gif'},
+      {id:'s3',title:'Mind Blown',url:'https://media.giphy.com/media/26ufdipQqU2lhNA4g/giphy.gif'},
+      {id:'s4',title:'No Way',url:'https://media.giphy.com/media/3o6Mbrjw5ynGp61yOA/giphy.gif'},
+      {id:'s5',title:'Wow',url:'https://media.giphy.com/media/3o7TKSjRrfIPjeiVyO/giphy.gif'},
+      {id:'s6',title:'What',url:'https://media.giphy.com/media/3oEjI6SIIHBdRxXI40/giphy.gif'},
+      {id:'s7',title:'Unexpected',url:'https://media.giphy.com/media/xUPGGDNsLvqsBOhuU0/giphy.gif'},
+      {id:'s8',title:'Wait What',url:'https://media.giphy.com/media/lKZEeXJGhU1d6/giphy.gif'},
+    ],
+    '💀 Perdeu': [
+      {id:'p1',title:'RIP',url:'https://media.giphy.com/media/l2JhpjWPccQtartio/giphy.gif'},
+      {id:'p2',title:'F',url:'https://media.giphy.com/media/3o6Mbn2NmHHLRf4D8Q/giphy.gif'},
+      {id:'p3',title:'L',url:'https://media.giphy.com/media/PjJ1cLHqLEveXysGDB/giphy.gif'},
+      {id:'p4',title:'Crying',url:'https://media.giphy.com/media/OPU6wzx8JrHna/giphy.gif'},
+      {id:'p5',title:'Fail',url:'https://media.giphy.com/media/26ybwvTX4DTkwst6U/giphy.gif'},
+      {id:'p6',title:'Broke',url:'https://media.giphy.com/media/l2YWuMPCsJ1y1KCCI/giphy.gif'},
+      {id:'p7',title:'Loss',url:'https://media.giphy.com/media/3o7ZeTmU77UlPyeR2w/giphy.gif'},
+      {id:'p8',title:'Sad',url:'https://media.giphy.com/media/ROF8OQvDmxytW/giphy.gif'},
+    ],
+    '🔥 Futebol': [
+      {id:'ft1',title:'Gol',url:'https://media.giphy.com/media/l0MYGb1LuZ3n7dRnO/giphy.gif'},
+      {id:'ft2',title:'Comemoração',url:'https://media.giphy.com/media/3oEjHAUOqG3lSS0f1C/giphy.gif'},
+      {id:'ft3',title:'Defesa',url:'https://media.giphy.com/media/3o6MbbwX7oMbxzQ01W/giphy.gif'},
+      {id:'ft4',title:'Chute',url:'https://media.giphy.com/media/26BRBKqUiq586bRVm/giphy.gif'},
+      {id:'ft5',title:'Flamengo',url:'https://media.giphy.com/media/d31w24psGYeekCZy/giphy.gif'},
+      {id:'ft6',title:'Seleção',url:'https://media.giphy.com/media/l0HlBO7eyXzSZkJri/giphy.gif'},
+    ],
+    '👍 Reações': [
+      {id:'r1',title:'Like',url:'https://media.giphy.com/media/3oEjHchKlHiHcMhQle/giphy.gif'},
+      {id:'r2',title:'Dislike',url:'https://media.giphy.com/media/26BRrSvJEDlpqyMqY/giphy.gif'},
+      {id:'r3',title:'Clap',url:'https://media.giphy.com/media/3oz8xP6SaSkSU9dhcI/giphy.gif'},
+      {id:'r4',title:'OK',url:'https://media.giphy.com/media/l0HlvtIPzPdt2usKs/giphy.gif'},
+      {id:'r5',title:'Love',url:'https://media.giphy.com/media/3oEdva9BUHPHz2yEnO/giphy.gif'},
+      {id:'r6',title:'100',url:'https://media.giphy.com/media/l4q8cJzGdR9J8w3hS/giphy.gif'},
+      {id:'r7',title:'Salute',url:'https://media.giphy.com/media/26FLgGTPUDH6UGAbm/giphy.gif'},
+      {id:'r8',title:'Strong',url:'https://media.giphy.com/media/3o7TKSha51ATTx9KzC/giphy.gif'},
+    ],
   }
 
   const [gifCategory, setGifCategory] = useState('📈 Mercado')
-  const [tenorGifs, setTenorGifs] = useState<{id:string,title:string,url:string,thumb:string}[]>([])
-  const [tenorLoading, setTenorLoading] = useState(false)
   const [gifSearch, setGifSearch] = useState('')
-  const gifCategories = Object.keys(TENOR_SEARCHES)
+  const gifCategories = Object.keys(GIF_DB)
+  const currentGifs = gifSearch.trim()
+    ? Object.values(GIF_DB).flat().filter(g => g.title.toLowerCase().includes(gifSearch.toLowerCase()))
+    : (GIF_DB[gifCategory] || [])
 
-  async function loadTenorGifs(query: string) {
-    setTenorLoading(true)
-    try {
-      const q = encodeURIComponent(query)
-      const res = await fetch(`https://tenor.googleapis.com/v2/search?q=${q}&key=${TENOR_KEY}&limit=20&media_filter=gif`)
-      const data = await res.json()
-      const results = (data.results || []).map((r: any) => ({
-        id: r.id,
-        title: r.title || query,
-        url: r.media_formats?.gif?.url || r.media_formats?.tinygif?.url || '',
-        thumb: r.media_formats?.tinygif?.url || r.media_formats?.gif?.url || '',
-      })).filter((g: any) => g.url)
-      setTenorGifs(results)
-    } catch { setTenorGifs([]) }
-    setTenorLoading(false)
-  }
-
-  useEffect(() => {
-    if (open && tab === 'gif') {
-      loadTenorGifs(gifSearch || TENOR_SEARCHES[gifCategory] || gifCategory)
-    }
-  }, [open, tab, gifCategory])
-
-  const currentGifs = tenorGifs
+  useEffect(() => {}, [open, tab])
 
   if (!open) return (
     <div className="flex gap-1.5">
@@ -144,45 +206,36 @@ function EmojiGifPicker({ onEmoji, onGif, compact = false }: {
       {tab === 'gif' && (
         <div>
 
-          {/* Busca + Tabs de categoria */}
+          {/* Busca */}
           <div className="px-2 py-1.5 border-b border-border/30 space-y-1.5">
-            <div className="flex gap-1.5">
-              <input value={gifSearch} onChange={e => setGifSearch(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && loadTenorGifs(gifSearch)}
-                placeholder="Buscar GIFs..."
-                className="flex-1 rounded-lg border border-border bg-background px-2.5 py-1 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40" />
-              <button onClick={() => loadTenorGifs(gifSearch)} type="button"
-                className="rounded-lg bg-primary/20 text-primary px-2.5 py-1 text-xs font-semibold hover:bg-primary/30 transition-colors">
-                🔍
-              </button>
-            </div>
-            <div className="flex gap-1 overflow-x-auto pb-0.5">
-              {gifCategories.map(cat => (
-                <button key={cat} onClick={() => setGifCategory(cat)} type="button"
-                  className={`px-2 py-0.5 rounded-lg text-[10px] font-medium whitespace-nowrap transition-all flex-shrink-0 ${gifCategory === cat ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
-                  {cat}
-                </button>
-              ))}
-            </div>
+            <input value={gifSearch} onChange={e => setGifSearch(e.target.value)}
+              placeholder="Buscar GIFs..."
+              className="w-full rounded-lg border border-border bg-background px-2.5 py-1 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40" />
+            {!gifSearch && (
+              <div className="flex gap-1 overflow-x-auto pb-0.5">
+                {gifCategories.map(cat => (
+                  <button key={cat} onClick={() => setGifCategory(cat)} type="button"
+                    className={`px-2 py-0.5 rounded-lg text-[10px] font-medium whitespace-nowrap transition-all flex-shrink-0 ${gifCategory === cat ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
+                    {cat}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
           <div className="grid grid-cols-4 gap-1 p-2 max-h-48 overflow-y-auto">
-            {tenorLoading ? (
-              <div className="col-span-4 flex justify-center py-4">
-                <Loader2 className="h-5 w-5 animate-spin text-primary" />
-              </div>
-            ) : currentGifs.length === 0 ? (
+            {currentGifs.length === 0 ? (
               <div className="col-span-4 text-center py-4 text-xs text-muted-foreground">Nenhum GIF encontrado</div>
             ) : currentGifs.map((g) => (
               <button key={g.id} onClick={() => { onGif(g.url); setOpen(false) }} type="button"
                 className="relative group rounded-lg overflow-hidden hover:ring-2 hover:ring-primary transition-all aspect-video bg-muted">
-                <img src={g.thumb} alt={g.title} className="w-full h-full object-cover" loading="lazy" />
+                <img src={g.url} alt={g.title} className="w-full h-full object-cover" loading="lazy" />
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-0.5">
                   <span className="text-white text-[8px] truncate w-full">{g.title}</span>
                 </div>
               </button>
             ))}
           </div>
-          <p className="text-[9px] text-muted-foreground/40 text-center pb-1">Powered by Tenor</p>
+          <p className="text-[9px] text-muted-foreground/40 text-center pb-1">Powered by Giphy</p>
         </div>
       )}
     </div>
