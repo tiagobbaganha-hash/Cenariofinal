@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 import type { ApiResponse, User } from '@/lib/types/api'
 
 const supabaseAdmin = createClient(
-  'https://slxzmyiwcsjyahahkppe.supabase.co',
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 

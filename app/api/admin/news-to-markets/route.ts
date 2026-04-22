@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
 function getDb(token?: string) {
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNseHpteWl3Y3NqeWFoYWhrcHBlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzExNjExOTMsImV4cCI6MjA4NjczNzE5M30.S_r0W7rJ-KapNXO-Lkb_ggL6jUob0fUeR9nuwZH3Bn4'
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   const opts = (!process.env.SUPABASE_SERVICE_ROLE_KEY && token)
     ? { global: { headers: { Authorization: `Bearer ${token}` } } } : {}
-  return createClient('https://slxzmyiwcsjyahahkppe.supabase.co', key, opts)
+  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, key, opts)
 }
 
 export async function POST(req: NextRequest) {
