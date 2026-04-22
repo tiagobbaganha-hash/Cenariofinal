@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 import type { ApiResponse, Market, CreateMarketInput } from '@/lib/types/api'
 
 const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  'https://slxzmyiwcsjyahahkppe.supabase.co',
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
