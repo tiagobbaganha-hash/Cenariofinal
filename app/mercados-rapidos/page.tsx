@@ -39,20 +39,19 @@ interface LivePrice {
 }
 
 const ASSETS = [
-  { id: 'bitcoin',        symbol: 'BTC',  name: 'Bitcoin',   icon: '₿',  color: 'text-orange-400',  category: 'Crypto'      },
-  { id: 'ethereum',       symbol: 'ETH',  name: 'Ethereum',  icon: 'Ξ',  color: 'text-blue-400',    category: 'Crypto'      },
-  { id: 'solana',         symbol: 'SOL',  name: 'Solana',    icon: '◎',  color: 'text-purple-400',  category: 'Crypto'      },
-  { id: 'binancecoin',    symbol: 'BNB',  name: 'BNB',       icon: '◆',  color: 'text-yellow-400',  category: 'Crypto'      },
-  { id: 'ripple',         symbol: 'XRP',  name: 'XRP',       icon: '✦',  color: 'text-cyan-400',    category: 'Crypto'      },
-  { id: 'cardano',        symbol: 'ADA',  name: 'Cardano',   icon: '₳',  color: 'text-sky-400',     category: 'Crypto'      },
-  { id: 'dogecoin',       symbol: 'DOGE', name: 'Dogecoin',  icon: 'Ð',  color: 'text-amber-400',   category: 'Crypto'      },
-  { id: 'gold',           symbol: 'GOLD', name: 'Ouro',      icon: '🥇', color: 'text-yellow-300',  category: 'Commodity'   },
-  { id: 'silver',         symbol: 'SILV', name: 'Prata',     icon: '🥈', color: 'text-slate-300',   category: 'Commodity'   },
+  { id: 'bitcoin',     symbol: 'BTC',  name: 'Bitcoin',   icon: '₿',  color: 'text-orange-400' },
+  { id: 'ethereum',    symbol: 'ETH',  name: 'Ethereum',  icon: 'Ξ',  color: 'text-blue-400'   },
+  { id: 'solana',      symbol: 'SOL',  name: 'Solana',    icon: '◎',  color: 'text-purple-400' },
+  { id: 'binancecoin', symbol: 'BNB',  name: 'BNB',       icon: '◆',  color: 'text-yellow-400' },
+  { id: 'ripple',      symbol: 'XRP',  name: 'XRP',       icon: '✦',  color: 'text-cyan-400'   },
+  { id: 'dogecoin',    symbol: 'DOGE', name: 'Dogecoin',  icon: 'Ð',  color: 'text-amber-400'  },
+  { id: 'USD',         symbol: 'USD',  name: 'Dólar',     icon: '$',  color: 'text-green-400'  },
+  { id: 'EUR',         symbol: 'EUR',  name: 'Euro',      icon: '€',  color: 'text-blue-300'   },
+  { id: 'GOLD',        symbol: 'OURO', name: 'Ouro',      icon: '🥇', color: 'text-yellow-300' },
+  { id: 'WTI',         symbol: 'WTI',  name: 'Petróleo',  icon: '🛢️', color: 'text-slate-300'  },
 ]
 
-// CoinGecko suporta: bitcoin, ethereum, solana, binancecoin, ripple, cardano, dogecoin
-// Para ouro/prata usamos IDs: gold, silver
-const COINGECKO_IDS = 'bitcoin,ethereum,solana,binancecoin,ripple,cardano,dogecoin,gold,silver'
+const COINGECKO_IDS = 'bitcoin,ethereum,solana,binancecoin,ripple,dogecoin'
 
 export default function MercadosRapidosPage() {
   const [markets, setMarkets] = useState<RapidMarket[]>([])
@@ -62,22 +61,32 @@ export default function MercadosRapidosPage() {
   const [priceLoading, setPriceLoading] = useState(true)
 
   const fetchPrices = useCallback(async () => {
+    const result: LivePrice = {}
     try {
-      const res = await fetch(
+      const cgRes = await fetch(
         `https://api.coingecko.com/api/v3/simple/price?ids=${COINGECKO_IDS}&vs_currencies=brl,usd&include_24hr_change=true`,
         { cache: 'no-store' }
       )
-      if (res.ok) {
-        const data = await res.json()
-        const formatted: LivePrice = {}
+      if (cgRes.ok) {
+        const data = await cgRes.json()
         for (const [key, val] of Object.entries(data)) {
           const v = val as any
-          formatted[key] = { brl: v.brl, usd: v.usd, brl_24h_change: v.brl_24h_change }
+          result[key] = { brl: v.brl, usd: v.usd, brl_24h_change: v.brl_24h_change }
         }
-        setPrices(formatted)
       }
     } catch (_) {}
-    finally { setPriceLoading(false) }
+    try {
+      const awRes = await fetch('https://economia.awesomeapi.com.br/json/last/USD-BRL,EUR-BRL,XAU-BRL,WTI-BRL', { cache: 'no-store' })
+      if (awRes.ok) {
+        const data = await awRes.json()
+        if (data.USDBRL) result['USD'] = { brl: parseFloat(data.USDBRL.bid), usd: 1, brl_24h_change: parseFloat(data.USDBRL.pctChange||'0') }
+        if (data.EURBRL) result['EUR'] = { brl: parseFloat(data.EURBRL.bid), usd: 0, brl_24h_change: parseFloat(data.EURBRL.pctChange||'0') }
+        if (data.XAUBRL) result['GOLD'] = { brl: parseFloat(data.XAUBRL.bid), usd: 0, brl_24h_change: parseFloat(data.XAUBRL.pctChange||'0') }
+        if (data.WTIBRL) result['WTI'] = { brl: parseFloat(data.WTIBRL.bid), usd: 0, brl_24h_change: parseFloat(data.WTIBRL.pctChange||'0') }
+      }
+    } catch (_) {}
+    setPrices(result)
+    setPriceLoading(false)
   }, [])
 
   async function loadMarkets() {
