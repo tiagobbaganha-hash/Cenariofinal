@@ -48,93 +48,43 @@ const GIFS_CATEGORIES = {
     { label: 'Nope', url: 'https://media.giphy.com/media/3oEduIT4h4QFZH1jaw/giphy.gif' },
   ],
 }
-function EmojiGifPicker({ onEmoji, onGif, compact = false }: { 
+function EmojiGifPicker({ onEmoji, onGif, compact = false }: {
   onEmoji: (e: string) => void
   onGif: (url: string) => void
-  compact?: boolean 
+  compact?: boolean
 }) {
   const [tab, setTab] = useState<'emoji' | 'gif'>('emoji')
   const [open, setOpen] = useState(false)
-
-  // GIFs com URLs Giphy verificadas (formato estável media.giphy.com)
-  type Gif = { id: string; title: string; url: string }
-  const GIF_DB: Record<string, Gif[]> = {
-    '📈 Mercado': [
-      {id:'m1',title:'Stonks',url:'https://media.giphy.com/media/XNBcChLQt3beckMGhZ/giphy.gif'},
-      {id:'m2',title:'To the Moon',url:'https://media.giphy.com/media/YnkMcHgNIMW4Yfmjxr/giphy.gif'},
-      {id:'m3',title:'Money Rain',url:'https://media.giphy.com/media/26tPplGWjN0xLybiU/giphy.gif'},
-      {id:'m4',title:'Gains',url:'https://media.giphy.com/media/l0MYB8Ory7Hqefo9a/giphy.gif'},
-      {id:'m5',title:'Loss',url:'https://media.giphy.com/media/3o7ZeTmU77UlPyeR2w/giphy.gif'},
-      {id:'m6',title:'Rich',url:'https://media.giphy.com/media/3oEjHAUOqG3lSS0f1C/giphy.gif'},
-      {id:'m7',title:'Bear Market',url:'https://media.giphy.com/media/l2JhpjWPccQtartio/giphy.gif'},
-      {id:'m8',title:'Bitcoin',url:'https://media.giphy.com/media/WFZvB7VIXBgiz3oDXE/giphy.gif'},
-      {id:'m9',title:'Chart Up',url:'https://media.giphy.com/media/feN0YJbVs0fwA/giphy.gif'},
-      {id:'m10',title:'Broke',url:'https://media.giphy.com/media/l2YWuMPCsJ1y1KCCI/giphy.gif'},
-      {id:'m11',title:'Crypto',url:'https://media.giphy.com/media/xT9IgzoKnwFNmISR8I/giphy.gif'},
-      {id:'m12',title:'Numbers',url:'https://media.giphy.com/media/67ThRZlYBvibtdF9JH/giphy.gif'},
-    ],
-    '🚀 Hype': [
-      {id:'h1',title:'LFG',url:'https://media.giphy.com/media/S9i8jJxTvAKVHVMvvW/giphy.gif'},
-      {id:'h2',title:'Hype',url:'https://media.giphy.com/media/l41Ymrnk3UYOAJ1rO/giphy.gif'},
-      {id:'h3',title:'Yes!',url:'https://media.giphy.com/media/3o7TKnCdBx5cMg0qti/giphy.gif'},
-      {id:'h4',title:'Party',url:'https://media.giphy.com/media/26ufdipQqU2lhNA4g/giphy.gif'},
-      {id:'h5',title:'Win',url:'https://media.giphy.com/media/rY93u9tQbybks/giphy.gif'},
-      {id:'h6',title:'Amazing',url:'https://media.giphy.com/media/26gsccje7r2LQAA12/giphy.gif'},
-      {id:'h7',title:'Lets Go',url:'https://media.giphy.com/media/5L57g5ek3OaNa/giphy.gif'},
-      {id:'h8',title:'Champion',url:'https://media.giphy.com/media/26FL4KZPYHA0iIoJi/giphy.gif'},
-      {id:'h9',title:'Fireworks',url:'https://media.giphy.com/media/26tOZ42Mg6pbTUPHW/giphy.gif'},
-      {id:'h10',title:'Trophy',url:'https://media.giphy.com/media/xT0xeuOy2Fcl9vDGiA/giphy.gif'},
-    ],
-    '😂 Memes': [
-      {id:'mm1',title:'Bruh',url:'https://media.giphy.com/media/l3q2K5jinAlChoCLS/giphy.gif'},
-      {id:'mm2',title:'Facepalm',url:'https://media.giphy.com/media/XsUtdIeJ0MWMo/giphy.gif'},
-      {id:'mm3',title:'Nope',url:'https://media.giphy.com/media/3oEduIT4h4QFZH1jaw/giphy.gif'},
-      {id:'mm4',title:'Wait',url:'https://media.giphy.com/media/xT5LMHxhOfscxPfIfm/giphy.gif'},
-      {id:'mm5',title:'Really?',url:'https://media.giphy.com/media/5t9wJjyHAOxvnxcPNk/giphy.gif'},
-      {id:'mm6',title:'Crying',url:'https://media.giphy.com/media/ISOckXUybVfQ4/giphy.gif'},
-      {id:'mm7',title:'Awkward',url:'https://media.giphy.com/media/l1J9EdzfOSgfyueLm/giphy.gif'},
-      {id:'mm8',title:'No',url:'https://media.giphy.com/media/3oEjHEkzCTyFQhE4qQ/giphy.gif'},
-      {id:'mm9',title:'Confused',url:'https://media.giphy.com/media/8abAbOrQ9rvLG/giphy.gif'},
-      {id:'mm10',title:'SMH',url:'https://media.giphy.com/media/3o6MbnqLhX5tJ5gXSk/giphy.gif'},
-    ],
-    '😮 Surpresa': [
-      {id:'s1',title:'OMG',url:'https://media.giphy.com/media/5VKbvrjxpVJCM/giphy.gif'},
-      {id:'s2',title:'Shocked',url:'https://media.giphy.com/media/xT9IgG50Lg7rusRgqU/giphy.gif'},
-      {id:'s3',title:'No Way',url:'https://media.giphy.com/media/3o6Mbrjw5ynGp61yOA/giphy.gif'},
-      {id:'s4',title:'Wow',url:'https://media.giphy.com/media/3o7TKSjRrfIPjeiVyO/giphy.gif'},
-      {id:'s5',title:'Wait What',url:'https://media.giphy.com/media/lKZEeXJGhU1d6/giphy.gif'},
-      {id:'s6',title:'Mind Blown',url:'https://media.giphy.com/media/xUPGGDNsLvqsBOhuU0/giphy.gif'},
-    ],
-    '💀 Perdeu': [
-      {id:'p1',title:'RIP',url:'https://media.giphy.com/media/l2JhpjWPccQtartio/giphy.gif'},
-      {id:'p2',title:'Fail',url:'https://media.giphy.com/media/26ybwvTX4DTkwst6U/giphy.gif'},
-      {id:'p3',title:'Loss',url:'https://media.giphy.com/media/3o7ZeTmU77UlPyeR2w/giphy.gif'},
-      {id:'p4',title:'Sad',url:'https://media.giphy.com/media/ROF8OQvDmxytW/giphy.gif'},
-      {id:'p5',title:'Broke',url:'https://media.giphy.com/media/l2YWuMPCsJ1y1KCCI/giphy.gif'},
-    ],
-    '⚽ Futebol': [
-      {id:'ft1',title:'Gol',url:'https://media.giphy.com/media/l0MYGb1LuZ3n7dRnO/giphy.gif'},
-      {id:'ft2',title:'Comemoração',url:'https://media.giphy.com/media/3oEjHAUOqG3lSS0f1C/giphy.gif'},
-      {id:'ft3',title:'Chute',url:'https://media.giphy.com/media/26BRBKqUiq586bRVm/giphy.gif'},
-      {id:'ft4',title:'Seleção',url:'https://media.giphy.com/media/l0HlBO7eyXzSZkJri/giphy.gif'},
-    ],
-    '👍 Reações': [
-      {id:'r1',title:'Like',url:'https://media.giphy.com/media/3oEjHchKlHiHcMhQle/giphy.gif'},
-      {id:'r2',title:'Clap',url:'https://media.giphy.com/media/3oz8xP6SaSkSU9dhcI/giphy.gif'},
-      {id:'r3',title:'Love',url:'https://media.giphy.com/media/3oEdva9BUHPHz2yEnO/giphy.gif'},
-      {id:'r4',title:'Strong',url:'https://media.giphy.com/media/3o7TKSha51ATTx9KzC/giphy.gif'},
-      {id:'r5',title:'Fire',url:'https://media.giphy.com/media/l46Cy1rHbQ92uuLXa/giphy.gif'},
-      {id:'r6',title:'Salute',url:'https://media.giphy.com/media/26FLgGTPUDH6UGAbm/giphy.gif'},
-    ],
-  }
-  const [gifCategory, setGifCategory] = useState('📈 Mercado')
   const [gifSearch, setGifSearch] = useState('')
-  const gifCategories = Object.keys(GIF_DB)
-  const currentGifs = gifSearch.trim()
-    ? Object.values(GIF_DB).flat().filter(g => g.title.toLowerCase().includes(gifSearch.toLowerCase()))
-    : (GIF_DB[gifCategory] || [])
+  const [gifs, setGifs] = useState<{id:string,title:string,url:string,thumb:string}[]>([])
+  const [gifLoading, setGifLoading] = useState(false)
+  const [gifCategory, setGifCategory] = useState('📈 Mercado')
 
-  useEffect(() => {}, [open, tab])
+  const GIF_CATEGORIES = ['📈 Mercado','🚀 Hype','🎉 Festa','😂 Memes','😮 Surpresa','💀 Perdeu','⚽ Futebol','👍 Reações']
+  const GIF_QUERIES: Record<string,string> = {
+    '📈 Mercado':'stonks money finance','🚀 Hype':'lets go hype excited','🎉 Festa':'party celebrate',
+    '😂 Memes':'funny meme bruh','😮 Surpresa':'shocked surprised omg','💀 Perdeu':'fail lose rip',
+    '⚽ Futebol':'soccer goal football','👍 Reações':'thumbs up reaction',
+  }
+
+  async function loadGifs(query: string) {
+    setGifLoading(true)
+    try {
+      const q = encodeURIComponent(query)
+      const res = await fetch(`/api/gifs?q=${q}&limit=20`)
+      if (res.ok) {
+        const data = await res.json()
+        setGifs(data.gifs || [])
+      }
+    } catch { setGifs([]) }
+    setGifLoading(false)
+  }
+
+  useEffect(() => {
+    if (open && tab === 'gif') {
+      loadGifs(gifSearch || GIF_QUERIES[gifCategory] || gifCategory)
+    }
+  }, [open, tab, gifCategory])
 
   if (!open) return (
     <div className="flex gap-1.5">
@@ -168,10 +118,8 @@ function EmojiGifPicker({ onEmoji, onGif, compact = false }: {
         <EmojiPicker
           onEmojiClick={(data: any) => { onEmoji(data.emoji); setOpen(false) }}
           searchPlaceholder="Buscar emoji..."
-          width="100%"
-          height={320}
-          lazyLoadEmojis
-          skinTonesDisabled
+          width="100%" height={320}
+          lazyLoadEmojis skinTonesDisabled
           theme={"dark" as any}
           previewConfig={{ showPreview: false }}
         />
@@ -179,33 +127,35 @@ function EmojiGifPicker({ onEmoji, onGif, compact = false }: {
 
       {tab === 'gif' && (
         <div>
-
-          {/* Busca */}
           <div className="px-2 py-1.5 border-b border-border/30 space-y-1.5">
-            <input value={gifSearch} onChange={e => setGifSearch(e.target.value)}
-              placeholder="Buscar GIFs..."
-              className="w-full rounded-lg border border-border bg-background px-2.5 py-1 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40" />
-            {!gifSearch && (
-              <div className="flex gap-1 overflow-x-auto pb-0.5">
-                {gifCategories.map(cat => (
-                  <button key={cat} onClick={() => setGifCategory(cat)} type="button"
-                    className={`px-2 py-0.5 rounded-lg text-[10px] font-medium whitespace-nowrap transition-all flex-shrink-0 ${gifCategory === cat ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
-                    {cat}
-                  </button>
-                ))}
-              </div>
-            )}
+            <div className="flex gap-1.5">
+              <input value={gifSearch} onChange={e => setGifSearch(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && loadGifs(gifSearch)}
+                placeholder="Buscar GIFs..."
+                className="flex-1 rounded-lg border border-border bg-background px-2.5 py-1 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40" />
+              <button onClick={() => loadGifs(gifSearch)} type="button"
+                className="rounded-lg bg-primary/20 text-primary px-2 py-1 text-xs hover:bg-primary/30">
+                🔍
+              </button>
+            </div>
+            <div className="flex gap-1 overflow-x-auto pb-0.5">
+              {GIF_CATEGORIES.map(cat => (
+                <button key={cat} onClick={() => setGifCategory(cat)} type="button"
+                  className={`px-2 py-0.5 rounded-lg text-[10px] font-medium whitespace-nowrap transition-all flex-shrink-0 ${gifCategory === cat ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
+                  {cat}
+                </button>
+              ))}
+            </div>
           </div>
           <div className="grid grid-cols-4 gap-1 p-2 max-h-48 overflow-y-auto">
-            {currentGifs.length === 0 ? (
+            {gifLoading ? (
+              <div className="col-span-4 flex justify-center py-4"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
+            ) : gifs.length === 0 ? (
               <div className="col-span-4 text-center py-4 text-xs text-muted-foreground">Nenhum GIF encontrado</div>
-            ) : currentGifs.map((g) => (
+            ) : gifs.map(g => (
               <button key={g.id} onClick={() => { onGif(g.url); setOpen(false) }} type="button"
                 className="relative group rounded-lg overflow-hidden hover:ring-2 hover:ring-primary transition-all aspect-video bg-muted">
-                <img src={g.url} alt={g.title} className="w-full h-full object-cover" loading="lazy" />
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-0.5">
-                  <span className="text-white text-[8px] truncate w-full">{g.title}</span>
-                </div>
+                <img src={g.thumb || g.url} alt={g.title} className="w-full h-full object-cover" loading="lazy" />
               </button>
             ))}
           </div>
