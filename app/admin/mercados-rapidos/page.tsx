@@ -190,7 +190,7 @@ export default function AdminRapidMarketsPage() {
       const resolvesAt = new Date(closesAt.getTime() + 60000)
       const slug = `${asset_symbol.toLowerCase()}-${Date.now().toString(36)}`
       const title = form.custom_title || `${asset_symbol} (${duration_minutes}min): ${form.up_label} ou ${form.down_label}?`
-      const description = form.ai_description || `Preço inicial: R$ ${currentPrice.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+      const description = form.ai_description || `Preço inicial: R$ ${currentPrice?.value?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'}`
 
       const insertData: any = {
         title, slug, description, category: 'Cripto',
@@ -209,7 +209,7 @@ export default function AdminRapidMarketsPage() {
         { market_id: market.id, label: form.down_label || 'Desce', option_key: 'no', probability: 0.50, odds: 1.90, sort_order: 1, is_active: true },
       ])
 
-      setMsg(`✅ Criado! ${asset_symbol} a R$ ${currentPrice.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} por ${duration_minutes}min`)
+      setMsg(`✅ Criado! ${asset_symbol} a R$ ${currentPrice?.value?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '?'} por ${duration_minutes}min`)
       setForm(f => ({ ...f, custom_title: '', image_url: '', ai_description: '', influencer_id: '' }))
       loadMarkets()
     } catch (e: any) { setMsg(`❌ ${e.message}`) }

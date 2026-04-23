@@ -420,7 +420,7 @@ export default function ComunidadePage() {
             </div>
           )}
           <div className="flex justify-end gap-2">
-            <button onClick={handlePost} disabled={!title.trim() || !content.trim() || posting}
+            <button onClick={handlePost} disabled={(!title.trim() || !content.trim()) && !selectedGif || posting}
               className="flex items-center gap-2 rounded-xl bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50 hover:bg-primary/90 transition-colors">
               {posting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
               Publicar
