@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { Sparkles, Loader2 as L2 } from 'lucide-react'
+import { Sparkles, X, Loader2 as L2, Image as ImgIcon } from 'lucide-react'
 import { Radio, Plus, Edit3, Zap, CheckCircle, Loader2, RefreshCw, Play, Pause, StopCircle } from 'lucide-react'
 import { useToast } from '@/hooks/useToast'
 
@@ -23,6 +25,9 @@ export default function AdminAoVivoPage() {
   const [markets, setMarkets] = useState<LiveMarket[]>([])
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
+  const [generatingCover, setGeneratingCover] = useState(false)
+  const [generatingCover, setGeneratingCover] = useState(false)
+  const [generatingAI, setGeneratingAI] = useState(false)
   const [updating, setUpdating] = useState<string | null>(null)
   const [form, setForm] = useState({
     title: '',
@@ -58,6 +63,18 @@ export default function AdminAoVivoPage() {
       .limit(20)
     setMarkets(data || [])
     setLoading(false)
+  }
+
+  async function generateAICover() {
+    setGeneratingCover(true)
+    try {
+      const fd = new FormData()
+      fd.append('description', `Mercado ao vivo: ${form.event_name || form.title}`)
+      const res = await fetch('/api/admin/ai-cover', { method: 'POST', body: fd })
+      const data = await res.json()
+      if (data.image_url) setForm((f: any) => ({ ...f, image_url: data.image_url }))
+    } catch (_) {}
+    setGeneratingCover(false)
   }
 
   async function handleCreate() {

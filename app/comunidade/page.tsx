@@ -408,12 +408,15 @@ export default function ComunidadePage() {
           <EmojiGifPicker onEmoji={(e) => setContent(c => c + e)} onGif={(url) => setSelectedGif(url)} />
           {/* Preview do GIF selecionado */}
           {selectedGif && (
-            <div className="relative inline-block">
+            <div className="mt-2 space-y-1">
+              <p className="text-xs text-primary font-medium">✅ GIF anexado ao post</p>
+              <div className="relative inline-block">
               <img src={selectedGif} alt="GIF" className="rounded-xl max-h-40 border border-primary/30" />
               <button onClick={() => setSelectedGif(null)} type="button"
                 className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-destructive text-white text-xs flex items-center justify-center hover:bg-destructive/80 transition-colors">
                 ✕
               </button>
+              </div>
             </div>
           )}
           <div className="flex justify-end gap-2">

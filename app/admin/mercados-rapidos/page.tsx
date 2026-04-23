@@ -1,48 +1,52 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Zap, Plus, CheckCircle, Loader2, RefreshCw, TrendingUp, TrendingDown } from 'lucide-react'
+import { Zap, Plus, CheckCircle, Loader2, RefreshCw, TrendingUp, TrendingDown, Image, Sparkles, User, X } from 'lucide-react'
 
-// ─── ATIVOS POR CATEGORIA ───────────────────────────────────────────────────
 const ASSET_GROUPS = [
   {
     label: '₿ Cripto',
     assets: [
-      { id: 'bitcoin',     symbol: 'BTC',  name: 'Bitcoin',   source: 'coingecko' },
-      { id: 'ethereum',    symbol: 'ETH',  name: 'Ethereum',  source: 'coingecko' },
-      { id: 'solana',      symbol: 'SOL',  name: 'Solana',    source: 'coingecko' },
-      { id: 'binancecoin', symbol: 'BNB',  name: 'BNB',       source: 'coingecko' },
-      { id: 'ripple',      symbol: 'XRP',  name: 'XRP',       source: 'coingecko' },
-      { id: 'dogecoin',    symbol: 'DOGE', name: 'Dogecoin',  source: 'coingecko' },
+      { id: 'bitcoin',      symbol: 'BTC',  name: 'Bitcoin',   ws: 'btcbrl' },
+      { id: 'ethereum',     symbol: 'ETH',  name: 'Ethereum',  ws: 'ethbrl' },
+      { id: 'solana',       symbol: 'SOL',  name: 'Solana',    ws: 'solbrl' },
+      { id: 'binancecoin',  symbol: 'BNB',  name: 'BNB',       ws: 'bnbbrl' },
+      { id: 'ripple',       symbol: 'XRP',  name: 'XRP',       ws: 'xrpbrl' },
+      { id: 'dogecoin',     symbol: 'DOGE', name: 'Dogecoin',  ws: 'dogebrl' },
+      { id: 'cardano',      symbol: 'ADA',  name: 'Cardano',   ws: 'adabrl' },
+      { id: 'avalanche-2',  symbol: 'AVAX', name: 'Avalanche', ws: 'avaxbrl' },
+      { id: 'matic-network',symbol: 'MATIC',name: 'Polygon',   ws: 'maticbrl' },
+      { id: 'chainlink',    symbol: 'LINK', name: 'Chainlink', ws: 'linkbrl' },
     ],
   },
   {
     label: '📊 Bolsa BR',
     assets: [
-      { id: 'IBOV',  symbol: 'IBOV',  name: 'Ibovespa',  source: 'hgbrasil' },
-      { id: 'PETR4', symbol: 'PETR4', name: 'Petrobras', source: 'hgbrasil' },
-      { id: 'VALE3', symbol: 'VALE3', name: 'Vale',      source: 'hgbrasil' },
-      { id: 'BBDC4', symbol: 'BBDC4', name: 'Bradesco',  source: 'hgbrasil' },
+      { id: 'IBOV',  symbol: 'IBOV',  name: 'Ibovespa',  ws: null },
+      { id: 'PETR4', symbol: 'PETR4', name: 'Petrobras', ws: null },
+      { id: 'VALE3', symbol: 'VALE3', name: 'Vale',      ws: null },
+      { id: 'BBDC4', symbol: 'BBDC4', name: 'Bradesco',  ws: null },
+      { id: 'ITUB4', symbol: 'ITUB4', name: 'Itaú',      ws: null },
+      { id: 'BBAS3', symbol: 'BBAS3', name: 'Banco do Brasil', ws: null },
     ],
   },
   {
-    label: '🛢️ Commodities',
+    label: '🛢️ Commodities & Forex',
     assets: [
-      { id: 'WTI',   symbol: 'WTI',  name: 'Petróleo WTI',  source: 'awesomeapi' },
-      { id: 'GOLD',  symbol: 'OURO', name: 'Ouro (oz)',      source: 'awesomeapi' },
-      { id: 'USD',   symbol: 'USD',  name: 'Dólar (BRL)',    source: 'awesomeapi' },
-      { id: 'EUR',   symbol: 'EUR',  name: 'Euro (BRL)',     source: 'awesomeapi' },
+      { id: 'USD',    symbol: 'USD',   name: 'Dólar (BRL)',   ws: null },
+      { id: 'EUR',    symbol: 'EUR',   name: 'Euro (BRL)',    ws: null },
+      { id: 'GBP',    symbol: 'GBP',   name: 'Libra (BRL)',   ws: null },
+      { id: 'GOLD',   symbol: 'OURO',  name: 'Ouro (oz)',     ws: null },
+      { id: 'SILVER', symbol: 'PRATA', name: 'Prata (oz)',    ws: null },
+      { id: 'WTI',    symbol: 'WTI',   name: 'Petróleo WTI', ws: null },
     ],
   },
 ]
 
 const ALL_ASSETS = ASSET_GROUPS.flatMap(g => g.assets)
 
-interface RapidMarket {
-  id: string; title: string; status: string; closes_at: string
-  rapid_config: any
-}
+interface RapidMarket { id: string; title: string; status: string; closes_at: string; rapid_config: any }
 
 export default function AdminRapidMarketsPage() {
   const [markets, setMarkets] = useState<RapidMarket[]>([])
@@ -50,23 +54,71 @@ export default function AdminRapidMarketsPage() {
   const [priceLoading, setPriceLoading] = useState(true)
   const [creating, setCreating] = useState(false)
   const [resolving, setResolving] = useState<string | null>(null)
+  const [msg, setMsg] = useState('')
+  const [influencers, setInfluencers] = useState<{id:string,name:string}[]>([])
+  const [generatingCover, setGeneratingCover] = useState(false)
+  const [generatingAI, setGeneratingAI] = useState(false)
+  const wsRef = useRef<WebSocket | null>(null)
+
   const [form, setForm] = useState({
     asset: 'bitcoin',
     duration: '5',
     up_label: 'Sobe',
     down_label: 'Desce',
     custom_title: '',
+    image_url: '',
+    influencer_id: '',
+    ai_description: '',
   })
-  const [msg, setMsg] = useState('')
 
   const selectedAsset = ALL_ASSETS.find(a => a.id === form.asset) || ALL_ASSETS[0]
   const currentPrice = prices[form.asset]
 
-  useEffect(() => { loadMarkets(); fetchAllPrices() }, [])
+  useEffect(() => {
+    loadMarkets()
+    fetchAllPrices()
+    createClient().from('influencers').select('id, name').eq('is_active', true)
+      .then(({ data }) => setInfluencers(data || []))
+  }, [])
+
+  // Binance WebSocket para cripto em tempo real
+  useEffect(() => {
+    const cryptoAssets = ALL_ASSETS.filter(a => a.ws)
+    if (!cryptoAssets.length) return
+
+    const streams = cryptoAssets.map(a => `${a.ws}@miniTicker`).join('/')
+    const wsUrl = `wss://stream.binance.com/stream?streams=${streams}`
+
+    const connect = () => {
+      const ws = new WebSocket(wsUrl)
+      wsRef.current = ws
+
+      ws.onmessage = (e) => {
+        try {
+          const { data: d } = JSON.parse(e.data)
+          const sym = d.s?.replace('BRL', '').toLowerCase()
+          const asset = cryptoAssets.find(a => a.ws === sym + 'brl' || a.symbol.toLowerCase() === sym)
+          if (asset && d.c) {
+            const value = parseFloat(d.c)
+            setPrices(prev => ({
+              ...prev,
+              [asset.id]: { value, change: prev[asset.id]?.change || 0 }
+            }))
+          }
+        } catch (_) {}
+      }
+
+      ws.onerror = () => ws.close()
+      ws.onclose = () => setTimeout(connect, 3000) // reconectar
+    }
+
+    connect()
+    return () => { wsRef.current?.close() }
+  }, [])
 
   async function loadMarkets() {
-    const supabase = createClient()
-    const { data } = await supabase.from('markets').select('id, title, status, closes_at, rapid_config')
+    const { data } = await createClient().from('markets')
+      .select('id, title, status, closes_at, rapid_config')
       .eq('market_type', 'rapid').order('created_at', { ascending: false }).limit(30)
     setMarkets(data || [])
   }
@@ -74,30 +126,59 @@ export default function AdminRapidMarketsPage() {
   const fetchAllPrices = useCallback(async () => {
     setPriceLoading(true)
     try {
-      // Proxy interno — evita CORS e rate limit do browser
       const res = await fetch('/api/prices', { cache: 'no-store' })
       if (res.ok) {
         const data = await res.json()
-        const result: Record<string, { value: number; change: number }> = {}
-        for (const [id, v] of Object.entries(data as any)) {
-          result[id] = { value: (v as any).value, change: (v as any).change }
-        }
-        setPrices(result)
+        setPrices(prev => {
+          const next = { ...prev }
+          for (const [id, v] of Object.entries(data as any)) {
+            next[id] = { value: (v as any).value, change: (v as any).change }
+          }
+          return next
+        })
       }
     } catch (_) {}
     setPriceLoading(false)
   }, [])
 
-  // Atualizar preços a cada 15s
+  // Polling para não-cripto a cada 10s
   useEffect(() => {
-    const interval = setInterval(fetchAllPrices, 15000)
+    const interval = setInterval(fetchAllPrices, 10000)
     return () => clearInterval(interval)
   }, [fetchAllPrices])
+
+  async function generateAICover() {
+    setGeneratingCover(true)
+    try {
+      const fd = new FormData()
+      fd.append('description', `Mercado preditivo: ${selectedAsset.name} — ${form.custom_title || `${selectedAsset.symbol} sobe ou desce?`}`)
+      const res = await fetch('/api/admin/ai-cover', { method: 'POST', body: fd })
+      const data = await res.json()
+      if (data.image_url) setForm(f => ({ ...f, image_url: data.image_url }))
+      else if (data.error) setMsg(`❌ Capa IA: ${data.error}`)
+    } catch (e: any) { setMsg(`❌ ${e.message}`) }
+    setGeneratingCover(false)
+  }
+
+  async function generateAIAnalysis() {
+    setGeneratingAI(true)
+    try {
+      const prompt = `Gere uma análise curta e impactante para um mercado preditivo sobre: ${selectedAsset.name} (${selectedAsset.symbol}). Pergunta: ${form.custom_title || `${selectedAsset.symbol} vai subir ou cair nos próximos ${form.duration} minutos?`}. Preço atual: R$ ${currentPrice?.value?.toLocaleString('pt-BR') || 'N/A'}. Máximo 3 frases.`
+      const res = await fetch('/api/admin/ai-market', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt })
+      })
+      const data = await res.json()
+      if (data.content || data.result) setForm(f => ({ ...f, ai_description: data.content || data.result }))
+    } catch (e: any) { setMsg(`❌ ${e.message}`) }
+    setGeneratingAI(false)
+  }
 
   async function handleCreate() {
     setCreating(true); setMsg('')
     if (!currentPrice?.value) {
-      setMsg('❌ Preço não disponível para este ativo. Tente outro ou atualize os preços.')
+      setMsg('❌ Preço não disponível. Aguarde ou escolha outro ativo.')
       setCreating(false); return
     }
     try {
@@ -108,49 +189,48 @@ export default function AdminRapidMarketsPage() {
       const closesAt = new Date(now.getTime() + duration_minutes * 60000)
       const resolvesAt = new Date(closesAt.getTime() + 60000)
       const slug = `${asset_symbol.toLowerCase()}-${Date.now().toString(36)}`
-      const title = form.custom_title || `${asset_symbol} (${duration_minutes}min): ${form.up_label || 'Sobe'} ou ${form.down_label || 'Desce'}?`
+      const title = form.custom_title || `${asset_symbol} (${duration_minutes}min): ${form.up_label} ou ${form.down_label}?`
+      const description = form.ai_description || `Preço inicial: R$ ${currentPrice.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
 
-      const { data: market, error: mErr } = await supa.from('markets').insert({
-        title, slug,
-        description: `Preço inicial: R$ ${currentPrice.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
-        category: 'Cripto', status: 'open', market_type: 'rapid',
-        closes_at: closesAt.toISOString(),
-        resolves_at: resolvesAt.toISOString(),
+      const insertData: any = {
+        title, slug, description, category: 'Cripto',
+        status: 'open', market_type: 'rapid',
+        closes_at: closesAt.toISOString(), resolves_at: resolvesAt.toISOString(),
         rapid_config: { asset: form.asset, asset_symbol, vs_currency: 'brl', duration_minutes, price_at_creation: currentPrice.value },
-      }).select().single()
+      }
+      if (form.image_url) insertData.image_url = form.image_url
+      if (form.influencer_id) insertData.influencer_id = form.influencer_id
 
+      const { data: market, error: mErr } = await supa.from('markets').insert(insertData).select().single()
       if (mErr) throw new Error(mErr.message)
 
-      const { error: oErr } = await supa.from('market_options').insert([
+      await supa.from('market_options').insert([
         { market_id: market.id, label: form.up_label || 'Sobe', option_key: 'yes', probability: 0.50, odds: 1.90, sort_order: 0, is_active: true },
         { market_id: market.id, label: form.down_label || 'Desce', option_key: 'no', probability: 0.50, odds: 1.90, sort_order: 1, is_active: true },
       ])
-      if (oErr) throw new Error(oErr.message)
 
-      const priceStr = currentPrice.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })
-      setMsg(`✅ Mercado criado! ${asset_symbol} a R$ ${priceStr} por ${duration_minutes} min`)
+      setMsg(`✅ Criado! ${asset_symbol} a R$ ${currentPrice.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} por ${duration_minutes}min`)
+      setForm(f => ({ ...f, custom_title: '', image_url: '', ai_description: '', influencer_id: '' }))
       loadMarkets()
     } catch (e: any) { setMsg(`❌ ${e.message}`) }
-    finally { setCreating(false) }
+    setCreating(false)
   }
 
   async function handleResolve(id: string) {
     setResolving(id)
     try {
-      const supa = createClient()
-      const { data: { session } } = await supa.auth.getSession()
-      const tok = session?.access_token || ''
+      const { data: { session } } = await createClient().auth.getSession()
       const res = await fetch('/api/admin/rapid-markets', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${tok}` },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
         body: JSON.stringify({ market_id: id })
       })
       const data = await res.json()
       if (data.error) throw new Error(data.error)
-      setMsg(`✅ Resolvido! ${data.winner} (${data.change_pct}%) · R$${Number(data.initial_price).toFixed(2)} → R$${Number(data.final_price).toFixed(2)}`)
+      setMsg(`✅ Resolvido! ${data.winner} (${data.change_pct}%)`)
       loadMarkets()
     } catch (e: any) { setMsg(`❌ ${e.message}`) }
-    finally { setResolving(null) }
+    setResolving(null)
   }
 
   const inp = 'w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 text-foreground'
@@ -161,45 +241,36 @@ export default function AdminRapidMarketsPage() {
         <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/20">
           <Zap className="h-4 w-4 text-primary" />
         </div>
-        <h1 className="text-xl font-bold">Mercados Rápidos</h1>
-        <button onClick={fetchAllPrices} disabled={priceLoading}
-          className="ml-auto flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
-          <RefreshCw className={`h-3.5 w-3.5 ${priceLoading ? 'animate-spin' : ''}`} />
-          Atualizar preços
+        <div>
+          <h1 className="text-xl font-bold">Mercados Rápidos</h1>
+          <p className="text-xs text-muted-foreground">Preços cripto via Binance WebSocket (tempo real)</p>
+        </div>
+        <button onClick={fetchAllPrices} disabled={priceLoading} className="ml-auto flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
+          <RefreshCw className={`h-3.5 w-3.5 ${priceLoading ? 'animate-spin' : ''}`} /> Atualizar
         </button>
       </div>
 
-      {/* Painel de preços ao vivo */}
+      {/* Painel de preços */}
       <div className="space-y-3">
         {ASSET_GROUPS.map(group => (
           <div key={group.label}>
             <p className="text-xs font-semibold text-muted-foreground mb-2">{group.label}</p>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-2">
               {group.assets.map(asset => {
                 const p = prices[asset.id]
                 const isSelected = form.asset === asset.id
                 return (
-                  <button key={asset.id}
-                    onClick={() => setForm(f => ({ ...f, asset: asset.id }))}
+                  <button key={asset.id} onClick={() => setForm(f => ({ ...f, asset: asset.id }))}
                     className={`rounded-xl border p-3 text-left transition-all ${isSelected ? 'border-primary bg-primary/10' : 'border-border bg-card hover:border-primary/40'}`}>
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-bold text-foreground">{asset.symbol}</span>
-                      {p && (
-                        <span className={`text-[10px] font-medium flex items-center gap-0.5 ${p.change >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                          {p.change >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-                          {Math.abs(p.change).toFixed(2)}%
-                        </span>
-                      )}
+                      <span className="text-xs font-bold">{asset.symbol}</span>
+                      {p && <span className={`text-[10px] flex items-center gap-0.5 ${p.change >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                        {p.change >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                        {Math.abs(p.change).toFixed(2)}%
+                      </span>}
                     </div>
-                    {priceLoading && !p ? (
-                      <div className="h-3 w-16 bg-muted animate-pulse rounded" />
-                    ) : p ? (
-                      <p className="text-xs font-mono text-foreground">
-                        R$ {p.value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: p.value > 100 ? 2 : 4 })}
-                      </p>
-                    ) : (
-                      <p className="text-[10px] text-muted-foreground">indisponível</p>
-                    )}
+                    {p ? <p className="text-xs font-mono">R$ {p.value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: p.value > 10 ? 2 : 6 })}</p>
+                      : <div className="h-3 w-14 bg-muted animate-pulse rounded" />}
                   </button>
                 )
               })}
@@ -208,27 +279,15 @@ export default function AdminRapidMarketsPage() {
         ))}
       </div>
 
-      {/* Formulário de criação */}
+      {/* Formulário */}
       <div className="rounded-2xl border border-primary/20 bg-primary/5 p-5 space-y-4">
-        <p className="text-sm font-semibold text-foreground flex items-center gap-2">
-          <Plus className="h-4 w-4" /> Criar mercado rápido
-        </p>
+        <p className="text-sm font-semibold flex items-center gap-2"><Plus className="h-4 w-4" /> Criar mercado rápido</p>
 
-        {/* Ativo selecionado */}
         <div className="rounded-xl border border-primary/30 bg-card px-4 py-3 flex items-center justify-between">
-          <div>
-            <p className="text-xs text-muted-foreground">Ativo selecionado</p>
-            <p className="font-semibold text-foreground">{selectedAsset.symbol} — {selectedAsset.name}</p>
-          </div>
-          <div className="text-right">
-            <p className="text-xs text-muted-foreground">Preço atual</p>
-            {currentPrice ? (
-              <p className="font-mono font-bold text-primary">
-                R$ {currentPrice.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-              </p>
-            ) : (
-              <p className="text-xs text-muted-foreground">não disponível</p>
-            )}
+          <div><p className="text-xs text-muted-foreground">Ativo selecionado</p><p className="font-semibold">{selectedAsset.symbol} — {selectedAsset.name}</p></div>
+          <div className="text-right"><p className="text-xs text-muted-foreground">Preço atual</p>
+            {currentPrice ? <p className="font-mono font-bold text-primary">R$ {currentPrice.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+              : <p className="text-xs text-muted-foreground">não disponível</p>}
           </div>
         </div>
 
@@ -236,14 +295,12 @@ export default function AdminRapidMarketsPage() {
           <div>
             <label className="block text-xs text-muted-foreground mb-1.5">Duração</label>
             <select className={inp} value={form.duration} onChange={e => setForm(f => ({ ...f, duration: e.target.value }))}>
-              {['2','5','10','15','30','60'].map(d => (
-                <option key={d} value={d}>{d < '60' ? `${d} minutos` : '1 hora'}</option>
-              ))}
+              {['1','2','5','10','15','30','60'].map(d => <option key={d} value={d}>{d === '60' ? '1 hora' : `${d} minutos`}</option>)}
             </select>
           </div>
           <div>
             <label className="block text-xs text-muted-foreground mb-1.5">Pergunta customizada (opcional)</label>
-            <input className={inp} placeholder={`${selectedAsset.symbol} sobe ou desce em ${form.duration}min?`}
+            <input className={inp} placeholder={`${selectedAsset.symbol} sobe ou desce?`}
               value={form.custom_title} onChange={e => setForm(f => ({ ...f, custom_title: e.target.value }))} />
           </div>
           <div>
@@ -256,13 +313,57 @@ export default function AdminRapidMarketsPage() {
           </div>
         </div>
 
-        {/* Preview do título */}
+        {/* Influencer */}
+        <div>
+          <label className="block text-xs text-muted-foreground mb-1.5 flex items-center gap-1"><User className="h-3 w-3" /> Influencer (opcional)</label>
+          <select className={inp} value={form.influencer_id} onChange={e => setForm(f => ({ ...f, influencer_id: e.target.value }))}>
+            <option value="">Nenhum</option>
+            {influencers.map(inf => <option key={inf.id} value={inf.id}>{inf.name}</option>)}
+          </select>
+        </div>
+
+        {/* Imagem de capa */}
+        <div>
+          <label className="block text-xs text-muted-foreground mb-1.5 flex items-center gap-1"><Image className="h-3 w-3" /> Imagem de capa</label>
+          <div className="flex gap-2">
+            <input className={inp} placeholder="URL da imagem ou gere com IA →"
+              value={form.image_url} onChange={e => setForm(f => ({ ...f, image_url: e.target.value }))} />
+            <button onClick={generateAICover} disabled={generatingCover}
+              className="flex-shrink-0 flex items-center gap-1.5 rounded-xl bg-violet-500/20 border border-violet-500/30 text-violet-400 px-3 py-2 text-xs font-medium hover:bg-violet-500/30 transition-colors disabled:opacity-50">
+              {generatingCover ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+              IA
+            </button>
+          </div>
+          {form.image_url && (
+            <div className="relative mt-2">
+              <img src={form.image_url} alt="Capa" className="w-full h-32 object-cover rounded-xl border border-border" />
+              <button onClick={() => setForm(f => ({ ...f, image_url: '' }))} className="absolute top-2 right-2 rounded-full bg-black/60 p-1 text-white hover:bg-black/80">
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Análise IA */}
+        <div>
+          <div className="flex items-center justify-between mb-1.5">
+            <label className="text-xs text-muted-foreground flex items-center gap-1"><Sparkles className="h-3 w-3" /> Análise IA (descrição)</label>
+            <button onClick={generateAIAnalysis} disabled={generatingAI}
+              className="flex items-center gap-1 text-xs text-violet-400 hover:text-violet-300 transition-colors disabled:opacity-50">
+              {generatingAI ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+              Gerar
+            </button>
+          </div>
+          <textarea className={inp + ' resize-none'} rows={3}
+            placeholder="Descrição/análise do mercado (opcional — gerada por IA)"
+            value={form.ai_description} onChange={e => setForm(f => ({ ...f, ai_description: e.target.value }))} />
+        </div>
+
+        {/* Preview */}
         <div className="rounded-xl bg-muted/40 border border-border px-4 py-2.5 text-xs text-muted-foreground">
           <span className="text-foreground font-medium">Título: </span>
           {form.custom_title || `${selectedAsset.symbol} (${form.duration}min): ${form.up_label} ou ${form.down_label}?`}
-          {currentPrice && (
-            <span className="ml-2 text-primary font-mono">· Inicial: R$ {currentPrice.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-          )}
+          {currentPrice && <span className="ml-2 text-primary font-mono">· R$ {currentPrice.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>}
         </div>
 
         {msg && <p className={`text-sm font-medium ${msg.startsWith('✅') ? 'text-green-400' : 'text-red-400'}`}>{msg}</p>}
@@ -274,25 +375,21 @@ export default function AdminRapidMarketsPage() {
         </button>
       </div>
 
-      {/* Lista de mercados */}
+      {/* Lista */}
       <div className="space-y-2">
         <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Mercados recentes</p>
         {markets.length === 0 ? (
-          <div className="rounded-xl border border-border bg-card/50 p-6 text-center text-sm text-muted-foreground">
-            Nenhum mercado rápido criado ainda
-          </div>
+          <div className="rounded-xl border border-border bg-card/50 p-6 text-center text-sm text-muted-foreground">Nenhum mercado rápido criado ainda</div>
         ) : markets.map(m => {
           const cfg = m.rapid_config || {}
-          const isOpen = m.status === 'open'
-          const expired = isOpen && new Date(m.closes_at) < new Date()
+          const expired = m.status === 'open' && new Date(m.closes_at) < new Date()
           return (
             <div key={m.id} className="rounded-xl border border-border bg-card p-4 flex items-center justify-between gap-3 flex-wrap">
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-foreground truncate">{m.title}</p>
+                <p className="text-sm font-medium truncate">{m.title}</p>
                 <p className="text-xs text-muted-foreground">
-                  {cfg.asset_symbol} · Inicial: R$ {Number(cfg.price_at_creation || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                  {cfg.final_price && ` → R$ ${Number(cfg.final_price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
-                  {' · '}{new Date(m.closes_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                  {cfg.asset_symbol} · R$ {Number(cfg.price_at_creation||0).toLocaleString('pt-BR', {minimumFractionDigits:2})}
+                  {' · '}{new Date(m.closes_at).toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'})}
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -302,7 +399,7 @@ export default function AdminRapidMarketsPage() {
                   'text-blue-400 bg-blue-500/10 border-blue-500/20'}`}>
                   {m.status === 'resolved' ? '✓ Resolvido' : expired ? '⏰ Expirado' : '🔴 Ao vivo'}
                 </span>
-                {(expired || isOpen) && m.status !== 'resolved' && (
+                {m.status !== 'resolved' && (
                   <button onClick={() => handleResolve(m.id)} disabled={resolving === m.id}
                     className="flex items-center gap-1.5 rounded-lg bg-primary/20 border border-primary/30 px-3 py-1.5 text-xs text-primary hover:bg-primary/30 transition-colors disabled:opacity-50">
                     {resolving === m.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle className="h-3 w-3" />}
