@@ -18,7 +18,7 @@ export function ImageUploadButton({ value, onChange, bucket = 'market-images', f
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
-    if (file.size > 5 * 1024 * 1024) { setError('Máximo 5MB'); return }
+    if (file.size > 2 * 1024 * 1024) { setError('Máximo 2MB'); return }
     setUploading(true); setError('')
     try {
       const fd = new FormData()
@@ -54,7 +54,7 @@ export function ImageUploadButton({ value, onChange, bucket = 'market-images', f
           Upload
         </button>
       </div>
-      <input ref={ref} type="file" accept="image/*,image/gif" className="hidden" onChange={handleFile} />
+      <input ref={ref} type="file" accept="image/gif" className="hidden" onChange={handleFile} />
       {error && <p className="text-xs text-destructive">{error}</p>}
       {value && (
         <div className="relative">

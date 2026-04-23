@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { MyPositions } from '@/components/market/MyPositions'
+import Link from 'next/link'
 import { TrendingUp, TrendingDown, Loader2, Lock, Zap } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
 
@@ -230,6 +231,11 @@ export function RapidMarketCard({ market, livePrice, onExpired, isEnded }: Props
             )}
           </div>
         )}
+        {/* Link para página completa */}
+        <Link href={`/mercados/${market.slug}`}
+          className="block text-center text-xs text-muted-foreground hover:text-primary transition-colors py-1">
+          Ver mercado completo →
+        </Link>
         {/* Minhas posições neste mercado */}
         <MyPositions marketId={market.id} options={[
           { id: market.opt_up_id, label: market.opt_up_label, probability: market.opt_up_prob },

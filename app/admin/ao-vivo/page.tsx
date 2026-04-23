@@ -236,6 +236,14 @@ export default function AdminAoVivoPage() {
           </div>
           <div className="sm:col-span-2">
             <div className="flex items-center justify-between mb-1.5">
+              <label className="text-xs text-muted-foreground">Descrição / análise</label>
+            </div>
+            <textarea className={inp + ' resize-none'} rows={3}
+              placeholder="Descrição do mercado (gerada por IA ou escreva manualmente)..."
+              value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
+          </div>
+          <div className="sm:col-span-2">
+            <div className="flex items-center justify-between mb-1.5">
               <label className="text-xs text-muted-foreground">Imagem de capa</label>
               <button onClick={generateAICover} disabled={generatingCover} type="button"
                 className="flex items-center gap-1 text-xs text-violet-400 hover:text-violet-300 transition-colors disabled:opacity-50">
@@ -257,12 +265,12 @@ export default function AdminAoVivoPage() {
             <input className={inp} placeholder="Ex: Flamengo x Palmeiras" value={form.event_name} onChange={e => setForm(f => ({ ...f, event_name: e.target.value }))} />
           </div>
           <div>
-            <label className="block text-xs text-muted-foreground mb-1.5">Placar atual</label>
-            <input className={inp} placeholder="Ex: 1 x 0" value={form.current_score} onChange={e => setForm(f => ({ ...f, current_score: e.target.value }))} />
+            <label className="block text-xs text-muted-foreground mb-1.5">Contexto atual (placar, índice, etc.)</label>
+            <input className={inp} placeholder="Ex: 1x0 · 67' / IBOV: 128.500 pts / Taxa: 10,5%" value={form.current_score} onChange={e => setForm(f => ({ ...f, current_score: e.target.value }))} />
           </div>
           <div>
-            <label className="block text-xs text-muted-foreground mb-1.5">Período / Tempo</label>
-            <input className={inp} placeholder="Ex: 2º Tempo · 67'" value={form.period} onChange={e => setForm(f => ({ ...f, period: e.target.value }))} />
+            <label className="block text-xs text-muted-foreground mb-1.5">Fase / Momento (opcional)</label>
+            <input className={inp} placeholder="Ex: 2º Tempo · 67' / Sessão 3 / Round 2" value={form.period} onChange={e => setForm(f => ({ ...f, period: e.target.value }))} />
           </div>
           <div>
             <label className="block text-xs text-muted-foreground mb-1.5">Duração (horas)</label>

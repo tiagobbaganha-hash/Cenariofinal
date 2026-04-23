@@ -182,7 +182,7 @@ export function MarketComments({ marketId }: { marketId: string }) {
                 <button onClick={() => fileGifRef.current?.click()} disabled={uploadingGif} className="rounded-lg bg-card border border-border text-muted-foreground px-2 py-1 text-xs hover:border-primary/40 disabled:opacity-50">
                   {uploadingGif ? '⏳' : '📎'}
                 </button>
-                <input ref={fileGifRef} type="file" accept="image/*,image/gif" className="hidden" onChange={handleGifUpload} />
+                <input ref={fileGifRef} type="file" accept="image/gif" className="hidden" onChange={handleGifUpload} />
               </div>
               <div className="grid grid-cols-4 gap-1 p-2 max-h-40 overflow-y-auto">
                 {gifLoading ? <div className="col-span-4 flex justify-center py-3"><Loader2 className="h-4 w-4 animate-spin text-primary" /></div>

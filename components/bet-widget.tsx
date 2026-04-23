@@ -155,7 +155,7 @@ export function BetWidget({ marketId, marketSlug, options, isOpen }: BetWidgetPr
       toast({ type: 'success', title: 'Aposta confirmada!', description: `${formatCurrency(stake)} em "${chosen.label}"` })
       setAmount('')
       router.refresh()
-      setTimeout(() => { setTab('vender'); loadPositions() }, 800)
+      setTimeout(() => { setTab('vender'); loadPositions(); window.dispatchEvent(new CustomEvent('positionUpdated')) }, 800)
     } catch (err: any) {
       toast({ type: 'error', title: 'Erro ao apostar', description: err?.message ?? 'Tente novamente.' })
     } finally {

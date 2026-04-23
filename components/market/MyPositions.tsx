@@ -40,6 +40,13 @@ export function MyPositions({ marketId, options }: { marketId: string; options: 
 
   useEffect(() => { load() }, [marketId])
 
+  // Escuta evento de nova compra para recarregar automaticamente
+  useEffect(() => {
+    const handler = () => load()
+    window.addEventListener('positionUpdated', handler)
+    return () => window.removeEventListener('positionUpdated', handler)
+  }, [])
+
   async function handleSell(pos: Position) {
     setSelling(pos.id); setMsg('')
     const supabase = createClient()

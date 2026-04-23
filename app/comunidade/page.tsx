@@ -141,7 +141,7 @@ function EmojiGifPicker({ onEmoji, onGif, compact = false }: {
                 className="rounded-lg bg-card border border-border text-muted-foreground px-2 py-1 text-xs hover:border-primary/40 hover:text-foreground disabled:opacity-50">
                 {uploading ? '⏳' : '📎'}
               </button>
-              <input ref={fileRef} type="file" accept="image/*,image/gif" className="hidden" onChange={handleFileUpload} />
+              <input ref={fileRef} type="file" accept="image/gif" className="hidden" onChange={handleFileUpload} />
             </div>
             <div className="flex gap-1 overflow-x-auto pb-0.5">
               {GIF_CATEGORIES.map(cat => (

@@ -357,6 +357,11 @@ function LiveMarketCard({ market, userId, balance, amounts, setAmounts, bettingI
             Faça login para apostar
           </Link>
         )}
+        {/* Link para página completa */}
+        <a href={`/mercados/${market.slug}`}
+          className="block text-center text-xs text-muted-foreground hover:text-primary transition-colors py-1">
+          Ver mercado completo →
+        </a>
         {/* Minhas posições */}
         {userId && <MyPositions marketId={market.id} options={market.options} />}
       </div>
