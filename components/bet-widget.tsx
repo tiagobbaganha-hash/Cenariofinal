@@ -85,13 +85,9 @@ export function BetWidget({ marketId, marketSlug, options, isOpen }: BetWidgetPr
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { setPositions([]); setLoadingPositions(false); return }
       
+      // Usar RPC SECURITY DEFINER — garante auth.uid() correto no banco
       const { data: orders, error: ordErr } = await supabase
-        .from('orders')
-        .select('id, option_id, stake_amount, potential_payout, status')
-        .eq('market_id', marketId)
-        .eq('user_id', user.id)
-        .in('status', ['open', 'pending', 'matched', 'locked'])
-        .order('created_at', { ascending: false })
+        .rpc('get_my_orders', { p_market_id: marketId })
       if (ordErr) console.error('loadPositions error:', ordErr)
 
       if (orders && orders.length > 0) {
