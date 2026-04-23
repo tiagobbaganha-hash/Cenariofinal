@@ -40,12 +40,31 @@ function EmojiGifPicker({ onEmoji, onGif, compact = false }: {
   const [gifs, setGifs] = useState<{id:string,title:string,url:string,thumb:string}[]>([])
   const [gifLoading, setGifLoading] = useState(false)
   const [gifCategory, setGifCategory] = useState('📈 Mercado')
+  const [uploading, setUploading] = useState(false)
+  const fileRef = useRef<HTMLInputElement>(null)
 
   const GIF_CATEGORIES = ['📈 Mercado','🚀 Hype','🎉 Festa','😂 Memes','😮 Surpresa','💀 Perdeu','⚽ Futebol','👍 Reações']
   const GIF_QUERIES: Record<string,string> = {
     '📈 Mercado':'stonks money finance','🚀 Hype':'lets go hype excited','🎉 Festa':'party celebrate',
     '😂 Memes':'funny meme bruh','😮 Surpresa':'shocked surprised omg','💀 Perdeu':'fail lose rip',
     '⚽ Futebol':'soccer goal football','👍 Reações':'thumbs up reaction',
+  }
+
+  async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploading(true)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      fd.append('bucket', 'community')
+      fd.append('folder', 'gifs')
+      const res = await fetch('/api/upload-image', { method: 'POST', body: fd })
+      const data = await res.json()
+      if (data.url) { onGif(data.url); setOpen(false) }
+    } catch (_) {}
+    setUploading(false)
+    if (fileRef.current) fileRef.current.value = ''
   }
 
   async function loadGifs(query: string) {
@@ -118,6 +137,11 @@ function EmojiGifPicker({ onEmoji, onGif, compact = false }: {
                 className="rounded-lg bg-primary/20 text-primary px-2 py-1 text-xs hover:bg-primary/30">
                 🔍
               </button>
+              <button onClick={() => fileRef.current?.click()} type="button" disabled={uploading}
+                className="rounded-lg bg-card border border-border text-muted-foreground px-2 py-1 text-xs hover:border-primary/40 hover:text-foreground disabled:opacity-50">
+                {uploading ? '⏳' : '📎'}
+              </button>
+              <input ref={fileRef} type="file" accept="image/*,image/gif" className="hidden" onChange={handleFileUpload} />
             </div>
             <div className="flex gap-1 overflow-x-auto pb-0.5">
               {GIF_CATEGORIES.map(cat => (

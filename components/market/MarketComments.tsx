@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Send, Smile, Loader2, Trash2 } from 'lucide-react'
 import EmojiPicker from 'emoji-picker-react'
@@ -31,6 +31,8 @@ export function MarketComments({ marketId }: { marketId: string }) {
   const [gifs, setGifs] = useState<{id:string,title:string,url:string,thumb:string}[]>([])
   const [gifSearch, setGifSearch] = useState('')
   const [gifLoading, setGifLoading] = useState(false)
+  const [uploadingGif, setUploadingGif] = useState(false)
+  const fileGifRef = useRef<HTMLInputElement | null>(null)
   const [pendingGif, setPendingGif] = useState<string|null>(null)
   const [error, setError] = useState('')
 
@@ -60,6 +62,23 @@ export function MarketComments({ marketId }: { marketId: string }) {
       .limit(50)
     setComments(data || [])
     setLoading(false)
+  }
+
+  async function handleGifUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploadingGif(true)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      fd.append('bucket', 'community')
+      fd.append('folder', 'gifs')
+      const res = await fetch('/api/upload-image', { method: 'POST', body: fd })
+      const data = await res.json()
+      if (data.url) { setPendingGif(data.url); setShowGif(false) }
+    } catch (_) {}
+    setUploadingGif(false)
+    if (fileGifRef.current) fileGifRef.current.value = ''
   }
 
   async function loadGifs(q: string) {
@@ -160,6 +179,10 @@ export function MarketComments({ marketId }: { marketId: string }) {
                   onKeyDown={e => e.key === 'Enter' && loadGifs(gifSearch)}
                   placeholder="Buscar GIFs..." className="flex-1 rounded-lg border border-border bg-background px-2.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary/40" />
                 <button onClick={() => loadGifs(gifSearch)} className="rounded-lg bg-primary/20 text-primary px-2 py-1 text-xs">🔍</button>
+                <button onClick={() => fileGifRef.current?.click()} disabled={uploadingGif} className="rounded-lg bg-card border border-border text-muted-foreground px-2 py-1 text-xs hover:border-primary/40 disabled:opacity-50">
+                  {uploadingGif ? '⏳' : '📎'}
+                </button>
+                <input ref={fileGifRef} type="file" accept="image/*,image/gif" className="hidden" onChange={handleGifUpload} />
               </div>
               <div className="grid grid-cols-4 gap-1 p-2 max-h-40 overflow-y-auto">
                 {gifLoading ? <div className="col-span-4 flex justify-center py-3"><Loader2 className="h-4 w-4 animate-spin text-primary" /></div>

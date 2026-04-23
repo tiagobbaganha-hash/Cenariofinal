@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Zap, Plus, CheckCircle, Loader2, RefreshCw, TrendingUp, TrendingDown, Image, Sparkles, User, X } from 'lucide-react'
+import { Zap, Plus, CheckCircle, Loader2, RefreshCw, TrendingUp, TrendingDown, Sparkles, User } from 'lucide-react'
+import { ImageUploadButton } from '@/components/ui/ImageUploadButton'
 
 const ASSET_GROUPS = [
   {
@@ -170,7 +171,11 @@ export default function AdminRapidMarketsPage() {
         body: JSON.stringify({ prompt })
       })
       const data = await res.json()
-      if (data.content || data.result) setForm(f => ({ ...f, ai_description: data.content || data.result }))
+      if (data.error) { setMsg(`❌ IA: ${data.error}`); return }
+      // API retorna {market: {description, title, ...}}
+      const desc = data.market?.description || data.content || data.result || ''
+      if (desc) setForm(f => ({ ...f, ai_description: desc }))
+      else setMsg('❌ IA não retornou descrição')
     } catch (e: any) { setMsg(`❌ ${e.message}`) }
     setGeneratingAI(false)
   }
@@ -324,27 +329,18 @@ export default function AdminRapidMarketsPage() {
 
         {/* Imagem de capa */}
         <div>
-          <label className="block text-xs text-muted-foreground mb-1.5 flex items-center gap-1"><Image className="h-3 w-3" /> Imagem de capa</label>
-          <div className="flex gap-2">
-            <input className={inp} placeholder="URL da imagem ou gere com IA →"
-              value={form.image_url} onChange={e => setForm(f => ({ ...f, image_url: e.target.value }))} />
-            <button onClick={generateAICover} disabled={generatingCover}
-              className="flex-shrink-0 flex items-center gap-1.5 rounded-xl bg-violet-500/20 border border-violet-500/30 text-violet-400 px-3 py-2 text-xs font-medium hover:bg-violet-500/30 transition-colors disabled:opacity-50">
-              {generatingCover ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-              IA
+          <div className="flex items-center justify-between mb-1.5">
+            <label className="text-xs text-muted-foreground">Imagem de capa</label>
+            <button onClick={generateAICover} disabled={generatingCover} type="button"
+              className="flex items-center gap-1 text-xs text-violet-400 hover:text-violet-300 transition-colors disabled:opacity-50">
+              {generatingCover ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+              Gerar com IA
             </button>
           </div>
-          {form.image_url && (
-            <div className="relative mt-2">
-              <img src={form.image_url} alt="Capa" className="w-full h-32 object-cover rounded-xl border border-border" />
-              <button onClick={() => setForm(f => ({ ...f, image_url: '' }))} className="absolute top-2 right-2 rounded-full bg-black/60 p-1 text-white hover:bg-black/80">
-                <X className="h-3 w-3" />
-              </button>
-            </div>
-          )}
+          <ImageUploadButton value={form.image_url} onChange={url => setForm(f => ({ ...f, image_url: url }))} />
         </div>
 
-        {/* Análise IA */}
+                {/* Análise IA */}
         <div>
           <div className="flex items-center justify-between mb-1.5">
             <label className="text-xs text-muted-foreground flex items-center gap-1"><Sparkles className="h-3 w-3" /> Análise IA (descrição)</label>
