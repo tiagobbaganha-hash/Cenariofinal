@@ -33,6 +33,17 @@ const ASSET_GROUPS = [
     ],
   },
   {
+    label: '🌾 Agro BR (B3)',
+    assets: [
+      { id: 'JBSS3',  symbol: 'JBSS3',  name: 'JBS (Boi Gordo)',    ws: null },
+      { id: 'MRFG3',  symbol: 'MRFG3',  name: 'Marfrig (Boi)',      ws: null },
+      { id: 'AGRO3',  symbol: 'AGRO3',  name: 'BrasilAgro (Soja)',  ws: null },
+      { id: 'SLCE3',  symbol: 'SLCE3',  name: 'SLC Agrícola',       ws: null },
+      { id: 'SMTO3',  symbol: 'SMTO3',  name: 'São Martinho (Cana)',ws: null },
+      { id: 'CAML3',  symbol: 'CAML3',  name: 'Camil (Alimentos)',  ws: null },
+    ],
+  },
+  {
     label: '🛢️ Commodities & Forex',
     assets: [
       { id: 'USD',    symbol: 'USD',   name: 'Dólar (BRL)',   ws: null },

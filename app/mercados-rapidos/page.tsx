@@ -50,6 +50,16 @@ const ASSETS = [
   { id: 'EUR',         symbol: 'EUR',  name: 'Euro',      icon: '€',  color: 'text-blue-300'   },
   { id: 'GOLD',        symbol: 'OURO', name: 'Ouro',      icon: '🥇', color: 'text-yellow-300' },
   { id: 'WTI',         symbol: 'WTI',  name: 'Petróleo',  icon: '🛢️', color: 'text-slate-300'  },
+  // Bolsa BR
+  { id: 'IBOV',  symbol: 'IBOV',  name: 'Ibovespa',  icon: '📊', color: 'text-green-300'  },
+  { id: 'PETR4', symbol: 'PETR4', name: 'Petrobras', icon: '🛢️', color: 'text-slate-300'  },
+  { id: 'VALE3', symbol: 'VALE3', name: 'Vale',      icon: '⛏️', color: 'text-stone-300'  },
+  // Agro BR
+  { id: 'JBSS3', symbol: 'JBSS3', name: 'JBS (Boi)', icon: '🐂', color: 'text-amber-600'  },
+  { id: 'MRFG3', symbol: 'MRFG3', name: 'Marfrig',  icon: '🥩', color: 'text-red-400'    },
+  { id: 'AGRO3', symbol: 'AGRO3', name: 'Soja BR',  icon: '🌱', color: 'text-green-400'  },
+  { id: 'SLCE3', symbol: 'SLCE3', name: 'Milho BR', icon: '🌽', color: 'text-yellow-400' },
+  { id: 'SMTO3', symbol: 'SMTO3', name: 'Cana/Açúcar', icon: '🍬', color: 'text-pink-300'},
 ]
 
 const COINGECKO_IDS = 'bitcoin,ethereum,solana,binancecoin,ripple,dogecoin'

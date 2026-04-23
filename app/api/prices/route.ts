@@ -53,7 +53,7 @@ export async function GET() {
 
   // 4. Bolsa BR — brapi.dev
   try {
-    const symbols = 'IBOV,PETR4,VALE3,BBDC4,ITUB4,BBAS3,ABEV3'
+    const symbols = 'IBOV,PETR4,VALE3,BBDC4,ITUB4,BBAS3,ABEV3,JBSS3,MRFG3,AGRO3,SLCE3,SMTO3,CAML3'
     const res = await fetch(`https://brapi.dev/api/quote/${symbols}?range=1d&interval=1d`, { signal: AbortSignal.timeout(5000) })
     if (res.ok) {
       const data = await res.json()
