@@ -404,21 +404,21 @@ export default function ComunidadePage() {
             className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40" />
           <textarea value={content} onChange={e => setContent(e.target.value)} rows={3} placeholder="Compartilhe sua análise, previsão ou dúvida..."
             className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-primary/40" />
-          {/* Emoji + GIF picker */}
-          <EmojiGifPicker onEmoji={(e) => setContent(c => c + e)} onGif={(url) => setSelectedGif(url)} />
-          {/* Preview do GIF selecionado */}
+          {/* Preview do GIF selecionado - ACIMA do picker */}
           {selectedGif && (
-            <div className="mt-2 space-y-1">
-              <p className="text-xs text-primary font-medium">✅ GIF anexado ao post</p>
+            <div className="space-y-1">
+              <p className="text-xs text-primary font-semibold">🎬 GIF anexado ao post</p>
               <div className="relative inline-block">
-              <img src={selectedGif} alt="GIF" className="rounded-xl max-h-40 border border-primary/30" />
-              <button onClick={() => setSelectedGif(null)} type="button"
-                className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-destructive text-white text-xs flex items-center justify-center hover:bg-destructive/80 transition-colors">
-                ✕
-              </button>
+                <img src={selectedGif} alt="GIF" className="rounded-xl max-h-40 border-2 border-primary/40" />
+                <button onClick={() => setSelectedGif(null)} type="button"
+                  className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-destructive text-white text-xs flex items-center justify-center hover:bg-destructive/80 transition-colors font-bold">
+                  ✕
+                </button>
               </div>
             </div>
           )}
+          {/* Emoji + GIF picker */}
+          <EmojiGifPicker onEmoji={(e) => setContent(c => c + e)} onGif={(url) => setSelectedGif(url)} />
           <div className="flex justify-end gap-2">
             <button onClick={handlePost} disabled={(!title.trim() || !content.trim()) && !selectedGif || posting}
               className="flex items-center gap-2 rounded-xl bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50 hover:bg-primary/90 transition-colors">

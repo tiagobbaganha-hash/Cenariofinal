@@ -38,7 +38,7 @@ export function RapidPriceBar({ prices, assets, loading, onRefresh }: Props) {
               ) : (
                 <>
                   <p className="text-sm font-bold text-foreground font-mono">
-                    R$ {price.brl.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    R$ {(price?.brl||0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </p>
                   <p className={`text-[10px] font-semibold mt-0.5 ${positive ? 'text-green-400' : 'text-red-400'}`}>
                     {positive ? '▲' : '▼'} {Math.abs(change).toFixed(2)}% 24h

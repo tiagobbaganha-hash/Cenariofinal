@@ -89,7 +89,7 @@ export function LivePriceChart({ assetId, assetSymbol, initialPrice, targetPrice
             </span>
           </div>
           <p className="text-lg font-mono font-bold text-foreground">
-            R$ {currentPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            R$ {(currentPrice||0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
           </p>
         </div>
         <div className="text-right">
@@ -122,7 +122,7 @@ export function LivePriceChart({ assetId, assetSymbol, initialPrice, targetPrice
               <line x1="0" y1={initY} x2={W} y2={initY}
                 stroke={isUp ? '#10b981' : '#ef4444'} strokeWidth="1" strokeDasharray="4,3" opacity="0.4" />
               <text x="4" y={initY - 3} fontSize="8" fill="#6b7280">
-                R$ {initialPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                R$ {(initialPrice||0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </text>
             </>
           )}
@@ -155,9 +155,9 @@ export function LivePriceChart({ assetId, assetSymbol, initialPrice, targetPrice
 
       {/* Footer: inicial vs atual */}
       <div className="flex justify-between text-xs text-muted-foreground">
-        <span>Inicial: <span className="font-mono text-foreground">R$ {initialPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span></span>
+        <span>Inicial: <span className="font-mono text-foreground">R$ {(initialPrice||0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span></span>
         <span className={`font-mono font-semibold ${isUp ? 'text-emerald-400' : 'text-rose-400'}`}>
-          {isUp ? '▲' : '▼'} R$ {Math.abs(change).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+          {isUp ? '▲' : '▼'} R$ {(Math.abs(change||0)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
         </span>
       </div>
     </div>

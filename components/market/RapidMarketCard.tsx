@@ -137,7 +137,7 @@ export function RapidMarketCard({ market, livePrice, onExpired, isEnded }: Props
             <div className="text-right">
               <p className="text-[10px] text-muted-foreground">Preço atual</p>
               <p className="text-sm font-mono font-bold text-foreground">
-                R$ {livePrice.brl.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                R$ {(livePrice?.brl||0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </p>
               {priceChange !== null && (
                 <p className={`text-[10px] font-semibold ${priceChange >= 0 ? 'text-green-400' : 'text-red-400'}`}>
