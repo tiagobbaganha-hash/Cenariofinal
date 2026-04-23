@@ -2,9 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Sparkles, Loader2 as L2 } from 'lucide-react'
-import { Sparkles, X, Loader2 as L2, Image as ImgIcon } from 'lucide-react'
-import { Radio, Plus, Edit3, Zap, CheckCircle, Loader2, RefreshCw, Play, Pause, StopCircle } from 'lucide-react'
+import { Radio, Plus, Edit3, Zap, CheckCircle, Loader2, Loader2 as L2, RefreshCw, Play, Pause, StopCircle, Sparkles } from 'lucide-react'
 import { useToast } from '@/hooks/useToast'
 
 interface LiveMarket {
@@ -26,8 +24,6 @@ export default function AdminAoVivoPage() {
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
   const [generatingCover, setGeneratingCover] = useState(false)
-  const [generatingCover, setGeneratingCover] = useState(false)
-  const [generatingAI, setGeneratingAI] = useState(false)
   const [updating, setUpdating] = useState<string | null>(null)
   const [form, setForm] = useState({
     title: '',
