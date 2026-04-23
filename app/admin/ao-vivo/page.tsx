@@ -214,9 +214,16 @@ export default function AdminAoVivoPage() {
             <input className={inp} placeholder="Ex: Quem vai marcar o próximo gol?" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} />
           </div>
           <div className="sm:col-span-2">
-            <label className="block text-xs text-muted-foreground mb-1.5">URL da imagem de capa</label>
-            <input className={inp} placeholder="https://..." value={form.image_url} onChange={e => setForm(f => ({ ...f, image_url: e.target.value }))} />
-            {form.image_url && <img src={form.image_url} alt="preview" className="mt-2 h-24 w-full object-cover rounded-xl border border-border" />}
+            <label className="block text-xs text-muted-foreground mb-1.5">Imagem de capa</label>
+            <div className="flex gap-2">
+              <input className={inp} placeholder="URL da imagem ou gere com IA →" value={form.image_url} onChange={e => setForm(f => ({ ...f, image_url: e.target.value }))} />
+              <button onClick={generateAICover} disabled={generatingCover} type="button"
+                className="flex-shrink-0 flex items-center gap-1.5 rounded-xl bg-violet-500/20 border border-violet-500/30 text-violet-400 px-3 py-2 text-xs font-medium hover:bg-violet-500/30 disabled:opacity-50 transition-colors">
+                {generatingCover ? <L2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                IA
+              </button>
+            </div>
+            {form.image_url && <img src={form.image_url} alt="preview" className="mt-2 h-28 w-full object-cover rounded-xl border border-border" />}
           </div>
           <div>
             <label className="block text-xs text-muted-foreground mb-1.5">Influencer (opcional)</label>

@@ -269,7 +269,7 @@ export default function AdminRapidMarketsPage() {
                         {Math.abs(p.change).toFixed(2)}%
                       </span>}
                     </div>
-                    {p ? <p className="text-xs font-mono">R$ {p.value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: p.value > 10 ? 2 : 6 })}</p>
+                    {p ? <p className="text-xs font-mono">R$ {(p.value||0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: (p.value||0) > 10 ? 2 : 6 })}</p>
                       : <div className="h-3 w-14 bg-muted animate-pulse rounded" />}
                   </button>
                 )

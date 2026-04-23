@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { MyPositions } from '@/components/market/MyPositions'
 import { Zap, Radio, Clock, Users, TrendingUp, TrendingDown, Loader2, RefreshCw } from 'lucide-react'
 import Link from 'next/link'
 import { formatCurrency } from '@/lib/utils'
@@ -356,6 +357,8 @@ function LiveMarketCard({ market, userId, balance, amounts, setAmounts, bettingI
             Faça login para apostar
           </Link>
         )}
+        {/* Minhas posições */}
+        {userId && <MyPositions marketId={market.id} options={market.options} />}
       </div>
     </div>
   )
