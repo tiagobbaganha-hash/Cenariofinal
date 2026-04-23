@@ -104,6 +104,11 @@ export default function MercadosPage() {
   const filtered = useMemo(() => {
     let list = [...markets]
 
+    if (marketType !== 'todos') {
+      const typeMap: Record<string, string> = { rapidos: 'rapid', 'ao-vivo': 'live', normais: 'standard' }
+      list = list.filter(m => (m.market_type || 'standard') === (typeMap[marketType] || marketType))
+    }
+
     if (category !== 'todos') {
       list = list.filter(m => m.category?.toLowerCase() === category)
     }
@@ -187,6 +192,25 @@ export default function MercadosPage() {
               className="w-full h-12 pl-12 pr-4 rounded-xl bg-card border border-border focus:border-primary outline-none"
             />
           </div>
+          {/* Filtro por tipo de mercado */}
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {[
+              { id: 'todos', label: '🌐 Todos' },
+              { id: 'normais', label: '📊 Normais' },
+              { id: 'rapidos', label: '⚡ Rápidos' },
+              { id: 'ao-vivo', label: '🔴 Ao Vivo' },
+            ].map(t => (
+              <button key={t.id} onClick={() => setMarketType(t.id)}
+                className={`px-4 py-1.5 rounded-full text-sm whitespace-nowrap transition-colors border ${
+                  marketType === t.id
+                    ? 'bg-primary text-primary-foreground border-primary'
+                    : 'bg-card border-border hover:border-primary/50'
+                }`}>
+                {t.label}
+              </button>
+            ))}
+          </div>
+          {/* Filtro por categoria */}
           <div className="flex gap-2 overflow-x-auto pb-2 lg:pb-0">
             {categories.map(cat => (
               <button
@@ -291,6 +315,8 @@ function MarketCard({ market }: { market: Market }) {
           <span className="px-3 py-1 rounded-full text-xs font-medium bg-black/50 backdrop-blur-sm border border-white/10">
             {market.category || 'Geral'}
           </span>
+          {market.market_type === 'rapid' && <span className="ml-1 px-2 py-1 rounded-full text-xs font-bold bg-yellow-500/90 text-black">⚡</span>}
+          {market.market_type === 'live' && <span className="ml-1 px-2 py-1 rounded-full text-xs font-bold bg-red-500/90 text-white">🔴</span>}
         </div>
         {market.featured && (
           <div className={`absolute ${market.image_url ? 'top-2' : 'top-4'} right-4 z-10`}>
