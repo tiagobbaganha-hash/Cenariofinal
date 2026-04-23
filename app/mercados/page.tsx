@@ -66,7 +66,7 @@ export default function MercadosPage() {
       // Busca mercados + opções diretamente (não depende de view)
       const { data: rawMarkets } = await supabase
         .from('markets')
-        .select('id, slug, title, category, status, image_url, featured, closes_at, total_volume, influencer_id')
+        .select('id, slug, title, category, status, market_type, image_url, featured, closes_at, total_volume, influencer_id')
         .in('status', ['open', 'closed'])
         .order('featured', { ascending: false })
         .order('created_at', { ascending: false })

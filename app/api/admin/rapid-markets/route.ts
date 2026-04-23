@@ -81,3 +81,65 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: e.message }, { status: 500 })
   }
 }
+
+export async function PATCH(req: NextRequest) {
+  try {
+    const token = req.headers.get('authorization')?.replace('Bearer ', '') || null
+    const user = token ? decodeJWT(token) : null
+    if (!user) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
+
+    const { market_id } = await req.json()
+    if (!market_id) return NextResponse.json({ error: 'market_id obrigatório' }, { status: 400 })
+
+    const db = getDb(token || undefined)
+
+    // Buscar preço atual do ativo
+    const { data: market } = await db.from('markets')
+      .select('id, title, rapid_config, market_options(id, label, option_key)')
+      .eq('id', market_id).single()
+
+    if (!market) return NextResponse.json({ error: 'Mercado não encontrado' }, { status: 404 })
+
+    const cfg = market.rapid_config || {}
+    const symbol = cfg.asset_symbol || 'BTC'
+    const priceAtCreation = parseFloat(cfg.price_at_creation || '0')
+
+    // Buscar preço atual via API de preços
+    let currentPrice = priceAtCreation
+    try {
+      const priceRes = await fetch(`${req.nextUrl.origin}/api/prices`, { signal: AbortSignal.timeout(5000) })
+      if (priceRes.ok) {
+        const priceData = await priceRes.json()
+        const assetId = cfg.asset || symbol.toLowerCase()
+        if (priceData[assetId]?.value) currentPrice = priceData[assetId].value
+      }
+    } catch (_) {}
+
+    const change_pct = priceAtCreation > 0 ? ((currentPrice - priceAtCreation) / priceAtCreation * 100) : 0
+    const winner = change_pct >= 0 ? 'yes' : 'no'
+
+    // Encontrar opção vencedora
+    const options = (market as any).market_options || []
+    const winOption = options.find((o: any) => o.option_key === winner)
+    if (!winOption) return NextResponse.json({ error: 'Opção vencedora não encontrada' }, { status: 400 })
+
+    // Resolver usando RPC admin_settle_market
+    const { data: result, error } = await db.rpc('admin_settle_market', {
+      p_market_id: market_id,
+      p_result_option_id: winOption.id,
+      p_note: `Auto-resolvido: ${symbol} ${change_pct >= 0 ? '▲' : '▼'} ${Math.abs(change_pct).toFixed(2)}% (R$${currentPrice.toLocaleString('pt-BR')})`,
+    })
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+    return NextResponse.json({
+      success: true,
+      winner: winOption.label,
+      change_pct: change_pct.toFixed(2),
+      current_price: currentPrice,
+      result
+    })
+  } catch (e: any) {
+    return NextResponse.json({ error: e.message }, { status: 500 })
+  }
+}
