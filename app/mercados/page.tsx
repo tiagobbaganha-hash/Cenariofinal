@@ -52,6 +52,7 @@ export default function MercadosPage() {
   const [category, setCategory] = useState('todos')
   const [sortBy, setSortBy] = useState('featured')
   const [user, setUser] = useState<any>(null)
+  const [marketType, setMarketType] = useState('todos')
 
   const categories = ['todos', 'politica', 'esportes', 'economia', 'cultura', 'entretenimento', 'tecnologia']
 
