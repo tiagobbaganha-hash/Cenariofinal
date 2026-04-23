@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Send, Smile, Loader2, Trash2 } from 'lucide-react'
 import EmojiPicker from 'emoji-picker-react'
@@ -27,13 +27,6 @@ export function MarketComments({ marketId }: { marketId: string }) {
   const [userName, setUserName] = useState('Anônimo')
   const [isAdmin, setIsAdmin] = useState(false)
   const [showEmoji, setShowEmoji] = useState(false)
-  const [showGif, setShowGif] = useState(false)
-  const [gifs, setGifs] = useState<{id:string,title:string,url:string,thumb:string}[]>([])
-  const [gifSearch, setGifSearch] = useState('')
-  const [gifLoading, setGifLoading] = useState(false)
-  const [uploadingGif, setUploadingGif] = useState(false)
-  const fileGifRef = useRef<HTMLInputElement | null>(null)
-  const [pendingGif, setPendingGif] = useState<string|null>(null)
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -64,36 +57,10 @@ export function MarketComments({ marketId }: { marketId: string }) {
     setLoading(false)
   }
 
-  async function handleGifUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setUploadingGif(true)
-    try {
-      const fd = new FormData()
-      fd.append('file', file)
-      fd.append('bucket', 'community')
-      fd.append('folder', 'gifs')
-      const res = await fetch('/api/upload-image', { method: 'POST', body: fd })
-      const data = await res.json()
-      if (data.url) { setPendingGif(data.url); setShowGif(false) }
-    } catch (_) {}
-    setUploadingGif(false)
-    if (fileGifRef.current) fileGifRef.current.value = ''
-  }
 
-  async function loadGifs(q: string) {
-    setGifLoading(true)
-    try {
-      const res = await fetch(`/api/gifs?q=${encodeURIComponent(q||'trending')}&limit=12`)
-      if (res.ok) { const d = await res.json(); setGifs(d.gifs||[]) }
-    } catch { setGifs([]) }
-    setGifLoading(false)
-  }
-
-  useEffect(() => { if (showGif) loadGifs(gifSearch||'trending') }, [showGif])
 
   async function handlePost() {
-    const msg = pendingGif ? `__GIF__:${pendingGif}` : text.trim()
+    const msg = text.trim()
     if (!msg || !userId) return
     setPosting(true); setError('')
     try {
@@ -107,7 +74,7 @@ export function MarketComments({ marketId }: { marketId: string }) {
         is_deleted: false,
       })
       if (e) throw new Error(e.message)
-      setText(''); setPendingGif(null); setShowEmoji(false); setShowGif(false)
+      setText(''); setShowEmoji(false)
       await load()
     } catch (e: any) {
       setError(e.message)
@@ -133,8 +100,6 @@ export function MarketComments({ marketId }: { marketId: string }) {
         ) : comments.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-4">Nenhum comentário ainda. Seja o primeiro!</p>
         ) : comments.map(c => {
-          const isGif = c.content.startsWith('__GIF__:')
-          const gifUrl = isGif ? c.content.replace('__GIF__:', '') : null
           return (
             <div key={c.id} className="flex gap-3 group">
               <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary flex-shrink-0">
@@ -150,10 +115,7 @@ export function MarketComments({ marketId }: { marketId: string }) {
                     </button>
                   )}
                 </div>
-                {gifUrl
-                  ? <img src={gifUrl} alt="GIF" className="rounded-xl max-w-[200px] mt-1" />
-                  : <p className="text-sm text-foreground mt-0.5 break-words">{c.content}</p>
-                }
+                <p className="text-sm text-foreground mt-0.5 break-words">{c.content}</p>
               </div>
             </div>
           )
@@ -172,51 +134,19 @@ export function MarketComments({ marketId }: { marketId: string }) {
             </div>
           )}
 
-          {showGif && (
-            <div className="rounded-xl border border-border bg-card overflow-hidden">
-              <div className="flex gap-1.5 p-2 border-b border-border/30">
-                <input value={gifSearch} onChange={e => setGifSearch(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && loadGifs(gifSearch)}
-                  placeholder="Buscar GIFs..." className="flex-1 rounded-lg border border-border bg-background px-2.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary/40" />
-                <button onClick={() => loadGifs(gifSearch)} className="rounded-lg bg-primary/20 text-primary px-2 py-1 text-xs">🔍</button>
-                <button onClick={() => fileGifRef.current?.click()} disabled={uploadingGif} className="rounded-lg bg-card border border-border text-muted-foreground px-2 py-1 text-xs hover:border-primary/40 disabled:opacity-50">
-                  {uploadingGif ? '⏳' : '📎'}
-                </button>
-                <input ref={fileGifRef} type="file" accept="image/gif" className="hidden" onChange={handleGifUpload} />
-              </div>
-              <div className="grid grid-cols-4 gap-1 p-2 max-h-40 overflow-y-auto">
-                {gifLoading ? <div className="col-span-4 flex justify-center py-3"><Loader2 className="h-4 w-4 animate-spin text-primary" /></div>
-                  : gifs.map(g => (
-                    <button key={g.id} onClick={() => { setPendingGif(g.url); setShowGif(false) }}
-                      className="rounded-lg overflow-hidden aspect-video bg-muted hover:ring-2 hover:ring-primary transition-all">
-                      <img src={g.thumb||g.url} alt={g.title} className="w-full h-full object-cover" loading="lazy" />
-                    </button>
-                  ))}
-              </div>
-            </div>
-          )}
 
-          {pendingGif && (
-            <div className="relative inline-block">
-              <img src={pendingGif} alt="GIF" className="rounded-xl max-h-20 border border-primary/30" />
-              <button onClick={() => setPendingGif(null)} className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-destructive text-white text-[10px] flex items-center justify-center">✕</button>
-            </div>
-          )}
 
           <div className="flex gap-2">
-            <button onClick={() => { setShowEmoji(v => !v); setShowGif(false) }}
+            <button onClick={() => { setShowEmoji(v => !v) }}
               className={`flex-shrink-0 rounded-xl p-2 border transition-colors ${showEmoji ? 'border-primary/40 bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:text-foreground'}`}>
               <Smile className="h-4 w-4" />
             </button>
-            <button onClick={() => { setShowGif(v => !v); setShowEmoji(false) }}
-              className={`flex-shrink-0 rounded-xl px-2.5 py-2 border text-xs font-bold transition-colors ${showGif ? 'border-primary/40 bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:text-foreground'}`}>
-              GIF
-            </button>
+
             <input value={text} onChange={e => setText(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handlePost())}
               placeholder="Escreva um comentário..."
               className="flex-1 rounded-xl border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
-            <button onClick={handlePost} disabled={(!text.trim() && !pendingGif) || posting}
+            <button onClick={handlePost} disabled={!text.trim() || posting}
               className="flex-shrink-0 rounded-xl bg-primary px-3 py-2 text-primary-foreground disabled:opacity-40 hover:bg-primary/90 transition-colors">
               {posting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             </button>

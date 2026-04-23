@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import EmojiPicker from 'emoji-picker-react'
 import { createClient } from '@/lib/supabase/client'
 import { useToast } from '@/hooks/useToast'
@@ -29,142 +29,37 @@ const EMOJI_CATEGORIES = {
 }
 
 
-function EmojiGifPicker({ onEmoji, onGif, compact = false }: {
-  onEmoji: (e: string) => void
-  onGif: (url: string) => void
-  compact?: boolean
-}) {
-  const [tab, setTab] = useState<'emoji' | 'gif'>('emoji')
+function EmojiPicker({ onEmoji }: { onEmoji: (e: string) => void }) {
   const [open, setOpen] = useState(false)
-  const [gifSearch, setGifSearch] = useState('')
-  const [gifs, setGifs] = useState<{id:string,title:string,url:string,thumb:string}[]>([])
-  const [gifLoading, setGifLoading] = useState(false)
-  const [gifCategory, setGifCategory] = useState('📈 Mercado')
-  const [uploading, setUploading] = useState(false)
-  const fileRef = useRef<HTMLInputElement>(null)
-
-  const GIF_CATEGORIES = ['📈 Mercado','🚀 Hype','🎉 Festa','😂 Memes','😮 Surpresa','💀 Perdeu','⚽ Futebol','👍 Reações']
-  const GIF_QUERIES: Record<string,string> = {
-    '📈 Mercado':'stonks money finance','🚀 Hype':'lets go hype excited','🎉 Festa':'party celebrate',
-    '😂 Memes':'funny meme bruh','😮 Surpresa':'shocked surprised omg','💀 Perdeu':'fail lose rip',
-    '⚽ Futebol':'soccer goal football','👍 Reações':'thumbs up reaction',
+  const EMOJIS = {
+    '🔥 Trending': ['🔥','💯','👀','🚀','📈','💪','🎯','⚡','🏆','🎉','😤','🤯','💎','🦁','⚔️'],
+    '😂 Reações': ['😂','🤣','😭','😍','🥰','😎','🤔','😱','🙄','😤','🥺','😏','🤩','😴','🫡'],
+    '💸 Mercado': ['💸','💰','📊','📉','📈','🏦','💳','🪙','💵','💹','🤑','🏧','💲','🧾','⚖️'],
+    '👏 Reações': ['👏','👍','👎','🙌','🤝','💪','🫶','🤜','✊','☝️','🤙','🫰','👌','🫱','🤞'],
+    '⚽ Esportes': ['⚽','🏀','🎾','🏈','⚾','🏐','🏉','🎱','🥊','🏋️','🤼','🏇','🎿','🛹','🏄'],
+    '🌍 Mundo': ['🌍','🌎','🌏','🇧🇷','🏛️','⚖️','🗳️','📰','📡','🔭','🛸','🌊','🌋','⭐','🌙'],
   }
-
-  async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setUploading(true)
-    try {
-      const fd = new FormData()
-      fd.append('file', file)
-      fd.append('bucket', 'community')
-      fd.append('folder', 'gifs')
-      const res = await fetch('/api/upload-image', { method: 'POST', body: fd })
-      const data = await res.json()
-      if (data.url) { onGif(data.url); setOpen(false) }
-    } catch (_) {}
-    setUploading(false)
-    if (fileRef.current) fileRef.current.value = ''
-  }
-
-  async function loadGifs(query: string) {
-    setGifLoading(true)
-    try {
-      const q = encodeURIComponent(query)
-      const res = await fetch(`/api/gifs?q=${q}&limit=20`)
-      if (res.ok) {
-        const data = await res.json()
-        setGifs(data.gifs || [])
-      }
-    } catch { setGifs([]) }
-    setGifLoading(false)
-  }
-
-  useEffect(() => {
-    if (open && tab === 'gif') {
-      loadGifs(gifSearch || GIF_QUERIES[gifCategory] || gifCategory)
-    }
-  }, [open, tab, gifCategory])
-
-  if (!open) return (
-    <div className="flex gap-1.5">
-      <button type="button" onClick={() => { setTab('emoji'); setOpen(true) }}
-        className="flex items-center gap-1.5 text-xs text-muted-foreground border border-border rounded-xl px-2.5 py-1.5 hover:text-foreground hover:border-primary/40 transition-colors">
-        😊 {!compact && 'Emoji'}
-      </button>
-      <button type="button" onClick={() => { setTab('gif'); setOpen(true) }}
-        className="flex items-center gap-1.5 text-xs text-muted-foreground border border-border rounded-xl px-2.5 py-1.5 hover:text-foreground hover:border-primary/40 transition-colors">
-        🎬 {!compact && 'GIF'}
-      </button>
-    </div>
-  )
-
   return (
-    <div className="rounded-2xl border border-border bg-card shadow-xl overflow-hidden">
-      <div className="flex items-center justify-between px-3 py-2 border-b border-border/50">
-        <div className="flex gap-1">
-          {(['emoji', 'gif'] as const).map(t => (
-            <button key={t} onClick={() => setTab(t)} type="button"
-              className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all ${tab === t ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
-              {t === 'emoji' ? '😊 Emoji' : '🎬 GIF'}
-            </button>
+    <div className="relative">
+      <button onClick={() => setOpen(v => !v)} type="button"
+        className={`flex items-center gap-1 rounded-xl px-3 py-2 border text-sm transition-colors ${open ? 'border-primary/40 bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:text-foreground'}`}>
+        😊 Emoji
+      </button>
+      {open && (
+        <div className="absolute bottom-full mb-2 left-0 z-50 rounded-2xl border border-border bg-card shadow-xl w-72 overflow-hidden">
+          {Object.entries(EMOJIS).map(([cat, emojis]) => (
+            <div key={cat} className="p-2">
+              <p className="text-[10px] text-muted-foreground px-1 mb-1">{cat}</p>
+              <div className="grid grid-cols-8 gap-0.5">
+                {emojis.map(e => (
+                  <button key={e} type="button" onClick={() => { onEmoji(e); setOpen(false) }}
+                    className="h-8 w-8 flex items-center justify-center text-lg hover:bg-muted rounded-lg transition-colors">
+                    {e}
+                  </button>
+                ))}
+              </div>
+            </div>
           ))}
-        </div>
-        <button onClick={() => setOpen(false)} type="button"
-          className="text-xs text-muted-foreground hover:text-foreground w-6 h-6 flex items-center justify-center rounded-lg hover:bg-accent">✕</button>
-      </div>
-
-      {tab === 'emoji' && (
-        <EmojiPicker
-          onEmojiClick={(data: any) => { onEmoji(data.emoji); setOpen(false) }}
-          searchPlaceholder="Buscar emoji..."
-          width="100%" height={320}
-          lazyLoadEmojis skinTonesDisabled
-          theme={"dark" as any}
-          previewConfig={{ showPreview: false }}
-        />
-      )}
-
-      {tab === 'gif' && (
-        <div>
-          <div className="px-2 py-1.5 border-b border-border/30 space-y-1.5">
-            <div className="flex gap-1.5">
-              <input value={gifSearch} onChange={e => setGifSearch(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && loadGifs(gifSearch)}
-                placeholder="Buscar GIFs..."
-                className="flex-1 rounded-lg border border-border bg-background px-2.5 py-1 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40" />
-              <button onClick={() => loadGifs(gifSearch)} type="button"
-                className="rounded-lg bg-primary/20 text-primary px-2 py-1 text-xs hover:bg-primary/30">
-                🔍
-              </button>
-              <button onClick={() => fileRef.current?.click()} type="button" disabled={uploading}
-                className="rounded-lg bg-card border border-border text-muted-foreground px-2 py-1 text-xs hover:border-primary/40 hover:text-foreground disabled:opacity-50">
-                {uploading ? '⏳' : '📎'}
-              </button>
-              <input ref={fileRef} type="file" accept="image/gif" className="hidden" onChange={handleFileUpload} />
-            </div>
-            <div className="flex gap-1 overflow-x-auto pb-0.5">
-              {GIF_CATEGORIES.map(cat => (
-                <button key={cat} onClick={() => setGifCategory(cat)} type="button"
-                  className={`px-2 py-0.5 rounded-lg text-[10px] font-medium whitespace-nowrap transition-all flex-shrink-0 ${gifCategory === cat ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
-                  {cat}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="grid grid-cols-4 gap-1 p-2 max-h-48 overflow-y-auto">
-            {gifLoading ? (
-              <div className="col-span-4 flex justify-center py-4"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
-            ) : gifs.length === 0 ? (
-              <div className="col-span-4 text-center py-4 text-xs text-muted-foreground">Nenhum GIF encontrado</div>
-            ) : gifs.map(g => (
-              <button key={g.id} onClick={() => { onGif(g.url); setOpen(false) }} type="button"
-                className="relative group rounded-lg overflow-hidden hover:ring-2 hover:ring-primary transition-all aspect-video bg-muted">
-                <img src={g.thumb || g.url} alt={g.title} className="w-full h-full object-cover" loading="lazy" />
-              </button>
-            ))}
-          </div>
-          <p className="text-[9px] text-muted-foreground/40 text-center pb-1">Powered by Giphy</p>
         </div>
       )}
     </div>
@@ -219,7 +114,6 @@ export default function ComunidadePage() {
   const [showForm, setShowForm] = useState(false)
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
-  const [selectedGif, setSelectedGif] = useState<string | null>(null)
   const [posting, setPosting] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
   const [userName, setUserName] = useState('Apostador')
@@ -428,23 +322,10 @@ export default function ComunidadePage() {
             className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40" />
           <textarea value={content} onChange={e => setContent(e.target.value)} rows={3} placeholder="Compartilhe sua análise, previsão ou dúvida..."
             className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-primary/40" />
-          {/* Preview do GIF selecionado - ACIMA do picker */}
-          {selectedGif && (
-            <div className="space-y-1">
-              <p className="text-xs text-primary font-semibold">🎬 GIF anexado ao post</p>
-              <div className="relative inline-block">
-                <img src={selectedGif} alt="GIF" className="rounded-xl max-h-40 border-2 border-primary/40" />
-                <button onClick={() => setSelectedGif(null)} type="button"
-                  className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-destructive text-white text-xs flex items-center justify-center hover:bg-destructive/80 transition-colors font-bold">
-                  ✕
-                </button>
-              </div>
-            </div>
-          )}
           {/* Emoji + GIF picker */}
-          <EmojiGifPicker onEmoji={(e) => setContent(c => c + e)} onGif={(url) => setSelectedGif(url)} />
+          <EmojiPicker onEmoji={(e) => setContent(c => c + e)} />
           <div className="flex justify-end gap-2">
-            <button onClick={handlePost} disabled={(!title.trim() || !content.trim()) && !selectedGif || posting}
+            <button onClick={handlePost} disabled={!title.trim() || !content.trim() || posting}
               className="flex items-center gap-2 rounded-xl bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50 hover:bg-primary/90 transition-colors">
               {posting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
               Publicar
