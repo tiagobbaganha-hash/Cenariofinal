@@ -81,11 +81,15 @@ export function BetWidget({ marketId, marketSlug, options, isOpen }: BetWidgetPr
     setLoadingPositions(true)
     try {
       const supabase = createClient()
+      // Buscar userId fresco do auth — não depende do state que pode ser null
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) { setPositions([]); setLoadingPositions(false); return }
+      
       const { data: orders, error: ordErr } = await supabase
         .from('orders')
         .select('id, option_id, stake_amount, potential_payout, status')
         .eq('market_id', marketId)
-        .eq('user_id', userId!)
+        .eq('user_id', user.id)
         .in('status', ['open', 'pending', 'matched', 'locked'])
         .order('created_at', { ascending: false })
       if (ordErr) console.error('loadPositions error:', ordErr)
