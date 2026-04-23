@@ -52,24 +52,25 @@ export async function GET() {
     }
   } catch (_) {}
 
-  // 4. Soja e Boi via HG Brasil (demo key — funciona no servidor)
+  // 4. Bolsa BR via brapi.dev (gratuito, sem API key)
   try {
+    const symbols = 'IBOV,PETR4,VALE3,BBDC4'
     const res = await fetch(
-      'https://api.hgbrasil.com/finance/stock_price?key=demo&symbol=IBOV,PETR4,VALE3,BBDC4,JBSS3,MRFG3',
-      { next: { revalidate: 0 } }
+      `https://brapi.dev/api/quote/${symbols}?range=1d&interval=1d`,
+      { next: { revalidate: 15 } }
     )
     if (res.ok) {
       const data = await res.json()
-      const results = data.results || {}
-      for (const sym of ['IBOV', 'PETR4', 'VALE3', 'BBDC4', 'JBSS3', 'MRFG3']) {
-        if (results[sym]?.price) {
-          result[sym] = { value: results[sym].price, change: results[sym].change_percent || 0, symbol: sym }
-        }
+      for (const item of (data.results || [])) {
+        const sym = item.symbol
+        const price = item.regularMarketPrice || item.price
+        const change = item.regularMarketChangePercent || 0
+        if (price) result[sym] = { value: price, change, symbol: sym }
       }
     }
   } catch (_) {}
 
   return NextResponse.json(result, {
-    headers: { 'Cache-Control': 'no-store, max-age=0' }
+    headers: { 'Cache-Control': 'public, s-maxage=15, stale-while-revalidate=30' }
   })
 }
