@@ -12,6 +12,8 @@ interface BrandingData {
   instagram_url?: string
   telegram_url?: string
   x_url?: string
+  youtube_url?: string
+  support_whatsapp?: string
 }
 
 export function SiteFooter() {
@@ -22,7 +24,7 @@ export function SiteFooter() {
     const supabase = createClient()
     // Carregar branding
     supabase.from('branding_settings')
-      .select('brand_name, logo_url, support_email, instagram_url, telegram_url, x_url')
+      .select('brand_name, logo_url, support_email, support_whatsapp, instagram_url, telegram_url, x_url, youtube_url')
       .eq('id', 1).maybeSingle()
       .then(({ data }) => { if (data) setBranding(data) })
       .catch(() => {})
@@ -84,7 +86,19 @@ export function SiteFooter() {
                   <Send className="h-4 w-4" />
                 </a>
               )}
-              {!branding.x_url && !branding.instagram_url && !branding.telegram_url && (
+              {branding.youtube_url && (
+                <a href={branding.youtube_url.startsWith('http') ? branding.youtube_url : `https://youtube.com/@${branding.youtube_url}`}
+                  target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                  ▶️ YouTube
+                </a>
+              )}
+              {branding.support_whatsapp && (
+                <a href={`https://wa.me/${branding.support_whatsapp.replace(/\D/g, '')}`}
+                  target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                  📱 WhatsApp
+                </a>
+              )}
+              {!branding.x_url && !branding.instagram_url && !branding.telegram_url && !branding.youtube_url && !branding.support_whatsapp && (
                 <p className="text-xs text-muted-foreground/50">Configure redes sociais no Admin → Branding</p>
               )}
             </div>

@@ -144,29 +144,23 @@ export default function ResolucaoPage() {
         <div className="grid gap-3 sm:grid-cols-2">
           <div>
             <label className="block text-xs text-muted-foreground mb-1.5">Mercado a Resolver</label>
-            {markets.length > 0 ? (
-              <select className={inp} value={manualMarketId} onChange={e => setManualMarketId(e.target.value)}>
-                <option value="">Selecionar...</option>
+            {markets.length === 0 ? (
+              <p className="text-xs text-muted-foreground py-2">Clique em "Carregar mercados" acima →</p>
+            ) : (
+              <select className={inp} value={manualMarketId} onChange={e => {
+                const id = e.target.value
+                setManualMarketId(id)
+                setManualOptionId('')
+                const m = markets.find(m => m.id === id)
+                setMarketOptions((m as any)?.market_options || [])
+              }}>
+                <option value="">— Selecione um mercado —</option>
                 {markets.map(m => (
                   <option key={m.id} value={m.id}>
-                    [{m.status}] {m.title.slice(0, 40)}
+                    [{m.status}] {m.title?.slice(0, 70)}
                   </option>
                 ))}
               </select>
-            ) : (
-              <select className={inp} value={manualMarketId} onChange={e => {
-              setManualMarketId(e.target.value)
-              setManualOptionId('')
-              const m = markets.find(m => m.id === e.target.value)
-              setMarketOptions((m as any)?.market_options || [])
-            }}>
-              <option value="">— Selecione um mercado —</option>
-              {markets.map(m => (
-                <option key={m.id} value={m.id}>
-                  [{m.status}] {m.title?.slice(0, 60)}
-                </option>
-              ))}
-            </select>
             )}
           </div>
           <div>

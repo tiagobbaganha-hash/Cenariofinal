@@ -54,7 +54,7 @@ export default function AdminMercados() {
 
   useEffect(() => {
     loadMarkets()
-  }, [statusFilter])
+  }, [statusFilter, typeFilter])
 
   async function loadMarkets() {
     setLoading(true)
@@ -68,6 +68,9 @@ export default function AdminMercados() {
     
     if (statusFilter !== 'all') {
       query = query.eq('status', statusFilter)
+    }
+    if (typeFilter !== 'all') {
+      query = query.eq('market_type', typeFilter)
     }
     
     const { data } = await query

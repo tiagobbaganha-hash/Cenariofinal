@@ -41,6 +41,8 @@ export default function LogsPage() {
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('')
   const [search, setSearch] = useState('')
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
   const [page, setPage] = useState(0)
   const [summary, setSummary] = useState<any[]>([])
   const PAGE = 50
@@ -59,7 +61,10 @@ export default function LogsPage() {
     setLoading(false)
   }
 
-  const filtered = search ? logs.filter(l => l.action.includes(search) || l.entity_label?.toLowerCase().includes(search.toLowerCase())) : logs
+  const filtered = logs
+    .filter(l => !dateFrom || l.created_at >= dateFrom + 'T00:00:00')
+    .filter(l => !dateTo || l.created_at <= dateTo + 'T23:59:59')
+    .filter(l => !search || l.action.includes(search) || l.entity_label?.toLowerCase().includes(search.toLowerCase()))
 
   return (
     <div className="space-y-6 pb-12">

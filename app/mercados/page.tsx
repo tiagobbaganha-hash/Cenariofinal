@@ -54,7 +54,13 @@ export default function MercadosPage() {
   const [sortBy, setSortBy] = useState('featured')
   const [user, setUser] = useState<any>(null)
   const searchParams = useSearchParams()
-  const [marketType, setMarketType] = useState(() => searchParams.get('tipo') || 'todos')
+  const [marketType, setMarketType] = useState('todos')
+  
+  // Ler ?tipo= da URL ao montar
+  useEffect(() => {
+    const tipo = searchParams.get('tipo')
+    if (tipo) setMarketType(tipo)
+  }, [searchParams])
   const [activeTag, setActiveTag] = useState('')
   const [showMovers, setShowMovers] = useState(false)
 
@@ -93,8 +99,8 @@ export default function MercadosPage() {
       // Busca mercados + opções diretamente (não depende de view)
       const { data: rawMarkets } = await supabase
         .from('markets')
-        .select('id, slug, title, category, status, market_type, image_url, featured, closes_at, total_volume, influencer_id')
-        .in('status', ['open', 'closed'])
+        .select('id, slug, title, category, status, market_type, image_url, featured, closes_at, total_volume, bet_count, influencer_id, rapid_config')
+        .in('status', ['open'])
         .order('featured', { ascending: false })
         .order('created_at', { ascending: false })
         .limit(100)

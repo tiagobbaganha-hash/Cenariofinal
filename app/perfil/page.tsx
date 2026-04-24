@@ -13,6 +13,18 @@ import {
 
 const AVATARS = ['🚀','🐂','🦁','🔮','🎯','⚡','🌊','🔥','💎','🦅','🎲','🌙','☀️','🏆','⚔️','🦊','🐉','🌟','💫','🎪']
 
+async function uploadFoto(file: File, userId: string): Promise<string | null> {
+  if (file.size > 3 * 1024 * 1024) { alert('Máximo 3MB'); return null }
+  const supabase = createClient()
+  const path = `avatars/${userId}_${Date.now()}.${file.name.split('.').pop()}`
+  const { error } = await supabase.storage.from('community').upload(path, file, { upsert: true })
+  if (error) { alert('Erro ao enviar: ' + error.message); return null }
+  const { data } = supabase.storage.from('community').getPublicUrl(path)
+  return data.publicUrl
+}
+
+
+
 type Tab = 'perfil' | 'kyc' | 'apostas' | 'seguranca'
 
 function TabBtn({ id, label, icon, active, onClick }: any) {
@@ -45,6 +57,8 @@ export default function PerfilPage() {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [selectedAvatar, setSelectedAvatar] = useState(0)
+  const [avatarUrl, setAvatarUrl] = useState('')
+  const [uploadingPhoto, setUploadingPhoto] = useState(false)
 
   // Dados do perfil
   const [nome, setNome] = useState('')
@@ -135,8 +149,9 @@ export default function PerfilPage() {
     setSaving(true)
     const supabase = createClient()
     await supabase.from('profiles').update({
-      full_name: nome,
-
+      if (data.avatar_url) setAvatarUrl(data.avatar_url)
+            full_name: nome,
+      avatar_url: avatarUrl || null,
       phone,
       cpf: cpf.replace(/\D/g, ''),
       birth_date: birthDate || null,
@@ -250,11 +265,38 @@ export default function PerfilPage() {
 
       {/* Avatar selector */}
       <div className="rounded-2xl border border-border bg-card p-4 space-y-2">
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Avatar</p>
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Foto de Perfil</p>
+        {/* Upload de foto real */}
+        <div className="flex items-center gap-4">
+          <div className="h-16 w-16 rounded-full overflow-hidden border-2 border-border flex-shrink-0">
+            {avatarUrl
+              ? <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
+              : <div className="h-full w-full bg-primary/20 flex items-center justify-center text-3xl">{AVATARS[selectedAvatar]}</div>
+            }
+          </div>
+          <div className="space-y-1.5">
+            <label className="cursor-pointer inline-flex items-center gap-2 rounded-xl border border-border bg-background px-4 py-2 text-sm hover:border-primary/40 hover:text-primary transition-colors">
+              <Camera className="h-4 w-4" />
+              {uploadingPhoto ? 'Enviando...' : 'Carregar foto'}
+              <input type="file" accept="image/*" className="hidden" disabled={uploadingPhoto}
+                onChange={async e => {
+                  const file = e.target.files?.[0]
+                  if (!file) return
+                  setUploadingPhoto(true)
+                  const url = await uploadFoto(file, userId)
+                  if (url) setAvatarUrl(url)
+                  setUploadingPhoto(false)
+                }} />
+            </label>
+            {avatarUrl && <button onClick={() => setAvatarUrl('')} className="text-xs text-destructive hover:underline">Remover foto</button>}
+          </div>
+        </div>
+        {/* Avatar emoji (alternativo) */}
+        <p className="text-xs text-muted-foreground">Ou escolha um avatar emoji:</p>
         <div className="flex flex-wrap gap-2">
           {AVATARS.map((emoji, i) => (
-            <button key={i} onClick={() => setSelectedAvatar(i)}
-              className={`text-2xl p-1.5 rounded-xl transition-all hover:scale-110 ${i === selectedAvatar ? 'bg-primary/20 ring-2 ring-primary' : 'hover:bg-accent'}`}>
+            <button key={i} onClick={() => { setSelectedAvatar(i); setAvatarUrl('') }}
+              className={`text-2xl p-1.5 rounded-xl transition-all hover:scale-110 ${i === selectedAvatar && !avatarUrl ? 'bg-primary/20 ring-2 ring-primary' : 'hover:bg-accent'}`}>
               {emoji}
             </button>
           ))}

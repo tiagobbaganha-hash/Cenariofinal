@@ -39,8 +39,18 @@ export function BrandingProvider() {
         if (data.color_accent && data.color_accent.startsWith('#')) {
           root.style.setProperty('--accent', hexToHsl(data.color_accent))
         }
-        // Background/surface não são alterados via branding para preservar o layout
-        // Apenas primary, secondary e accent são seguros para sobrescrever
+        // Aplicar background e card se houver configuração válida
+        if (data.color_bg && data.color_bg.startsWith('#') && data.color_bg !== '#0B0F14') {
+          root.style.setProperty('--background', hexToHsl(data.color_bg))
+        }
+        if (data.color_surface && data.color_surface.startsWith('#') && data.color_surface !== '#111827') {
+          root.style.setProperty('--card', hexToHsl(data.color_surface))
+          root.style.setProperty('--popover', hexToHsl(data.color_surface))
+        }
+        if (data.color_text && data.color_text.startsWith('#') && data.color_text !== '#E5E7EB') {
+          root.style.setProperty('--foreground', hexToHsl(data.color_text))
+          root.style.setProperty('--card-foreground', hexToHsl(data.color_text))
+        }
 
         // Fonte
         if (data.font_family) {
