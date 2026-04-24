@@ -111,6 +111,7 @@ export default function PerfilPage() {
       const { data: p } = await supabase.from('profiles').select('id, full_name, email, phone, cpf, birth_date, address, kyc_status, city, state').eq('id', user.id).single()
       if (p) {
         setNome((p as any).full_name || '')
+        if ((p as any).avatar_url) setAvatarUrl((p as any).avatar_url)
         // username não existe, usar email
         setPhone((p as any).phone || '')
         setCpf((p as any).cpf || '')
@@ -149,8 +150,7 @@ export default function PerfilPage() {
     setSaving(true)
     const supabase = createClient()
     await supabase.from('profiles').update({
-      if (data.avatar_url) setAvatarUrl(data.avatar_url)
-            full_name: nome,
+      full_name: nome,
       avatar_url: avatarUrl || null,
       phone,
       cpf: cpf.replace(/\D/g, ''),
