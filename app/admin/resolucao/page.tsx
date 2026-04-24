@@ -45,12 +45,18 @@ export default function ResolucaoPage() {
     setRunning(true)
     try {
       const supabase = createClient()
-      await supabase.from('markets').update({
-        status: 'resolved',
-        result_option_id: manualOptionId,
-        resolves_at: new Date().toISOString(),
-      }).eq('id', manualMarketId)
-      setResult({ ok: true, message: 'Mercado marcado como resolvido. O cron vai liquidar as apostas em até 5 minutos, ou clique em "Executar Agora".' })
+      // Usar RPC admin_settle_market que liquida tudo corretamente (enums, comissão, IR)
+      const { data, error } = await supabase.rpc('admin_settle_market', {
+        p_market_id: manualMarketId,
+        p_result_option_id: manualOptionId,
+        p_note: 'Resolvido manualmente pelo admin',
+      })
+      if (error) throw new Error(error.message)
+      setResult({
+        ok: true,
+        message: `✅ Mercado resolvido! ${data?.winners || 0} vencedores, ${data?.losers || 0} perdedores. Apostas liquidadas.`,
+        ...data
+      })
       loadOpenMarkets()
     } catch (e: any) {
       setError(e.message)

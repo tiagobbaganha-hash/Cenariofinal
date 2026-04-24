@@ -68,6 +68,10 @@ export default function AtividadePage() {
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState({ traders: 0, apostas: 0, volume: 0, mercados: 0 })
   const [live, setLive] = useState(true)
+  const [page, setPage] = useState(0)
+  const [hasMore, setHasMore] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const PAGE_SIZE = 30
 
   const load = useCallback(async () => {
     const supabase = createClient()
@@ -84,7 +88,8 @@ export default function AtividadePage() {
       `)
       .in('status', ['open', 'settled_win', 'settled_loss'])
       .order('created_at', { ascending: false })
-      .limit(50)
+      .limit(PAGE_SIZE)
+      .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1)
 
     // Buscar mercados recentes
     const { data: markets } = await supabase
@@ -155,7 +160,8 @@ export default function AtividadePage() {
 
     // Ordenar por data
     activities.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-    setItems(activities.slice(0, 60))
+    setItems(prev => page === 0 ? activities : [...prev, ...activities])
+    setHasMore(activities.length >= PAGE_SIZE)
     setLoading(false)
   }, [])
 
@@ -242,6 +248,16 @@ export default function AtividadePage() {
             </div>
           ))}
         </div>
+      {/* Carregar mais */}
+        {hasMore && !loading && (
+          <button onClick={() => { setPage(p => p + 1) }} disabled={loadingMore}
+            className="w-full rounded-xl border border-border bg-card py-3 text-sm text-muted-foreground hover:border-primary/40 hover:text-foreground transition-colors flex items-center justify-center gap-2">
+            {loadingMore ? <><RefreshCw className="h-3.5 w-3.5 animate-spin" /> Carregando...</> : 'Carregar mais atividades'}
+          </button>
+        )}
+        {!hasMore && items.length > 0 && (
+          <p className="text-center text-xs text-muted-foreground py-4">Todas as atividades carregadas</p>
+        )}
       </div>
     </div>
   )
