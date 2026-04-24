@@ -500,7 +500,6 @@ export default function ComunidadePage() {
 function PostComments({ postId, userId }: { postId: string; userId: string | null }) {
   const [comments, setComments] = useState<any[]>([])
   const [text, setText] = useState('')
-  const [commentGif, setCommentGif] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [posting, setPosting] = useState(false)
   const [open, setOpen] = useState(false)
@@ -626,19 +625,8 @@ function PostComments({ postId, userId }: { postId: string; userId: string | nul
               {/* Campo de comentário com emoji/GIF inserindo no texto */}
               <div className="flex gap-2 items-end">
                 <div className="flex-1 space-y-1">
-                  {commentGif && (
-                    <div className="relative inline-block">
-                      <img src={commentGif} alt="GIF" className="rounded-xl max-h-24 border border-primary/30" />
-                      <button onClick={() => setCommentGif(null)} type="button"
-                        className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-destructive text-white text-[10px] flex items-center justify-center">✕</button>
-                    </div>
-                  )}
                   <div className="flex gap-1 items-center">
-                    <EmojiGifPicker
-                      onEmoji={(e) => setText(t => t + e)}
-                      onGif={(url) => { setCommentGif(url) }}
-                      compact
-                    />
+                    <LocalEmojiPicker onEmoji={(e) => setText(t => t + e)} />
                     {/* Upload de GIF/imagem do dispositivo */}
                     <label className="cursor-pointer flex items-center gap-1 text-xs text-muted-foreground border border-border rounded-xl px-2 py-1.5 hover:border-primary/40 hover:text-foreground transition-colors">
                       📎

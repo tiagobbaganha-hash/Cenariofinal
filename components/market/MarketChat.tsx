@@ -22,11 +22,6 @@ export function MarketChat({ marketId }: { marketId: string }) {
   const [sending, setSending] = useState(false)
   const [loading, setLoading] = useState(true)
   const [showEmoji, setShowEmoji] = useState(false)
-  const [showGif, setShowGif] = useState(false)
-  const [gifs, setGifs] = useState<{id:string,title:string,url:string,thumb:string}[]>([])
-  const [gifSearch, setGifSearch] = useState('')
-  const [gifLoading, setGifLoading] = useState(false)
-  const [pendingGif, setPendingGif] = useState<string | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -43,24 +38,14 @@ export function MarketChat({ marketId }: { marketId: string }) {
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
 
-  async function loadGifs(q: string) {
-    setGifLoading(true)
-    try {
-      const res = await fetch(`/api/gifs?q=${encodeURIComponent(q || 'trending')}&limit=12`)
-      if (res.ok) { const d = await res.json(); setGifs(d.gifs || []) }
-    } catch { setGifs([]) }
-    setGifLoading(false)
-  }
-
-  useEffect(() => { if (showGif) loadGifs(gifSearch || 'trending') }, [showGif])
 
   async function send(override?: string) {
-    const msg = override || (pendingGif ? `__GIF__:${pendingGif}` : text.trim())
+    const msg = override || text.trim()
     if (!msg || !userId) return
     setSending(true); setShowEmoji(false); setShowGif(false)
     try {
       await createClient().from('market_chat').insert({ market_id: marketId, user_id: userId, message: msg })
-      setText(''); setPendingGif(null)
+      setText('')
     } catch (_) {}
     setSending(false)
   }
@@ -101,40 +86,13 @@ export function MarketChat({ marketId }: { marketId: string }) {
                 width="100%" height={280} lazyLoadEmojis skinTonesDisabled theme={"dark" as any} previewConfig={{ showPreview: false }} />
             </div>
           )}
-          {showGif && (
-            <div className="rounded-xl border border-border bg-card overflow-hidden">
-              <div className="flex gap-1.5 p-2 border-b border-border/30">
-                <input value={gifSearch} onChange={e => setGifSearch(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && loadGifs(gifSearch)}
-                  placeholder="Buscar GIFs..." className="flex-1 rounded-lg border border-border bg-background px-2.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary/40" />
-                <button onClick={() => loadGifs(gifSearch)} className="rounded-lg bg-primary/20 text-primary px-2 py-1 text-xs">🔍</button>
-              </div>
-              <div className="grid grid-cols-3 gap-1 p-2 max-h-36 overflow-y-auto">
-                {gifLoading ? <div className="col-span-3 flex justify-center py-3"><Loader2 className="h-4 w-4 animate-spin text-primary" /></div>
-                  : gifs.map(g => (
-                    <button key={g.id} onClick={() => { setPendingGif(g.url); setShowGif(false) }}
-                      className="rounded-lg overflow-hidden aspect-video bg-muted hover:ring-2 hover:ring-primary transition-all">
-                      <img src={g.thumb || g.url} alt={g.title} className="w-full h-full object-cover" loading="lazy" />
-                    </button>
-                  ))}
-              </div>
-            </div>
-          )}
-          {pendingGif && (
-            <div className="relative inline-block">
-              <img src={pendingGif} alt="GIF" className="rounded-xl max-h-20 border border-primary/30" />
-              <button onClick={() => setPendingGif(null)} className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-destructive text-white text-[10px] flex items-center justify-center">✕</button>
-            </div>
-          )}
           <div className="flex gap-2">
             <button onClick={() => { setShowEmoji(v => !v); setShowGif(false) }}
               className={`flex-shrink-0 rounded-xl p-2 border transition-colors ${showEmoji ? 'border-primary/40 bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:text-foreground'}`}>
               <Smile className="h-4 w-4" />
             </button>
             <button onClick={() => { setShowGif(v => !v); setShowEmoji(false) }}
-              className={`flex-shrink-0 rounded-xl px-2.5 py-2 border text-xs font-bold transition-colors ${showGif ? 'border-primary/40 bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:text-foreground'}`}>
-              GIF
-            </button>
+
             <input value={text} onChange={e => setText(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), send())}
               placeholder="Escreva sua análise..."
