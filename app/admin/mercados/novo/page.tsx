@@ -25,6 +25,7 @@ export default function NovoMercado() {
     description: '',
     category: 'Política',
     status: 'draft',
+    market_type: 'standard',
     featured: false,
     closes_at: '',
     resolves_at: '',
@@ -139,6 +140,7 @@ export default function NovoMercado() {
         category: form.category, status: form.status, featured: form.featured,
         closes_at: form.closes_at || null, resolves_at: form.resolves_at || null,
         image_url: form.image_url || null,
+        market_type: form.market_type || 'standard',
         ...(form.influencer_id ? { influencer_id: form.influencer_id } : {}),
         platform_commission: parseFloat(form.platform_commission) || 5,
       }).select().single()
@@ -256,6 +258,27 @@ export default function NovoMercado() {
       {/* Dados básicos */}
       <div className="rounded-2xl border border-border bg-card p-5 space-y-4">
         <p className="text-sm font-semibold text-foreground">Dados do mercado</p>
+
+        {/* Tipo de mercado */}
+        <div>
+          <label className="block text-xs font-medium text-muted-foreground mb-1.5">Tipo de Mercado</label>
+          <div className="grid grid-cols-3 gap-2">
+            {([
+              { id: 'standard', label: '📊 Normal', desc: 'Resolução manual' },
+              { id: 'rapid', label: '⚡ Rápido', desc: 'Auto via preço de ativo' },
+              { id: 'live', label: '🔴 Ao Vivo', desc: 'Evento em andamento' },
+            ] as const).map(t => (
+              <button key={t.id} type="button"
+                onClick={() => setForm(f => ({ ...f, market_type: t.id }))}
+                className={`p-2.5 rounded-xl border text-left transition-colors ${
+                  form.market_type === t.id ? 'border-primary bg-primary/10' : 'border-border hover:border-primary/40'
+                }`}>
+                <p className="font-semibold text-xs">{t.label}</p>
+                <p className="text-[10px] text-muted-foreground">{t.desc}</p>
+              </button>
+            ))}
+          </div>
+        </div>
 
         <div>
           <label className="block text-xs font-medium text-muted-foreground mb-1.5">Título *</label>
