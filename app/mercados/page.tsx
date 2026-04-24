@@ -137,6 +137,13 @@ export default function MercadosPage() {
       list = list.filter(m => m.category?.toLowerCase() === category)
     }
 
+    if (activeTag) {
+      list = list.filter(m => {
+        const t = m.title?.toLowerCase() + ' ' + (m.category?.toLowerCase() || '')
+        return t.includes(activeTag.toLowerCase())
+      })
+    }
+
     if (search.trim()) {
       const q = search.toLowerCase()
       list = list.filter(m => m.title?.toLowerCase().includes(q) || m.category?.toLowerCase().includes(q))
@@ -239,7 +246,7 @@ export default function MercadosPage() {
             {categories.map(cat => (
               <button
                 key={cat}
-                onClick={() => setCategory(cat)}
+                onClick={() => { setCategory(cat); setActiveTag('') }}
                 className={`px-4 py-2 rounded-lg whitespace-nowrap transition-colors ${
                   category === cat 
                     ? 'bg-primary text-primary-foreground' 
@@ -250,6 +257,21 @@ export default function MercadosPage() {
               </button>
             ))}
           </div>
+          {/* Tags por tópico — aparecem quando categoria selecionada */}
+          {category !== 'todos' && CATEGORY_TAGS[category] && (
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              <button onClick={() => setActiveTag('')}
+                className={`px-3 py-1 rounded-full text-xs whitespace-nowrap transition-colors border ${!activeTag ? 'bg-primary/20 border-primary/40 text-primary' : 'border-border text-muted-foreground hover:border-primary/40'}`}>
+                Todos
+              </button>
+              {CATEGORY_TAGS[category].map(tag => (
+                <button key={tag} onClick={() => setActiveTag(tag === activeTag ? '' : tag)}
+                  className={`px-3 py-1 rounded-full text-xs whitespace-nowrap transition-colors border ${activeTag === tag ? 'bg-primary/20 border-primary/40 text-primary' : 'border-border text-muted-foreground hover:border-primary/40'}`}>
+                  {tag}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Sort & Results */}
@@ -322,6 +344,17 @@ export default function MercadosPage() {
     </div>
   )
 }
+
+const CATEGORY_TAGS: Record<string, string[]> = {
+  esportes: ['Futebol','Basquete','NFL','F1','MMA','Tênis','Olimpíadas'],
+  politica: ['Eleições','Lula','EUA','Trump','Congresso','STF','Governadores'],
+  cripto: ['Bitcoin','Ethereum','Altcoins','DeFi','NFT','Regulação'],
+  economia: ['Juros','Dólar','Inflação','Bolsa','PIB','Emprego'],
+  entretenimento: ['BBB','Grammy','Oscar','Netflix','Séries','Música'],
+  tecnologia: ['IA','Apple','Google','Meta','OpenAI','Startups'],
+  cultura: ['Carnaval','Esports','Games','Reality Show'],
+}
+
 
 function MarketCard({ market, livePrice }: { market: Market; livePrice?: number }) {
   const options = Array.isArray(market.options) && market.options.length > 0 ? market.options : null
