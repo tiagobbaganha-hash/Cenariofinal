@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -55,6 +55,29 @@ export default function MercadosPage() {
   const [marketType, setMarketType] = useState('todos')
 
   const categories = ['todos', 'politica', 'esportes', 'economia', 'cultura', 'entretenimento', 'tecnologia']
+
+  // Binance WebSocket para preços de mercados rápidos em tempo real
+  const wsRef = useRef<WebSocket | null>(null)
+  useEffect(() => {
+    const CRIPTO_SYMBOLS = ['btcbrl','ethbrl','solbrl','bnbbrl','xrpbrl','dogebrl','adabrl','avaxbrl','maticbrl','linkbrl']
+    const streams = CRIPTO_SYMBOLS.map(s => `${s}@miniTicker`).join('/')
+    const connect = () => {
+      const ws = new WebSocket(`wss://stream.binance.com/stream?streams=${streams}`)
+      wsRef.current = ws
+      ws.onmessage = (e) => {
+        try {
+          const { data: d } = JSON.parse(e.data)
+          if (d?.c) {
+            const sym = d.s?.replace('BRL','').toLowerCase()
+            setLivePrices(prev => ({ ...prev, [sym]: parseFloat(d.c) }))
+          }
+        } catch (_) {}
+      }
+      ws.onclose = () => setTimeout(connect, 3000)
+    }
+    connect()
+    return () => wsRef.current?.close()
+  }, [])
 
   useEffect(() => {
     const supabase = createClient()
@@ -261,7 +284,11 @@ export default function MercadosPage() {
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {filtered.map(market => (
-              <MarketCard key={market.id} market={market} />
+              <MarketCard key={market.id} market={market}
+                livePrice={market.market_type === 'rapid' && market.rapid_config?.asset
+                  ? livePrices[market.rapid_config.asset.toLowerCase()]
+                  : undefined}
+              />
             ))}
           </div>
         )}
@@ -296,7 +323,7 @@ export default function MercadosPage() {
   )
 }
 
-function MarketCard({ market }: { market: Market }) {
+function MarketCard({ market, livePrice }: { market: Market; livePrice?: number }) {
   const options = Array.isArray(market.options) && market.options.length > 0 ? market.options : null
   const yesPrice = market.yes_price ?? (0.4 + Math.random() * 0.3)
   const noPrice = 1 - yesPrice
@@ -335,9 +362,22 @@ function MarketCard({ market }: { market: Market }) {
         )}
         <div className={market.image_url ? 'p-5' : 'p-6 pt-14'}>
           <h3 className="text-lg font-semibold line-clamp-2 group-hover:text-primary transition-colors mb-4">{market.title}</h3>
+          {/* Preço ao vivo para mercados rápidos */}
+          {market.market_type === 'rapid' && market.rapid_config && (
+            <div className="rounded-xl bg-muted/30 border border-border px-3 py-2 mb-3 flex items-center justify-between">
+              <div className="text-xs text-muted-foreground">Inicial: <span className="font-mono text-foreground">R$ {(market.rapid_config.price_at_creation||0).toLocaleString('pt-BR', {minimumFractionDigits:2})}</span></div>
+              {livePrice ? (
+                <div className="text-xs font-mono font-bold flex items-center gap-1">
+                  <span className={livePrice >= (market.rapid_config.price_at_creation||0) ? 'text-green-400' : 'text-red-400'}>
+                    {livePrice >= (market.rapid_config.price_at_creation||0) ? '▲' : '▼'} R$ {livePrice.toLocaleString('pt-BR', {minimumFractionDigits:2})}
+                  </span>
+                </div>
+              ) : <span className="text-xs text-muted-foreground animate-pulse">Carregando...</span>}
+            </div>
+          )}
           <div className="flex items-center gap-4 text-sm text-muted-foreground mb-6">
             <span className="flex items-center gap-1"><BarChart3 className="h-4 w-4" /> R$ {(volume / 1000).toFixed(1)}k</span>
-            {timeLeft !== null && <span className="flex items-center gap-1"><Clock className="h-4 w-4" /> {timeLeft}d</span>}
+            {timeLeft !== null && <span className="flex items-center gap-1"><Clock className="h-4 w-4" /> {market.market_type === 'rapid' ? `${Math.max(0, Math.floor((new Date(market.closes_at||'').getTime()-Date.now())/60000))}min` : `${timeLeft}d`}</span>}
           </div>
           {options && options.length > 0 ? (
             /* Opções reais do banco */

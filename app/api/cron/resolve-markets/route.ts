@@ -47,26 +47,46 @@ export async function GET(req: NextRequest) {
       if (!cfg?.asset) continue
 
       try {
-        const r = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${cfg.asset}&vs_currencies=brl`, { cache: 'no-store' })
-        const pData = await r.json()
-        const currentPrice: number = pData[cfg.asset]?.brl
+        // Tentar Binance primeiro (sem rate limit), fallback para CoinGecko
+        let currentPrice: number = 0
+        const wsSymbol = (cfg.asset_symbol || cfg.asset).toUpperCase() + 'BRL'
+        try {
+          const binanceRes = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${wsSymbol}`, { cache: 'no-store', signal: AbortSignal.timeout(3000) })
+          if (binanceRes.ok) {
+            const bd = await binanceRes.json()
+            if (bd.price) currentPrice = parseFloat(bd.price)
+          }
+        } catch (_) {}
+        
+        // Fallback: CoinGecko
+        if (!currentPrice) {
+          const r = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${cfg.asset}&vs_currencies=brl`, { cache: 'no-store', signal: AbortSignal.timeout(5000) })
+          const pData = await r.json()
+          currentPrice = pData[cfg.asset]?.brl || 0
+        }
         if (!currentPrice) continue
 
         const priceRose = currentPrice > cfg.price_at_creation
         const winKey = priceRose ? 'yes' : 'no'
 
         const { data: winOpt } = await db.from('market_options')
-          .select('id').eq('market_id', m.id).eq('option_key', winKey).single()
+          .select('id, label').eq('market_id', m.id).eq('option_key', winKey).single()
         if (!winOpt) continue
 
+        // Usar RPC admin_settle_market para liquidar corretamente com enum
+        const { data: settled, error: settleErr } = await db.rpc('admin_settle_market', {
+          p_market_id: m.id,
+          p_result_option_id: winOpt.id,
+          p_note: `Auto-resolvido: ${cfg.asset_symbol || cfg.asset} ${priceRose ? '▲' : '▼'} R$${currentPrice.toLocaleString('pt-BR')}`
+        })
+        if (settleErr) throw new Error(settleErr.message)
+
+        // Atualizar rapid_config com preço final
         await db.from('markets').update({
-          status: 'resolved',
-          result_option_id: winOpt.id,
           rapid_config: { ...cfg, final_price: currentPrice, resolved_at: now }
         }).eq('id', m.id)
 
-        const settled = await settleOrders(db, m.id, winOpt.id)
-        log.push({ step: 'rapid_resolved', market: m.title, winner: priceRose ? 'Subiu' : 'Desceu', price_change: `${cfg.price_at_creation} → ${currentPrice}`, ...settled })
+        log.push({ step: 'rapid_resolved', market: m.title, winner: winOpt.label, price_change: `${cfg.price_at_creation} → ${currentPrice}`, settled })
       } catch (e: any) {
         log.push({ step: 'rapid_error', market: m.title, error: e.message })
       }
