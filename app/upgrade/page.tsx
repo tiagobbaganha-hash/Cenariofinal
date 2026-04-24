@@ -49,6 +49,7 @@ const PLANS = [
 export default function UpgradePage() {
   const router = useRouter()
   const [loading, setLoading] = useState<string | null>(null)
+  const [currentPlan, setCurrentPlan] = useState('free')
   const [success, setSuccess] = useState('')
 
   async function handlePro() {
@@ -64,7 +65,7 @@ export default function UpgradePage() {
         user_id: user.id,
         plan: 'pro',
         status: 'active',
-        price_monthly: 29.90,
+        price: 29.90,
         expires_at: new Date(Date.now() + 30 * 86400000).toISOString(),
       }, { onConflict: 'user_id,plan' })
 
