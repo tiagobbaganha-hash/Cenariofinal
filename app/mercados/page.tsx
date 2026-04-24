@@ -327,7 +327,7 @@ function MarketCard({ market, livePrice }: { market: Market; livePrice?: number 
   const options = Array.isArray(market.options) && market.options.length > 0 ? market.options : null
   const yesPrice = market.yes_price ?? (0.4 + Math.random() * 0.3)
   const noPrice = 1 - yesPrice
-  const volume = market.total_volume ?? Math.floor(1000 + Math.random() * 50000)
+  const volume = market.total_volume || 0
   const timeLeft = market.closes_at ? Math.max(0, Math.floor((new Date(market.closes_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24))) : null
 
   return (
@@ -376,7 +376,7 @@ function MarketCard({ market, livePrice }: { market: Market; livePrice?: number 
             </div>
           )}
           <div className="flex items-center gap-4 text-sm text-muted-foreground mb-6">
-            <span className="flex items-center gap-1"><BarChart3 className="h-4 w-4" /> R$ {(volume / 1000).toFixed(1)}k</span>
+            <span className="flex items-center gap-1"><BarChart3 className="h-4 w-4" /> {volume > 0 ? `R$ ${volume >= 1000 ? (volume/1000).toFixed(1)+'k' : volume.toFixed(0)}` : 'Sem apostas'}</span>
             {timeLeft !== null && <span className="flex items-center gap-1"><Clock className="h-4 w-4" /> {market.market_type === 'rapid' ? `${Math.max(0, Math.floor((new Date(market.closes_at||'').getTime()-Date.now())/60000))}min` : `${timeLeft}d`}</span>}
           </div>
           {options && options.length > 0 ? (

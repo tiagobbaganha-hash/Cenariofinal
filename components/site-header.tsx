@@ -15,6 +15,7 @@ const navigation = [
   { label: '🔥 Burn', href: '/burn' },
   { label: 'Apostas', href: '/apostas' },
   { label: 'Leaderboard', href: '/leaderboard' },
+  { label: '⚡ Atividade', href: '/atividade' },
   { label: 'Comunidade', href: '/comunidade' },
 ]
 
