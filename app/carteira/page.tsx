@@ -213,23 +213,24 @@ export default function CarteiraPage() {
   async function handleDeposit() {
     const value = parseFloat(amount)
     if (!value || value < 10) {
-      setMessage({ type: 'error', text: 'Valor minimo: R$ 10,00' })
+      setMessage({ type: 'error', text: 'Valor mínimo: R$ 10,00' })
       return
     }
-
     setProcessing(true)
-    const supabase = createClient()
-    
-    const { error } = await supabase
-      .from('deposit_requests')
-      .insert({ user_id: user.id, amount: value, status: 'pending', payment_method: 'pix' })
-
-    if (error) {
-      setMessage({ type: 'error', text: error.message })
-    } else {
-      const code = `00020126580014br.gov.bcb.pix0136${user.id.slice(0, 36)}520400005303986540${value.toFixed(2)}5802BR5925CENARIOX6009SP62070503***6304`
-      setPixCode(code)
-      setMessage({ type: 'success', text: 'PIX gerado! Copie o codigo abaixo.' })
+    try {
+      const res = await fetch('/api/pagamentos/pix', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: user.id, amount: value, email: user.email })
+      })
+      const data = await res.json()
+      if (data.error) throw new Error(data.error)
+      setPixCode(data.pix_code)
+      setMessage({ type: 'success', text: data.mode === 'manual'
+        ? '✅ PIX gerado! Após pagar, envie o comprovante pelo suporte. Crédito em até 2h.'
+        : '✅ PIX gerado! Pague e aguarde a confirmação automática.' })
+    } catch (e: any) {
+      setMessage({ type: 'error', text: e.message })
     }
     setProcessing(false)
   }
@@ -237,7 +238,14 @@ export default function CarteiraPage() {
   async function handleWithdraw() {
     const value = parseFloat(amount)
     if (!value || value < 20) {
-      setMessage({ type: 'error', text: 'Valor minimo: R$ 20,00' })
+      setMessage({ type: 'error', text: 'Valor mínimo: R$ 20,00' })
+      return
+    }
+    // Verificar KYC
+    const supabase2 = createClient()
+    const { data: profile } = await supabase2.from('profiles').select('kyc_status, pix_key').eq('id', user.id).single()
+    if (!profile?.kyc_status || profile.kyc_status !== 'approved') {
+      setMessage({ type: 'error', text: '❌ KYC necessário para saques. Complete a verificação de identidade.' })
       return
     }
     if (!pixKey) {
