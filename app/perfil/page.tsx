@@ -16,10 +16,11 @@ const AVATARS = ['🚀','🐂','🦁','🔮','🎯','⚡','🌊','🔥','💎','
 async function uploadFoto(file: File, userId: string): Promise<string | null> {
   if (file.size > 3 * 1024 * 1024) { alert('Máximo 3MB'); return null }
   const supabase = createClient()
-  const path = `avatars/${userId}_${Date.now()}.${file.name.split('.').pop()}`
-  const { error } = await supabase.storage.from('community').upload(path, file, { upsert: true })
-  if (error) { alert('Erro ao enviar: ' + error.message); return null }
-  const { data } = supabase.storage.from('community').getPublicUrl(path)
+  const path = `avatars/${userId}_${Date.now()}.${file.name.split('.').pop() || 'jpg'}`
+  // Usar bucket market-images que já tem policy configurada
+  const { error } = await supabase.storage.from('market-images').upload(path, file, { upsert: true, contentType: file.type })
+  if (error) { alert('Erro ao enviar foto: ' + error.message); return null }
+  const { data } = supabase.storage.from('market-images').getPublicUrl(path)
   return data.publicUrl
 }
 

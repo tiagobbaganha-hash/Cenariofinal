@@ -102,6 +102,33 @@ export default function AdminCms() {
     toast({ type: 'success', title: 'Página removida' })
   }
 
+  async function seedDefaultPages() {
+    const supabase = createClient()
+    const defaults = [
+      { slug: 'termos', title: 'Termos de Uso', content_md: '# Termos de Uso\n\nBem-vindo ao CenárioX. Ao usar nossa plataforma, você concorda com estes termos.\n\n## 1. Aceitação\n\nAo acessar ou usar o CenárioX, você concorda em cumprir estes Termos de Uso.\n\n## 2. Plataforma\n\nO CenárioX é uma plataforma de mercados preditivos. As apostas são simulações e não envolvem dinheiro real até a regulamentação aplicável.\n\n## 3. Conta\n\nVocê é responsável por manter a confidencialidade de sua senha e por todas as atividades que ocorram em sua conta.' },
+      { slug: 'privacidade', title: 'Política de Privacidade', content_md: '# Política de Privacidade\n\n## Coleta de Dados\n\nColetamos informações necessárias para operar a plataforma: nome, e-mail, CPF (para KYC) e dados de uso.\n\n## Uso dos Dados\n\nSeus dados são usados para autenticação, personalização e cumprimento de obrigações legais.\n\n## Compartilhamento\n\nNão vendemos seus dados a terceiros. Compartilhamos apenas quando exigido por lei.' },
+      { slug: 'sobre', title: 'Sobre o CenárioX', content_md: '# Sobre o CenárioX\n\nO CenárioX é a principal plataforma brasileira de mercados preditivos.\n\n## Nossa Missão\n\nDemocratizar o acesso a mercados de previsão no Brasil, permitindo que qualquer pessoa aposte em eventos reais com transparência e segurança.\n\n## Como Funciona\n\nCrie uma conta, adicione saldo, escolha um mercado e faça sua previsão. Se acertar, você ganha!' },
+      { slug: 'como-funciona', title: 'Como Funciona', content_md: '# Como Funciona\n\n## 1. Crie sua Conta\n\nCadastre-se gratuitamente e complete seu perfil.\n\n## 2. Adicione Saldo\n\nDeposite via PIX de forma rápida e segura.\n\n## 3. Escolha um Mercado\n\nNavegue pelos mercados disponíveis em política, esportes, economia e mais.\n\n## 4. Faça sua Previsão\n\nEscolha Sim ou Não e defina o valor da sua aposta.\n\n## 5. Acompanhe\n\nSiga o mercado em tempo real e receba seus ganhos automaticamente.' },
+      { slug: 'regras', title: 'Regras da Plataforma', content_md: '# Regras da Plataforma\n\n## Conduta\n\n- Use o chat com respeito\n- Não manipule mercados\n- Uma conta por usuário\n\n## Apostas\n\n- Valor mínimo: R$ 1,00\n- Apostas são definitivas após confirmação\n- Resultados baseados em fontes confiáveis\n\n## Saques\n\n- Processados em até 24h úteis\n- Requerem KYC aprovado' },
+      { slug: 'riscos', title: 'Política de Riscos', content_md: '# Política de Riscos\n\n## Riscos da Plataforma\n\nO CenárioX envolve previsões de eventos futuros. Resultados passados não garantem resultados futuros.\n\n## Gestão de Risco\n\nAposte apenas o que pode perder. Defina limites pessoais de apostas.\n\n## Suporte\n\nSe sentir que está perdendo o controle, entre em contato com nosso suporte.' },
+      { slug: 'o-que-e', title: 'O que é o CenárioX?', content_md: '# O que é o CenárioX?\n\nO CenárioX é uma plataforma de **mercados preditivos** — um lugar onde você pode apostar em eventos reais usando análise e conhecimento.\n\n## Diferente das Apostas Tradicionais\n\nNos mercados preditivos, você negocia probabilidades. Quanto mais cedo acertar, mais você ganha.\n\n## Transparente e Seguro\n\nTodos os mercados têm fontes de resolução claras e auditáveis.' },
+    ]
+    
+    for (const page of defaults) {
+      await supabase.from('cms_pages').upsert({
+        ...page,
+        content: page.content_md,
+        is_published: true,
+        published: true,
+        sort_order: 0,
+        show_in_footer: true,
+      }, { onConflict: 'slug' })
+    }
+    
+    toast({ type: 'success', title: '✅ Páginas padrão criadas!', description: 'Todas as páginas foram criadas e publicadas.' })
+    loadPages()
+  }
+
   async function togglePublish(page: CmsPage) {
     const supabase = createClient()
     await supabase.from('cms_pages').update({ is_published: !page.is_published, published: !page.is_published }).eq('id', page.id)

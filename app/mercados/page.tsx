@@ -145,9 +145,13 @@ export default function MercadosPage() {
       list.sort((a, b) => ((b.bet_count||0) + (b.total_volume||0)/100) - ((a.bet_count||0) + (a.total_volume||0)/100))
     }
 
-    if (marketType !== 'todos') {
+    if (marketType !== 'todos' && !showMovers) {
       const typeMap: Record<string, string> = { rapidos: 'rapid', 'ao-vivo': 'live', normais: 'standard' }
-      list = list.filter(m => (m.market_type || 'standard') === (typeMap[marketType] || marketType))
+      const targetType = typeMap[marketType] || marketType
+      list = list.filter(m => {
+        const mt = m.market_type || 'standard'
+        return mt === targetType
+      })
     }
 
     if (category !== 'todos') {

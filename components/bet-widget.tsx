@@ -55,8 +55,8 @@ export function BetWidget({ marketId, marketSlug, options, isOpen }: BetWidgetPr
       if (data.user) {
         setUserId(data.user.id)
         try {
-          const { data: profile } = await supabase.from('v_front_me').select('available_balance').single()
-          setBalance((profile as any)?.available_balance ?? 0)
+          const { data: wallet } = await supabase.from('wallets').select('available_balance').eq('user_id', (await supabase.auth.getUser()).data.user?.id || '').single()
+          setBalance(parseFloat((wallet as any)?.available_balance || '0'))
         } catch { setBalance(0) }
       }
     }

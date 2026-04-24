@@ -18,7 +18,7 @@ export default function AdminBranding() {
     color_bg: '#0B0F14', color_surface: '#111827', color_text: '#E5E7EB',
     font_family: 'Inter',
     support_email: '', support_whatsapp: '',
-    instagram_url: '', youtube_url: '', telegram_url: '', x_url: '',
+    instagram_url: '', youtube_url: '', telegram_url: '', x_url: '', tiktok_url: '',
     maintenance_mode: false, maintenance_message: '',
   })
 
@@ -41,7 +41,7 @@ export default function AdminBranding() {
           color_text: data.color_text || '#E5E7EB',
           font_family: data.font_family || 'Inter',
           support_email: data.support_email || '', support_whatsapp: data.support_whatsapp || '',
-          instagram_url: data.instagram_url || '', youtube_url: data.youtube_url || '',
+          instagram_url: data.instagram_url || '', youtube_url: data.youtube_url || '', tiktok_url: data.tiktok_url || '',
           telegram_url: data.telegram_url || '', x_url: data.x_url || '',
           maintenance_mode: data.maintenance_mode || false,
           maintenance_message: data.maintenance_message || '',
@@ -67,7 +67,7 @@ export default function AdminBranding() {
         color_surface: form.color_surface, color_text: form.color_text,
         font_family: form.font_family,
         support_email: form.support_email, support_whatsapp: form.support_whatsapp,
-        instagram_url: form.instagram_url, youtube_url: form.youtube_url,
+        instagram_url: form.instagram_url, youtube_url: form.youtube_url, tiktok_url: form.tiktok_url,
         telegram_url: form.telegram_url, x_url: form.x_url,
         maintenance_mode: form.maintenance_mode, maintenance_message: form.maintenance_message,
       }).eq('id', 1)
