@@ -416,13 +416,13 @@ export default function RankingPage() {
           ))}
         </div>
       )}
-    </main>
 
-    {/* Mercados Quentes */}
-    <div className="mx-auto max-w-4xl px-4 sm:px-6 pb-12">
-      <h2 className="text-xl font-bold mb-4 flex items-center gap-2">🔥 Mercados Quentes</h2>
-      <MercadosQuentes />
-    </div>
+      {/* Mercados Quentes */}
+      <div className="mt-10">
+        <h2 className="text-xl font-bold mb-4 flex items-center gap-2">🔥 Mercados Quentes</h2>
+        <MercadosQuentes />
+      </div>
+    </main>
   )
 }
 
