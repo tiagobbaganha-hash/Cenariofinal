@@ -1,11 +1,11 @@
 'use client'
 
-import { BarChart3, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { BarChart3, usePathname, useRouter } from 'next/navigation'
-import { BarChart3, createClient } from '@/lib/supabase/client'
-import { BarChart3, 
-  LayoutDashboard, 
+import { usePathname, useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
+import { 
+  LayoutDashboard, BarChart3,
   TrendingUp, 
   Users, 
   Wallet,
@@ -17,12 +17,11 @@ import { BarChart3,
   FileText,
   Activity,
   MessageSquare,
-
   Menu,
   X,
   LogOut
 } from 'lucide-react'
-import { BarChart3, Button } from '@/components/ui/button'
+import { Button } from '@/components/ui/button'
 
 const navItems = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
