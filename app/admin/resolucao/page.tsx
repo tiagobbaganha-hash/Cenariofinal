@@ -34,12 +34,22 @@ export default function ResolucaoPage() {
   async function loadOpenMarkets() {
     setLoadingMarkets(true)
     const supabase = createClient()
-    const { data } = await supabase.from('markets')
-      .select('id, title, status, closes_at, result_option_id, market_options(id, label, option_key)')
+    const { data: mkt } = await supabase.from('markets')
+      .select('id, title, status, closes_at, result_option_id')
       .in('status', ['open', 'closed'])
       .order('created_at', { ascending: false })
       .limit(50)
-    setMarkets(data || [])
+    
+    // Buscar opções de cada mercado separadamente
+    const marketsWithOptions = await Promise.all((mkt || []).map(async m => {
+      const { data: opts } = await supabase.from('market_options')
+        .select('id, label, option_key')
+        .eq('market_id', m.id)
+        .order('sort_order')
+      return { ...m, market_options: opts || [] }
+    }))
+    
+    setMarkets(marketsWithOptions)
     setLoadingMarkets(false)
   }
 

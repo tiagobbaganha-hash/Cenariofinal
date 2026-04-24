@@ -78,9 +78,8 @@ export default async function MarketDetailPage({
 
   // Load market stats + options direto do banco
   const supabase = createClient()
-  const [{ data: statsData }, { data: liveOptions }] = await Promise.all([
+  const [{ data: statsData }, { data: influencerData }, { data: liveOptions }] = await Promise.all([
     supabase.from('orders').select('stake_amount').eq('market_id', market.id),
-    // Buscar dados do influencer se houver
     market.influencer_id
       ? supabase.from('influencers').select('id, name, photo_url, referral_code, bio').eq('id', market.influencer_id).single()
       : Promise.resolve({ data: null }),

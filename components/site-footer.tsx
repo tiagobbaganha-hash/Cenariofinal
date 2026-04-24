@@ -25,7 +25,7 @@ export function SiteFooter() {
     const supabase = createClient()
     // Carregar branding
     supabase.from('branding_settings')
-      .select('brand_name, logo_url, support_email, support_whatsapp, instagram_url, telegram_url, x_url, youtube_url, tiktok_url')
+      .select('*')
       .eq('id', 1).maybeSingle()
       .then(({ data }) => { if (data) setBranding(data) })
       .catch(() => {})
@@ -105,7 +105,7 @@ export function SiteFooter() {
                   📱 WhatsApp
                 </a>
               )}
-              {!branding.x_url && !branding.instagram_url && !branding.telegram_url && !branding.youtube_url && !branding.support_whatsapp && (
+              {!branding.x_url && !branding.instagram_url && !branding.telegram_url && !branding.youtube_url && !branding.support_whatsapp && !branding.tiktok_url && (
                 <p className="text-xs text-muted-foreground/50">Configure redes sociais no Admin → Branding</p>
               )}
             </div>
