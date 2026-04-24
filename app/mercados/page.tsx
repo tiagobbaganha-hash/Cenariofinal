@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -52,7 +53,8 @@ export default function MercadosPage() {
   const [category, setCategory] = useState('todos')
   const [sortBy, setSortBy] = useState('featured')
   const [user, setUser] = useState<any>(null)
-  const [marketType, setMarketType] = useState('todos')
+  const searchParams = useSearchParams()
+  const [marketType, setMarketType] = useState(() => searchParams.get('tipo') || 'todos')
   const [activeTag, setActiveTag] = useState('')
   const [showMovers, setShowMovers] = useState(false)
 

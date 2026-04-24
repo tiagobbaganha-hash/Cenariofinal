@@ -94,7 +94,7 @@ export default async function HomePage() {
 
         {/* Ao Vivo + Rápidos */}
         <div className="grid gap-3 sm:grid-cols-2">
-          <Link href="/ao-vivo" className="group rounded-2xl border border-red-500/20 bg-gradient-to-br from-red-500/10 to-transparent p-5 hover:border-red-500/40 transition-all">
+          <Link href="/mercados?tipo=ao-vivo" className="group rounded-2xl border border-red-500/20 bg-gradient-to-br from-red-500/10 to-transparent p-5 hover:border-red-500/40 transition-all">
             <div className="flex items-center gap-2 mb-2">
               <span className="h-2 w-2 rounded-full bg-red-400 animate-pulse" />
               <span className="text-xs font-bold text-red-400 uppercase tracking-wide">🔴 Ao Vivo</span>
@@ -103,7 +103,7 @@ export default async function HomePage() {
             <p className="text-xs text-muted-foreground mt-1">Aposte em jogos e shows acontecendo agora</p>
             <span className="inline-flex items-center gap-1 mt-3 text-xs text-red-400">Ver ao vivo <ChevronRight className="h-3 w-3" /></span>
           </Link>
-          <Link href="/mercados-rapidos" className="group rounded-2xl border border-yellow-500/20 bg-gradient-to-br from-yellow-500/10 to-transparent p-5 hover:border-yellow-500/40 transition-all">
+          <Link href="/mercados?tipo=rapidos" className="group rounded-2xl border border-yellow-500/20 bg-gradient-to-br from-yellow-500/10 to-transparent p-5 hover:border-yellow-500/40 transition-all">
             <div className="flex items-center gap-2 mb-2">
               <Zap className="h-3.5 w-3.5 text-yellow-400" />
               <span className="text-xs font-bold text-yellow-400 uppercase tracking-wide">⚡ Rápidos</span>

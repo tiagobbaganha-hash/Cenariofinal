@@ -357,17 +357,24 @@ export default function AdminUsuarios() {
                 </div>
               </div>
 
-              {/* Saldo */}
-              <div className="rounded-xl border border-border bg-muted/20 p-3 flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-muted-foreground">Saldo disponível</p>
-                  <p className="font-bold text-green-400">R$ {(editUser.available_balance || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">KYC Status</p>
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${editUser.kyc_status === 'approved' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
-                    {editUser.kyc_status || 'pendente'}
-                  </span>
+              {/* Saldo + KYC */}
+              <div className="rounded-xl border border-border bg-muted/20 p-3 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Saldo disponível</p>
+                    <p className="font-bold text-green-400">R$ {(editUser.available_balance || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-muted-foreground mb-1">KYC Status</p>
+                    <select value={editForm.kyc_status}
+                      onChange={e => setEditForm(f => ({...f, kyc_status: e.target.value}))}
+                      className="text-xs rounded-lg border border-border bg-background px-2 py-1 focus:outline-none focus:ring-1 focus:ring-primary/40">
+                      <option value="not_started">Não iniciado</option>
+                      <option value="pending">Pendente</option>
+                      <option value="approved">✅ Aprovado</option>
+                      <option value="rejected">❌ Rejeitado</option>
+                    </select>
+                  </div>
                 </div>
               </div>
 

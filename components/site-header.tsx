@@ -37,12 +37,19 @@ export function SiteHeader() {
 
       if (data.user) {
         const { data: me } = await supabase
-          .from('v_front_me')
-          .select('role, available_balance')
+          .from('profiles')
+          .select('role')
+          .eq('id', data.user.id)
           .single()
         const role = (me as any)?.role ?? 'user'
         setIsAdmin(['admin', 'super_admin'].includes(role))
-        setBalance((me as any)?.available_balance ?? null)
+        // Buscar saldo da carteira
+        const { data: wallet } = await supabase
+          .from('wallets')
+          .select('available_balance')
+          .eq('user_id', data.user.id)
+          .single()
+        setBalance(wallet?.available_balance ?? null)
 
         // Count unread notifications
         const { count } = await supabase

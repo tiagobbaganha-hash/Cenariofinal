@@ -230,13 +230,36 @@ export default function RankingPage() {
       setLoading(true)
       try {
         const supabase = createClient()
-        const viewMap: Record<Period, string> = {
-          '7d': 'v_ranking_7d',
-          '30d': 'v_ranking_30d',
-          'all': 'v_front_ranking_v1',
+        // Tentar views do banco, fallback para wallets direto
+        let list: LeaderboardRow[] = []
+        try {
+          const viewMap: Record<Period, string> = {
+            '7d': 'v_ranking_7d',
+            '30d': 'v_ranking_30d',
+            'all': 'v_front_ranking_v1',
+          }
+          const { data, error } = await supabase.from(viewMap[period]).select('*').limit(100)
+          if (!error && data?.length) {
+            list = data as LeaderboardRow[]
+          }
+        } catch (_) {}
+        
+        // Fallback: buscar de wallets + profiles se view falhar
+        if (!list.length) {
+          const { data: wallets } = await supabase
+            .from('wallets')
+            .select('user_id, available_balance, profiles(full_name, email)')
+            .order('available_balance', { ascending: false })
+            .limit(100)
+          list = (wallets || []).map((w: any, i) => ({
+            user_id: w.user_id,
+            display_name: w.profiles?.full_name || w.profiles?.email?.split('@')[0] || 'Trader',
+            score: parseFloat(w.available_balance || 0),
+            rank: i + 1,
+            wins: 0, losses: 0, total_bets: 0,
+            win_rate: 0, profit: parseFloat(w.available_balance || 0), xp: 0,
+          }))
         }
-        const { data } = await supabase.from(viewMap[period]).select('*').limit(100)
-        const list = (data ?? []) as LeaderboardRow[]
         setRows(list)
         if (myId) {
           const idx = list.findIndex(r => r.user_id === myId)
