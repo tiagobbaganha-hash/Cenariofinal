@@ -93,7 +93,9 @@ export default function UpgradePage() {
         status: 'pending',
       })
 
-      setSuccess('Candidatura enviada! Nossa equipe vai analisar em até 48h.')
+      setSuccess('✅ Candidatura enviada! Nossa equipe vai analisar em até 48h. Você receberá uma notificação quando sua conta for aprovada como influencer. Enquanto isso, explore os mercados e comece a indicar amigos com seu link de indicação.')
+      // Redirecionar para conta após 4s
+      setTimeout(() => router.push('/indicacao'), 4000)
     } catch (e: any) {
       alert('Erro: ' + e.message)
     } finally {

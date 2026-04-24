@@ -281,6 +281,41 @@ export default function NovoMercado() {
         </div>
 
         <div>
+
+          {/* Campos específicos para Rápido */}
+          {form.market_type === 'rapid' && (
+            <div className="rounded-xl border border-yellow-500/20 bg-yellow-500/5 p-4 space-y-3">
+              <p className="text-xs font-semibold text-yellow-400">⚡ Mercado Rápido</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-muted-foreground block mb-1">Ativo</label>
+                  <select className={inputCls} value={form.rapid_asset} onChange={e => setForm({...form, rapid_asset: e.target.value})}>
+                    {['BTC','ETH','SOL','BNB','XRP','DOGE','ADA','AVAX'].map(a => <option key={a} value={a}>{a}/BRL</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground block mb-1">Duração</label>
+                  <select className={inputCls} value={form.rapid_duration} onChange={e => setForm({...form, rapid_duration: e.target.value})}>
+                    {[['2','2 min'],['5','5 min'],['10','10 min'],['15','15 min'],['30','30 min']].map(([v,l]) => <option key={v} value={v}>{l}</option>)}
+                  </select>
+                </div>
+              </div>
+            </div>
+          )}
+          {form.market_type === 'live' && (
+            <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-4 space-y-3">
+              <p className="text-xs font-semibold text-red-400">🔴 Mercado Ao Vivo</p>
+              <div>
+                <label className="text-xs text-muted-foreground block mb-1">Nome do Evento *</label>
+                <input className={inputCls} value={form.live_event_name} onChange={e => setForm({...form, live_event_name: e.target.value})} placeholder="Ex: Brasil x Argentina, BBB Paredão..." />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground block mb-1">Contexto atual (opcional)</label>
+                <input className={inputCls} value={form.live_context} onChange={e => setForm({...form, live_context: e.target.value})} placeholder="Ex: 2° tempo, 67 min, 1x0" />
+              </div>
+            </div>
+          )}
+
           <label className="block text-xs font-medium text-muted-foreground mb-1.5">Título *</label>
           <input className={inputCls} placeholder="Pergunta do mercado?" value={form.title}
             onChange={e => setForm({ ...form, title: e.target.value, slug: generateSlug(e.target.value) })} />

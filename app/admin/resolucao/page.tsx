@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Zap, Play, CheckCircle, Loader2, RefreshCw, AlertTriangle } from 'lucide-react'
 
@@ -28,6 +28,8 @@ export default function ResolucaoPage() {
       setError(e.message)
     } finally { setRunning(false) }
   }
+
+  useEffect(() => { loadOpenMarkets() }, [])
 
   async function loadOpenMarkets() {
     setLoadingMarkets(true)

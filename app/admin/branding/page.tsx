@@ -144,8 +144,7 @@ export default function AdminBranding() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-2">Banner da Home (imagem grande "Preveja o Futuro")</label>
-          <ImageUpload value={form.hero_banner_url} onChange={(url) => setForm({ ...form, hero_banner_url: url })} bucket="market-images" folder="banners" />
+          {/* Banner da Home removido - não utilizado na versão atual */}
         </div>
 
         <div>

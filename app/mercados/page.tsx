@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -53,16 +52,19 @@ export default function MercadosPage() {
   const [category, setCategory] = useState('todos')
   const [sortBy, setSortBy] = useState('featured')
   const [user, setUser] = useState<any>(null)
-  const searchParams = useSearchParams()
   const [marketType, setMarketType] = useState('todos')
   
-  // Ler ?tipo= da URL ao montar
+  // Ler ?tipo= da URL ao montar (sem useSearchParams para evitar erro de Suspense)
   useEffect(() => {
-    const tipo = searchParams.get('tipo')
-    if (tipo) setMarketType(tipo)
-  }, [searchParams])
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      const tipo = params.get('tipo')
+      if (tipo) setMarketType(tipo)
+    }
+  }, [])
   const [activeTag, setActiveTag] = useState('')
   const [showMovers, setShowMovers] = useState(false)
+  const [livePrices, setLivePrices] = useState<Record<string, number>>({})
 
   const categories = ['todos', 'politica', 'esportes', 'cripto', 'economia', 'cultura', 'entretenimento', 'tecnologia']
 

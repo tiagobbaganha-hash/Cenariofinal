@@ -105,6 +105,27 @@ export default function LogsPage() {
           placeholder="Buscar..." value={search} onChange={e => setSearch(e.target.value)} />
       </div>
 
+      {/* Filtro por data */}
+      <div className="flex gap-3 items-center flex-wrap">
+        <span className="text-xs text-muted-foreground">Filtrar por data:</span>
+        <div className="flex items-center gap-2">
+          <label className="text-xs text-muted-foreground">De</label>
+          <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
+            className="rounded-lg border border-border bg-card px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40" />
+        </div>
+        <div className="flex items-center gap-2">
+          <label className="text-xs text-muted-foreground">Até</label>
+          <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
+            className="rounded-lg border border-border bg-card px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40" />
+        </div>
+        {(dateFrom || dateTo) && (
+          <button onClick={() => { setDateFrom(''); setDateTo('') }}
+            className="text-xs text-muted-foreground hover:text-foreground border border-border rounded-lg px-3 py-1.5 transition-colors">
+            Limpar
+          </button>
+        )}
+      </div>
+
       {loading ? (
         <div className="flex justify-center py-12"><div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" /></div>
       ) : filtered.length === 0 ? (
