@@ -128,6 +128,11 @@ export default function MercadosPage() {
   const filtered = useMemo(() => {
     let list = [...markets]
 
+    if (showMovers) {
+      list = list.filter(m => (m.bet_count || 0) > 0 || (m.total_volume || 0) > 0)
+      list.sort((a, b) => ((b.bet_count||0) + (b.total_volume||0)/100) - ((a.bet_count||0) + (a.total_volume||0)/100))
+    }
+
     if (marketType !== 'todos') {
       const typeMap: Record<string, string> = { rapidos: 'rapid', 'ao-vivo': 'live', normais: 'standard' }
       list = list.filter(m => (m.market_type || 'standard') === (typeMap[marketType] || marketType))
@@ -240,6 +245,13 @@ export default function MercadosPage() {
                 {t.label}
               </button>
             ))}
+          </div>
+          {/* Movers */}
+          <div className="flex items-center gap-2">
+            <button onClick={() => setShowMovers(v => !v)}
+              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium border transition-colors ${showMovers ? 'bg-orange-500/20 border-orange-500/40 text-orange-400' : 'border-border text-muted-foreground hover:border-orange-500/40 hover:text-orange-400'}`}>
+              🔥 Em Movimento
+            </button>
           </div>
           {/* Filtro por categoria */}
           <div className="flex gap-2 overflow-x-auto pb-2 lg:pb-0">
@@ -379,6 +391,13 @@ function MarketCard({ market, livePrice }: { market: Market; livePrice?: number 
           {market.market_type === 'rapid' && <span className="ml-1 px-2 py-1 rounded-full text-xs font-bold bg-yellow-500/90 text-black">⚡</span>}
           {market.market_type === 'live' && <span className="ml-1 px-2 py-1 rounded-full text-xs font-bold bg-red-500/90 text-white">🔴</span>}
         </div>
+        {(market.bet_count || 0) >= 5 && !market.featured && (
+          <div className={`absolute ${market.image_url ? 'top-2' : 'top-4'} right-4 z-10`}>
+            <span className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold bg-orange-500/20 text-orange-400 border border-orange-500/30 animate-pulse">
+              🔥 Quente
+            </span>
+          </div>
+        )}
         {market.featured && (
           <div className={`absolute ${market.image_url ? 'top-2' : 'top-4'} right-4 z-10`}>
             <span className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
