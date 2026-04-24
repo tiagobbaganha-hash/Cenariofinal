@@ -188,7 +188,7 @@ export default function MercadosPage() {
 
             <div className="hidden md:flex items-center gap-8">
               <Link href="/mercados" className="text-sm font-medium text-primary">Mercados</Link>
-              <Link href="/leaderboard" className="text-sm font-medium text-muted-foreground hover:text-foreground">Ranking</Link>
+              <Link href="/ranking" className="text-sm font-medium text-muted-foreground hover:text-foreground">Ranking</Link>
             </div>
 
             <div className="flex items-center gap-3">
@@ -350,7 +350,7 @@ export default function MercadosPage() {
             <TrendingUp className="h-5 w-5" />
             <span className="text-xs font-medium">Mercados</span>
           </Link>
-          <Link href="/leaderboard" className="flex flex-col items-center gap-1 px-4 py-2 text-muted-foreground">
+          <Link href="/ranking" className="flex flex-col items-center gap-1 px-4 py-2 text-muted-foreground">
             <Trophy className="h-5 w-5" />
             <span className="text-xs">Ranking</span>
           </Link>

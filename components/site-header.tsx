@@ -12,11 +12,9 @@ import { NotificationsDropdown } from '@/components/notifications-dropdown'
 
 const navigation = [
   { label: 'Mercados', href: '/mercados' },
-  { label: '🔥 Burn', href: '/burn' },
   { label: 'Apostas', href: '/apostas' },
-  { label: 'Ranking', href: '/leaderboard' },
+  { label: 'Ranking', href: '/ranking' },
   { label: '⚡ Atividade', href: '/atividade' },
-  { label: 'Comunidade', href: '/comunidade' },
 ]
 
 export function SiteHeader() {

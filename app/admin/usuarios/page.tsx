@@ -36,6 +36,10 @@ export default function AdminUsuarios() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [editUser, setEditUser] = useState<User | null>(null)
+  const [editForm, setEditForm] = useState({
+    full_name: '', cpf: '', phone: '', pix_key: '', role: 'user',
+    referral_code: '', commission_pct: 2, kyc_status: 'pending'
+  })
   const [newRole, setNewRole] = useState('')
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
@@ -247,7 +251,20 @@ export default function AdminUsuarios() {
                           </Button>
                         )}
                         {/* Role */}
-                        <Button size="sm" variant="ghost" onClick={() => { setEditUser(user); setNewRole(user.role || 'user'); setMsg(null) }}>
+                        <Button size="sm" variant="ghost" onClick={() => {
+                          setEditUser(user)
+                          setEditForm({
+                            full_name: user.full_name || '',
+                            cpf: user.cpf || '',
+                            phone: user.phone || '',
+                            pix_key: user.pix_key || '',
+                            role: user.role || 'user',
+                            referral_code: user.referral_code || '',
+                            commission_pct: user.commission_pct || 2,
+                            kyc_status: user.kyc_status || 'pending',
+                          })
+                          setMsg(null)
+                        }}>
                           <Shield className="h-4 w-4" />
                         </Button>
                         {/* Ban/Unban */}
@@ -288,7 +305,7 @@ export default function AdminUsuarios() {
                 <div>
                   <label className="text-xs text-muted-foreground block mb-1">Nome completo</label>
                   <input className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
-                    defaultValue={editUser.full_name || ''} id="edit_full_name" />
+                     value={editForm.full_name} onChange={e => setEditForm(f => ({...f, full_name: e.target.value}))} />
                 </div>
                 <div>
                   <label className="text-xs text-muted-foreground block mb-1">Email</label>
@@ -298,21 +315,21 @@ export default function AdminUsuarios() {
                 <div>
                   <label className="text-xs text-muted-foreground block mb-1">CPF</label>
                   <input className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
-                    defaultValue={editUser.cpf || ''} id="edit_cpf" placeholder="000.000.000-00" />
+                     value={editForm.cpf} onChange={e => setEditForm(f => ({...f, cpf: e.target.value}))} placeholder="000.000.000-00" />
                 </div>
                 <div>
                   <label className="text-xs text-muted-foreground block mb-1">Telefone</label>
                   <input className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
-                    defaultValue={editUser.phone || ''} id="edit_phone" placeholder="+55 (11) 99999-9999" />
+                     value={editForm.phone} onChange={e => setEditForm(f => ({...f, phone: e.target.value}))} placeholder="+55 (11) 99999-9999" />
                 </div>
                 <div>
                   <label className="text-xs text-muted-foreground block mb-1">Chave PIX</label>
                   <input className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
-                    defaultValue={editUser.pix_key || ''} id="edit_pix_key" placeholder="CPF, email ou telefone" />
+                     value={editForm.pix_key} onChange={e => setEditForm(f => ({...f, pix_key: e.target.value}))} placeholder="CPF, email ou telefone" />
                 </div>
                 <div>
                   <label className="text-xs text-muted-foreground block mb-1">Role</label>
-                  <select id="edit_role" defaultValue={editUser.role || 'user'}
+                  <select value={editForm.role} onChange={e => setEditForm(f => ({...f, role: e.target.value}))} 
                     className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40">
                     <option value="user">Usuário</option>
                     <option value="influencer">Influencer</option>
@@ -329,13 +346,13 @@ export default function AdminUsuarios() {
                   <div>
                     <label className="text-xs text-muted-foreground block mb-1">Código de referral</label>
                     <input className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:outline-none"
-                      defaultValue={editUser.referral_code || ''} id="edit_referral_code" placeholder="ex: joao2024" />
+                       value={editForm.referral_code} onChange={e => setEditForm(f => ({...f, referral_code: e.target.value}))} placeholder="ex: joao2024" />
                   </div>
                   <div>
                     <label className="text-xs text-muted-foreground block mb-1">Comissão (%)</label>
                     <input type="number" min="0" max="20" step="0.5"
                       className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:outline-none"
-                      defaultValue={editUser.commission_pct || 2} id="edit_commission_pct" />
+                       value={editForm.commission_pct} onChange={e => setEditForm(f => ({...f, commission_pct: parseFloat(e.target.value)||2}))} />
                   </div>
                 </div>
               </div>
@@ -363,28 +380,28 @@ export default function AdminUsuarios() {
               <Button className="flex-1" disabled={saving} onClick={async () => {
                 setSaving(true)
                 const supabase = createClient()
-                const full_name = (document.getElementById('edit_full_name') as HTMLInputElement)?.value
-                const cpf = (document.getElementById('edit_cpf') as HTMLInputElement)?.value
-                const phone = (document.getElementById('edit_phone') as HTMLInputElement)?.value
-                const pix_key = (document.getElementById('edit_pix_key') as HTMLInputElement)?.value
-                const role = (document.getElementById('edit_role') as HTMLSelectElement)?.value
-                const referral_code = (document.getElementById('edit_referral_code') as HTMLInputElement)?.value
-                const commission_pct = parseFloat((document.getElementById('edit_commission_pct') as HTMLInputElement)?.value || '2')
-
                 const { error } = await supabase.from('profiles').update({
-                  full_name, cpf, phone, pix_key, role, referral_code,
+                  full_name: editForm.full_name,
+                  cpf: editForm.cpf,
+                  phone: editForm.phone,
+                  pix_key: editForm.pix_key,
+                  role: editForm.role,
+                  referral_code: editForm.referral_code,
+                  kyc_status: editForm.kyc_status,
                 }).eq('id', editUser.id)
 
-                // Se influencer, atualizar/criar entrada na tabela influencers
-                if (role === 'influencer' && referral_code) {
+                if (editForm.role === 'influencer' && editForm.referral_code) {
                   await supabase.from('influencers').upsert({
-                    user_id: editUser.id, name: full_name || editUser.email,
-                    referral_code, commission_pct, is_active: true,
+                    user_id: editUser.id,
+                    name: editForm.full_name || editUser.email,
+                    referral_code: editForm.referral_code,
+                    commission_pct: editForm.commission_pct,
+                    is_active: true,
                   }, { onConflict: 'user_id' })
                 }
 
                 if (error) setMsg('❌ ' + error.message)
-                else { setMsg('✅ Usuário atualizado!'); loadUsers() }
+                else { setMsg('✅ Usuário atualizado!'); loadUsers(); setTimeout(() => setEditUser(null), 1000) }
                 setSaving(false)
               }}>
                 {saving ? 'Salvando...' : '💾 Salvar alterações'}

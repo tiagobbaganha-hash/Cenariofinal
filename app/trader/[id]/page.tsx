@@ -57,7 +57,7 @@ export default function TraderPage() {
   if (!trader) return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4">
       <p className="text-muted-foreground">Trader não encontrado</p>
-      <Link href="/leaderboard" className="text-primary hover:underline text-sm">← Voltar ao Leaderboard</Link>
+      <Link href="/ranking" className="text-primary hover:underline text-sm">← Voltar ao Ranking</Link>
     </div>
   )
 

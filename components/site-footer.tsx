@@ -97,10 +97,10 @@ export function SiteFooter() {
               {[
                 { label: 'Todos os Mercados', href: '/mercados' },
                 { label: 'Minhas Previsões', href: '/apostas' },
-                { label: 'Leaderboard', href: '/leaderboard' },
-                { label: 'Comunidade', href: '/comunidade' },
+                { label: 'Leaderboard', href: '/ranking' },
+                
                 { label: 'Sugerir Mercado', href: '/propor-mercado' },
-                { label: '🔥 Transparência', href: '/burn' },
+                
                 { label: '🎁 Indicação', href: '/indicacao' },
                 { label: 'Planos PRO', href: '/upgrade' },
               ].map(l => (

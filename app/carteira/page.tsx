@@ -509,27 +509,27 @@ export default function CarteiraPage() {
       </main>
 
       {/* Mobile Bottom Nav */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden border-t border-border bg-background/95 backdrop-blur-lg safe-area-bottom">
+      <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden border-t border-border bg-background/95 backdrop-blur-lg">
         <div className="flex items-center justify-around py-2">
-          <Link href="/" className="flex flex-col items-center gap-1 px-4 py-2 text-muted-foreground">
+          <Link href="/" className="flex flex-col items-center gap-1 px-3 py-2 text-muted-foreground">
             <Home className="h-5 w-5" />
-            <span className="text-xs">Inicio</span>
+            <span className="text-[10px]">Início</span>
           </Link>
-          <Link href="/mercados" className="flex flex-col items-center gap-1 px-4 py-2 text-muted-foreground">
+          <Link href="/mercados" className="flex flex-col items-center gap-1 px-3 py-2 text-muted-foreground">
             <TrendingUp className="h-5 w-5" />
-            <span className="text-xs">Mercados</span>
+            <span className="text-[10px]">Mercados</span>
           </Link>
-          <Link href="/leaderboard" className="flex flex-col items-center gap-1 px-4 py-2 text-muted-foreground">
-            <Trophy className="h-5 w-5" />
-            <span className="text-xs">Ranking</span>
+          <Link href="/atividade" className="flex flex-col items-center gap-1 px-3 py-2 text-muted-foreground">
+            <Zap className="h-5 w-5" />
+            <span className="text-[10px]">Atividade</span>
           </Link>
-          <Link href="/carteira" className="flex flex-col items-center gap-1 px-4 py-2 text-primary">
+          <Link href="/carteira" className="flex flex-col items-center gap-1 px-3 py-2 text-primary">
             <Wallet className="h-5 w-5" />
-            <span className="text-xs font-medium">Carteira</span>
+            <span className="text-[10px] font-medium">Carteira</span>
           </Link>
-          <Link href="/conta" className="flex flex-col items-center gap-1 px-4 py-2 text-muted-foreground">
+          <Link href="/conta" className="flex flex-col items-center gap-1 px-3 py-2 text-muted-foreground">
             <User className="h-5 w-5" />
-            <span className="text-xs">Conta</span>
+            <span className="text-[10px]">Conta</span>
           </Link>
         </div>
       </div>
