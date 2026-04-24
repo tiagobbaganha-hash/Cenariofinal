@@ -70,11 +70,15 @@ export function SiteHeader() {
   useEffect(() => {
     const supabase = createClient()
     supabase.from('branding_settings')
-      .select('logo_url, brand_name, app_name')
+      .select('logo_url, logo_dark_url, logo_light_url, brand_name, app_name, maintenance_mode')
       .eq('id', 1)
       .maybeSingle()
       .then(({ data: b }) => {
         if (b?.logo_url) setLogoUrl(b.logo_url)
+        // Usar logo dark/light se disponível
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark'
+        if (isDark && b?.logo_dark_url) setLogoUrl(b.logo_dark_url)
+        if (!isDark && b?.logo_light_url) setLogoUrl(b.logo_light_url)
         if (b?.brand_name || b?.app_name) setBrandName(b.brand_name || b.app_name || 'CenárioX')
       })
       .catch(() => {})

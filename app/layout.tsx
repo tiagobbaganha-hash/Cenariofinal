@@ -11,6 +11,7 @@ import { TermsModal } from '@/components/terms-modal'
 import { ThemeProvider } from '@/components/theme-provider'
 import { SupportChat } from '@/components/support-chat'
 import { GlobalLiveChat } from '@/components/global-live-chat'
+import { BrandingProvider } from '@/components/branding-provider'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -70,6 +71,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-dvh font-sans antialiased">
         <ThemeProvider>
           <ToastProvider>
+            <BrandingProvider />
             <SiteHeader />
             <main className="min-h-[calc(100dvh-8rem)]">
               {children}

@@ -13,7 +13,7 @@ export default function AdminBranding() {
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState({
     brand_name: '', app_title: '', app_tagline: '',
-    logo_url: '', favicon_url: '', login_background_url: '', hero_banner_url: '',
+    logo_url: '', logo_dark_url: '', logo_light_url: '', favicon_url: '', login_background_url: '', hero_banner_url: '',
     color_primary: '#F59E0B', color_secondary: '#FB923C', color_accent: '#22C55E',
     color_bg: '#0B0F14', color_surface: '#111827', color_text: '#E5E7EB',
     font_family: 'Inter',
@@ -30,7 +30,7 @@ export default function AdminBranding() {
         setForm({
           brand_name: data.brand_name || data.app_name || data.site_name || '',
           app_title: data.app_title || '', app_tagline: data.app_tagline || '',
-          logo_url: data.logo_url || '', favicon_url: data.favicon_url || '',
+          logo_url: data.logo_url || '', logo_dark_url: data.logo_dark_url || '', logo_light_url: data.logo_light_url || '', favicon_url: data.favicon_url || '',
           login_background_url: data.login_background_url || '',
           hero_banner_url: data.custom_css || '', // reusing custom_css field for hero banner URL
           color_primary: data.color_primary || '#F59E0B',
@@ -59,7 +59,7 @@ export default function AdminBranding() {
       const { error } = await supabase.from('branding_settings').update({
         brand_name: form.brand_name, app_name: form.brand_name, site_name: form.brand_name,
         app_title: form.app_title, app_tagline: form.app_tagline,
-        logo_url: form.logo_url, favicon_url: form.favicon_url,
+        logo_url: form.logo_url, logo_dark_url: form.logo_dark_url, logo_light_url: form.logo_light_url, favicon_url: form.favicon_url,
         login_background_url: form.login_background_url,
         custom_css: form.hero_banner_url, // reusing for hero banner URL
         color_primary: form.color_primary, color_secondary: form.color_secondary,
@@ -120,7 +120,22 @@ export default function AdminBranding() {
         
         <div>
           <label className="block text-sm font-medium mb-2">Logo</label>
-          <ImageUpload value={form.logo_url} onChange={(url) => setForm({ ...form, logo_url: url })} bucket="market-images" folder="branding" />
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs text-muted-foreground block mb-1.5">Logo Principal (padrão)</label>
+              <ImageUpload value={form.logo_url} onChange={(url) => setForm({ ...form, logo_url: url })} bucket="market-images" folder="branding" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs text-muted-foreground block mb-1.5">Logo Tema Escuro</label>
+                <ImageUpload value={form.logo_dark_url} onChange={(url) => setForm({ ...form, logo_dark_url: url })} bucket="market-images" folder="branding" />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground block mb-1.5">Logo Tema Claro</label>
+                <ImageUpload value={form.logo_light_url} onChange={(url) => setForm({ ...form, logo_light_url: url })} bucket="market-images" folder="branding" />
+              </div>
+            </div>
+          </div>
         </div>
         
         <div>
