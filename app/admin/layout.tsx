@@ -31,8 +31,7 @@ const navItems = [
   { href: '/admin/suporte', label: 'Suporte', icon: MessageSquare, group: 'geral' },
   // Mercados
   { href: '/admin/mercados', label: 'Todos os Mercados', icon: TrendingUp, group: 'mercados' },
-  { href: '/admin/ao-vivo', label: 'Criar Ao Vivo', icon: Zap, group: 'mercados' },
-  { href: '/admin/mercados-rapidos', label: 'Criar Rápido', icon: Zap, group: 'mercados' },
+  { href: '/admin/mercados/novo', label: 'Criar Mercado', icon: Zap, group: 'mercados' },
   { href: '/admin/resolucao', label: 'Resolução', icon: CheckCircle, group: 'mercados' },
   // Usuários
   { href: '/admin/usuarios', label: 'Usuários', icon: Users, group: 'usuarios' },

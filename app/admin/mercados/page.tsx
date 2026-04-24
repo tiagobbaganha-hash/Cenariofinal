@@ -42,6 +42,7 @@ export default function AdminMercados() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
+  const [typeFilter, setTypeFilter] = useState('all')
   
   // Resolve modal
   const [resolveMarket, setResolveMarket] = useState<Market | null>(null)

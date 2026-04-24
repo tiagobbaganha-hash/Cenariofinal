@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Sparkles, Lightbulb, CheckCircle, ArrowLeft, Loader2 } from 'lucide-react'
@@ -9,11 +9,25 @@ import Link from 'next/link'
 
 export default function ProporMercado() {
   const router = useRouter()
+  const [userPlan, setUserPlan] = useState<string>('free')
+  const [checkingPlan, setCheckingPlan] = useState(true)
   const [step, setStep] = useState<'form' | 'ai' | 'success'>('form')
   const [loading, setLoading] = useState(false)
   const [aiLoading, setAiLoading] = useState(false)
   const [error, setError] = useState('')
   const [aiSuggestion, setAiSuggestion] = useState<any>(null)
+
+  useEffect(() => {
+    async function checkPlan() {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) { router.push('/login'); return }
+      const { data: profile } = await supabase.from('profiles').select('plan').eq('id', user.id).single()
+      setUserPlan(profile?.plan || 'free')
+      setCheckingPlan(false)
+    }
+    checkPlan()
+  }, [router])
 
   const [form, setForm] = useState({
     title: '',
