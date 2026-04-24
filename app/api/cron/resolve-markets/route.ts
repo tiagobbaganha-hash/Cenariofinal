@@ -125,17 +125,45 @@ export async function GET(req: NextRequest) {
 }
 
 async function settleOrders(db: any, marketId: string, winOptionId: string) {
+  // Buscar configurações de comissão
+  const { data: settings } = await db.from('platform_settings').select('key, value')
+  const settingsMap: Record<string, string> = {}
+  for (const s of settings || []) settingsMap[s.key] = s.value
+  const platformPct = parseFloat(settingsMap['commission_pct'] || '5') / 100
+
+  // Buscar mercado para pegar influencer e commission_pct
+  const { data: market } = await db.from('markets')
+    .select('id, total_volume, platform_commission, influencer_id, influencer_commission_pct')
+    .eq('id', marketId).single()
+
+  const marketCommPct = market?.platform_commission ? parseFloat(market.platform_commission) / 100 : platformPct
+  const influencerPct = market?.influencer_commission_pct ? parseFloat(market.influencer_commission_pct) / 100 : 0
+  const influencerId = market?.influencer_id || null
+
+  // Buscar todas as ordens
   const { data: orders } = await db.from('orders')
     .select('id, user_id, option_id, stake_amount, potential_payout')
     .eq('market_id', marketId)
-    .in('status', ['open', 'pending', 'matched'])
+    .in('status', ['open', 'pending', 'matched', 'open'])
 
   let wins = 0, losses = 0, totalPaid = 0
+  let totalVolume = 0, totalLosses = 0
+
+  for (const o of orders || []) {
+    totalVolume += parseFloat(o.stake_amount || 0)
+    if (o.option_id !== winOptionId) totalLosses += parseFloat(o.stake_amount || 0)
+  }
+
+  // Calcular comissões sobre o volume total
+  const platformEarned = totalVolume * marketCommPct
+  const influencerEarned = totalVolume * influencerPct
+  const netPlatform = platformEarned - influencerEarned
 
   for (const o of orders || []) {
     const isWin = o.option_id === winOptionId
-    const payout = isWin ? parseFloat(o.potential_payout || 0) : 0
     const stake = parseFloat(o.stake_amount || 0)
+    // Payout já tem o spread dos odds baked in (1.90x vs 2.0x)
+    const payout = isWin ? parseFloat(o.potential_payout || 0) : 0
 
     await db.from('orders').update({
       status: isWin ? 'settled_win' : 'settled_loss',
@@ -144,14 +172,15 @@ async function settleOrders(db: any, marketId: string, winOptionId: string) {
     }).eq('id', o.id)
 
     // Atualizar carteira
-    const { data: wallet } = await db.from('wallets').select('available_balance, locked_balance').eq('user_id', o.user_id).single()
+    const { data: wallet } = await db.from('wallets')
+      .select('available_balance, locked_balance').eq('user_id', o.user_id).single()
     if (wallet) {
       const newAvailable = parseFloat(wallet.available_balance) + (isWin ? payout : 0)
       const newLocked = Math.max(0, parseFloat(wallet.locked_balance) - stake)
       await db.from('wallets').update({ available_balance: newAvailable, locked_balance: newLocked }).eq('user_id', o.user_id)
     }
 
-    // Ledger
+    // Ledger do usuário
     await db.from('wallet_ledger').insert({
       user_id: o.user_id,
       entry_type: isWin ? 'bet_settle_win' : 'bet_settle_loss',
@@ -171,5 +200,28 @@ async function settleOrders(db: any, marketId: string, winOptionId: string) {
     if (isWin) { wins++; totalPaid += payout } else losses++
   }
 
-  return { orders: (orders || []).length, wins, losses, total_paid: totalPaid }
+  // Registrar comissão da plataforma
+  if (totalVolume > 0) {
+    await db.from('platform_ledger').insert({
+      market_id: marketId,
+      entry_type: 'market_settlement',
+      gross_volume: totalVolume,
+      platform_commission_pct: marketCommPct * 100,
+      platform_amount: platformEarned,
+      influencer_id: influencerId,
+      influencer_commission_pct: influencerPct * 100,
+      influencer_amount: influencerEarned,
+      net_platform_profit: netPlatform,
+    }).catch(() => {})
+
+    // Atualizar total_earned do influencer
+    if (influencerId && influencerEarned > 0) {
+      await db.from('influencers').update({
+        total_earned: db.raw(`total_earned + ${influencerEarned}`),
+        total_commission: db.raw(`total_commission + ${influencerEarned}`),
+      }).eq('id', influencerId).catch(() => {})
+    }
+  }
+
+  return { orders: (orders || []).length, wins, losses, total_paid: totalPaid, platform_earned: platformEarned, influencer_earned: influencerEarned }
 }
