@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import EmojiPicker from 'emoji-picker-react'
 import { createClient } from '@/lib/supabase/client'
 import { useToast } from '@/hooks/useToast'
 import { formatCurrency } from '@/lib/utils'
@@ -29,7 +28,7 @@ const EMOJI_CATEGORIES = {
 }
 
 
-function EmojiPicker({ onEmoji }: { onEmoji: (e: string) => void }) {
+function LocalEmojiPicker({ onEmoji }: { onEmoji: (e: string) => void }) {
   const [open, setOpen] = useState(false)
   const EMOJIS = {
     '🔥 Trending': ['🔥','💯','👀','🚀','📈','💪','🎯','⚡','🏆','🎉','😤','🤯','💎','🦁','⚔️'],
@@ -323,7 +322,7 @@ export default function ComunidadePage() {
           <textarea value={content} onChange={e => setContent(e.target.value)} rows={3} placeholder="Compartilhe sua análise, previsão ou dúvida..."
             className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-primary/40" />
           {/* Emoji + GIF picker */}
-          <EmojiPicker onEmoji={(e) => setContent(c => c + e)} />
+          <LocalEmojiPicker onEmoji={(e) => setContent(c => c + e)} />
           <div className="flex justify-end gap-2">
             <button onClick={handlePost} disabled={!title.trim() || !content.trim() || posting}
               className="flex items-center gap-2 rounded-xl bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50 hover:bg-primary/90 transition-colors">
