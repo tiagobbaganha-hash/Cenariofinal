@@ -173,44 +173,6 @@ export default function MercadosPage() {
 
   return (
     <div className="min-h-screen bg-background pb-24">
-      {/* Header */}
-      <header className="sticky top-0 z-50 blur-backdrop border-b border-border/50">
-        <div className="mx-auto max-w-7xl px-4">
-          <div className="flex h-16 items-center justify-between">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-secondary">
-                <Zap className="h-5 w-5 text-background" />
-              </div>
-              <span className="text-xl font-bold hidden sm:block">
-                Cenario<span className="text-primary">X</span>
-              </span>
-            </Link>
-
-            <div className="hidden md:flex items-center gap-8">
-              <Link href="/mercados" className="text-sm font-medium text-primary">Mercados</Link>
-              <Link href="/ranking" className="text-sm font-medium text-muted-foreground hover:text-foreground">Ranking</Link>
-            </div>
-
-            <div className="flex items-center gap-3">
-              {user ? (
-                <>
-                  <Link href="/carteira">
-                    <Button variant="outline" size="sm"><Wallet className="mr-2 h-4 w-4" /> Carteira</Button>
-                  </Link>
-                  <Link href="/conta">
-                    <Button size="sm" className="glow-green"><User className="mr-2 h-4 w-4" /> Conta</Button>
-                  </Link>
-                </>
-              ) : (
-                <Link href="/login">
-                  <Button size="sm" className="glow-green">Entrar</Button>
-                </Link>
-              )}
-            </div>
-          </div>
-        </div>
-      </header>
-
       <main className="mx-auto max-w-7xl px-4 py-8">
         {/* Page Header */}
         <div className="mb-8">
@@ -233,8 +195,9 @@ export default function MercadosPage() {
           </div>
           {/* Linha 2: tipo + Em Movimento */}
           <div className="flex items-center gap-2 overflow-x-auto pb-1">
+            <span className="text-xs text-muted-foreground whitespace-nowrap flex-shrink-0 font-medium">Tipo:</span>
             {[
-              { id: 'todos', label: '🌐 Todos' },
+              { id: 'todos', label: 'Todos' },
               { id: 'normais', label: '📊 Normais' },
               { id: 'rapidos', label: '⚡ Rápidos' },
               { id: 'ao-vivo', label: '🔴 Ao Vivo' },
@@ -258,6 +221,7 @@ export default function MercadosPage() {
           </div>
           {/* Linha 3: categorias */}
           <div className="flex gap-2 overflow-x-auto pb-1">
+            <span className="text-xs text-muted-foreground whitespace-nowrap flex-shrink-0 font-medium self-center">Categoria:</span>
             {categories.map(cat => (
               <button
                 key={cat}
@@ -268,7 +232,7 @@ export default function MercadosPage() {
                     : 'bg-card border-border hover:border-primary/50 text-muted-foreground'
                 }`}
               >
-                {cat === 'todos' ? '🌍 Todos' : cat.charAt(0).toUpperCase() + cat.slice(1)}
+                {cat === 'todos' ? 'Todas as categorias' : cat.charAt(0).toUpperCase() + cat.slice(1)}
               </button>
             ))}
           </div>
