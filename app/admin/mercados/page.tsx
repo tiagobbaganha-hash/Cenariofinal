@@ -174,6 +174,16 @@ export default function AdminMercados() {
           <option value="resolved">Resolvido</option>
           <option value="cancelled">Cancelado</option>
         </select>
+        <select
+          value={typeFilter}
+          onChange={(e) => setTypeFilter(e.target.value)}
+          className="h-10 px-4 rounded-lg bg-card border border-border focus:border-primary outline-none"
+        >
+          <option value="all">Todos os tipos</option>
+          <option value="standard">📊 Normal</option>
+          <option value="rapid">⚡ Rápido</option>
+          <option value="live">🔴 Ao Vivo</option>
+        </select>
         <Button variant="outline" onClick={loadMarkets}>
           <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
         </Button>

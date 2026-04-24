@@ -67,19 +67,19 @@ export function SiteFooter() {
             {/* Redes sociais */}
             <div className="flex gap-2">
               {branding.x_url && (
-                <a href={branding.x_url} target="_blank" rel="noopener noreferrer"
+                <a href={branding.x_url.startsWith('http') ? branding.x_url : `https://${branding.x_url}`} target="_blank" rel="noopener noreferrer"
                   className="flex items-center gap-1.5 rounded-xl border border-border px-3 py-2 text-xs text-muted-foreground hover:text-foreground hover:border-primary/30 transition-colors">
                   𝕏
                 </a>
               )}
               {branding.instagram_url && (
-                <a href={branding.instagram_url} target="_blank" rel="noopener noreferrer"
+                <a href={branding.instagram_url.startsWith('http') ? branding.instagram_url : `https://instagram.com/${branding.instagram_url}`} target="_blank" rel="noopener noreferrer"
                   className="flex items-center gap-1.5 rounded-xl border border-border px-3 py-2 text-xs text-muted-foreground hover:text-foreground hover:border-primary/30 transition-colors">
                   IG
                 </a>
               )}
               {branding.telegram_url && (
-                <a href={branding.telegram_url} target="_blank" rel="noopener noreferrer"
+                <a href={branding.telegram_url.startsWith('http') ? branding.telegram_url : `https://t.me/${branding.telegram_url}`} target="_blank" rel="noopener noreferrer"
                   className="flex h-9 w-9 items-center justify-center rounded-xl border border-border text-muted-foreground hover:text-foreground hover:border-primary/30 transition-colors">
                   <Send className="h-4 w-4" />
                 </a>
@@ -97,7 +97,7 @@ export function SiteFooter() {
               {[
                 { label: 'Todos os Mercados', href: '/mercados' },
                 { label: 'Minhas Previsões', href: '/apostas' },
-                { label: 'Leaderboard', href: '/ranking' },
+                { label: 'Ranking', href: '/ranking' },
                 
                 { label: 'Sugerir Mercado', href: '/propor-mercado' },
                 

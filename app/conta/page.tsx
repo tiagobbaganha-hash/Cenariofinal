@@ -25,6 +25,8 @@ export default function AccountPage() {
   const [editando, setEditando] = useState(false)
   const [editNome, setEditNome] = useState('')
   const [editUsername, setEditUsername] = useState('')
+  const [editAvatar, setEditAvatar] = useState('')
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [salvando, setSalvando] = useState(false)
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [transactions, setTransactions] = useState<any[]>([])
@@ -71,7 +73,7 @@ export default function AccountPage() {
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (user) {
-      await supabase.from('profiles').update({ full_name: editNome, username: editUsername }).eq('id', user.id)
+      await supabase.from('profiles').update({ full_name: editNome, username: editUsername, avatar_url: editAvatar || null }).eq('id', user.id)
       setMe(prev => prev ? { ...prev, full_name: editNome, username: editUsername } : prev)
       setEditando(false)
     }
@@ -112,6 +114,37 @@ export default function AccountPage() {
           <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-6 space-y-4 shadow-2xl">
             <h2 className="text-lg font-bold text-foreground">Editar perfil</h2>
             <div className="space-y-3">
+              {/* Upload de foto */}
+              <div className="flex items-center gap-3">
+                <div className="h-14 w-14 rounded-full overflow-hidden flex-shrink-0 border-2 border-border">
+                  {editAvatar
+                    ? <img src={editAvatar} alt="" className="h-full w-full object-cover" />
+                    : <div className="h-full w-full bg-primary/20 flex items-center justify-center text-primary font-bold text-lg">{editNome[0]?.toUpperCase() || '?'}</div>
+                  }
+                </div>
+                <div className="flex-1">
+                  <label className="text-xs text-muted-foreground block mb-1">Foto de perfil</label>
+                  <label className="cursor-pointer flex items-center gap-1.5 rounded-xl border border-border px-3 py-2 text-xs text-muted-foreground hover:border-primary/40 hover:text-primary transition-colors w-fit">
+                    {uploadingAvatar ? 'Enviando...' : '📸 Carregar foto'}
+                    <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                      const file = e.target.files?.[0]
+                      if (!file) return
+                      if (file.size > 2 * 1024 * 1024) { alert('Máximo 2MB'); return }
+                      setUploadingAvatar(true)
+                      const supabase = createClient()
+                      const { data: { user } } = await supabase.auth.getUser()
+                      if (!user) return
+                      const path = `avatars/${user.id}.${file.name.split('.').pop()}`
+                      const { error } = await supabase.storage.from('community').upload(path, file, { upsert: true })
+                      if (!error) {
+                        const { data: url } = supabase.storage.from('community').getPublicUrl(path)
+                        setEditAvatar(url.publicUrl)
+                      } else { alert('Erro ao enviar foto') }
+                      setUploadingAvatar(false)
+                    }} />
+                  </label>
+                </div>
+              </div>
               <div>
                 <label className="text-xs text-muted-foreground mb-1.5 block">Nome completo</label>
                 <input value={editNome} onChange={e => setEditNome(e.target.value)}

@@ -119,10 +119,10 @@ export default function CarteiraPage() {
         setTransactions(txs.slice(0, 20).map((t: any) => ({
           id: t.id,
           type: t.entry_type || (t.direction === 'credit' ? 'deposit' : 'debit'),
-          entry_type: t.entry_type || (t.direction === 'credit' ? 'deposit' : 'debit'),
+          entry_type: t.entry_type || t.type || (t.direction === 'credit' ? 'deposit' : 'debit'),
           amount: parseFloat(t.amount || '0'),
           direction: t.direction === 'credit' ? 'credit' : 'debit',
-          description: getDescription(t.entry_type),
+          description: getDescription(t.entry_type || t.type),
           market_title: t.orders?.markets?.title || null,
           market_slug: t.orders?.markets?.slug || null,
           reference_id: t.reference_id || null,
@@ -208,7 +208,7 @@ export default function CarteiraPage() {
 
   const filteredTxs = txFilter === 'all'
     ? transactions
-    : transactions.filter(tx => tx.entry_type?.includes(txFilter))
+    : transactions.filter(tx => (tx.entry_type || '').includes(txFilter) || (tx.type || '').includes(txFilter))
 
   async function handleDeposit() {
     const value = parseFloat(amount)
