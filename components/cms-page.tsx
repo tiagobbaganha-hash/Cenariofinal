@@ -21,9 +21,7 @@ export function CmsPage({ slug, fallback }: CmsPageProps) {
         if (data) {
           setContent({
             title: data.title,
-            content_md: data.content_md || data.content || '# ' + data.title + '
-
-Conteúdo em breve...'
+            content_md: data.content_md || data.content || ('# ' + data.title)
           })
         }
         setLoading(false)
