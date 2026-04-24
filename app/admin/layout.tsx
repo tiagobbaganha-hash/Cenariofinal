@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { 
-  LayoutDashboard, BarChart3,
+  LayoutDashboard, BarChart3, CheckCircle,
   TrendingUp, 
   Users, 
   Wallet,
@@ -24,22 +24,59 @@ import {
 import { Button } from '@/components/ui/button'
 
 const navItems = [
-  { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/admin/ai-dashboard', label: 'IA Insights ✨', icon: Brain },
-  { href: '/admin/logs', label: 'Logs de Atividade', icon: Activity },
-  { href: '/admin/suporte', label: 'Suporte', icon: MessageSquare },
-  { href: '/admin/mercados-rapidos', label: 'Mercados Rápidos', icon: Zap },
-  { href: '/admin/resolucao', label: 'Resolução Auto', icon: Zap },
-  { href: '/admin/ao-vivo', label: 'Ao Vivo 🔴', icon: Zap },
-  { href: '/admin/automacao', label: '🤖 Automação', icon: Brain },
-  { href: '/admin/mercados', label: 'Mercados', icon: TrendingUp },
-  { href: '/admin/usuarios', label: 'Usuários', icon: Users },
-  { href: '/admin/financeiro', label: 'Financeiro', icon: Wallet },
-  { href: '/admin/cms', label: 'CMS / Páginas', icon: FileText },
-  { href: '/admin/branding', label: 'Branding', icon: Settings },
-  { href: '/admin/influencers', label: 'Influencers', icon: Users },
-  { href: '/admin/relatorios', label: 'Relatórios', icon: BarChart3 },
+  // Visão Geral
+  { href: '/admin', label: 'Dashboard', icon: LayoutDashboard, group: 'geral' },
+  { href: '/admin/relatorios', label: 'Relatórios', icon: BarChart3, group: 'geral' },
+  { href: '/admin/logs', label: 'Atividade', icon: Activity, group: 'geral' },
+  { href: '/admin/suporte', label: 'Suporte', icon: MessageSquare, group: 'geral' },
+  // Mercados
+  { href: '/admin/mercados', label: 'Todos os Mercados', icon: TrendingUp, group: 'mercados' },
+  { href: '/admin/ao-vivo', label: 'Criar Ao Vivo', icon: Zap, group: 'mercados' },
+  { href: '/admin/mercados-rapidos', label: 'Criar Rápido', icon: Zap, group: 'mercados' },
+  { href: '/admin/resolucao', label: 'Resolução', icon: CheckCircle, group: 'mercados' },
+  // Usuários
+  { href: '/admin/usuarios', label: 'Usuários', icon: Users, group: 'usuarios' },
+  { href: '/admin/financeiro', label: 'Financeiro', icon: Wallet, group: 'usuarios' },
+  // Plataforma
+  { href: '/admin/cms', label: 'CMS / Páginas', icon: FileText, group: 'plataforma' },
+  { href: '/admin/branding', label: 'Branding', icon: Settings, group: 'plataforma' },
 ]
+
+const NAV_GROUPS = [
+  { id: 'geral', label: 'Visão Geral' },
+  { id: 'mercados', label: 'Mercados' },
+  { id: 'usuarios', label: 'Usuários' },
+  { id: 'plataforma', label: 'Plataforma' },
+]
+
+
+function NavMenu({ pathname, onClose }: { pathname: string; onClose?: () => void }) {
+  return (
+    <nav className="space-y-4">
+      {NAV_GROUPS.map(group => {
+        const items = navItems.filter(i => i.group === group.id)
+        return (
+          <div key={group.id}>
+            <p className="px-3 mb-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50">{group.label}</p>
+            <div className="space-y-0.5">
+              {items.map(item => (
+                <Link key={item.href} href={item.href} onClick={onClose}
+                  className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-sm ${
+                    pathname === item.href
+                      ? 'bg-primary/10 text-primary font-semibold'
+                      : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                  }`}>
+                  <item.icon className="h-4 w-4 flex-shrink-0" />
+                  {item.label}
+                </Link>
+              ))}
+            </div>
+          </div>
+        )
+      })}
+    </nav>
+  )
+}
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
@@ -132,23 +169,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <nav className="space-y-1">
-              {navItems.map(item => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setSidebarOpen(false)}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                    pathname === item.href 
-                      ? 'bg-primary/10 text-primary' 
-                      : 'text-muted-foreground hover:text-foreground hover:bg-accent'
-                  }`}
-                >
-                  <item.icon className="h-5 w-5" />
-                  {item.label}
-                </Link>
-              ))}
-            </nav>
+            <NavMenu pathname={pathname} onClose={() => setSidebarOpen(false)} />
           </div>
         </div>
       )}

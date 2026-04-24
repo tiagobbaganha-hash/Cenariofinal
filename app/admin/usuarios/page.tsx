@@ -267,20 +267,127 @@ export default function AdminUsuarios() {
       {/* Role Modal */}
       {editUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="w-full max-w-sm rounded-2xl bg-card border border-border p-6 space-y-4">
-            <h2 className="font-bold">Alterar Role</h2>
-            <p className="text-sm text-muted-foreground">{editUser.email}</p>
-            <select value={newRole} onChange={e => setNewRole(e.target.value)}
-              className="w-full h-10 px-4 rounded-lg bg-background border border-border outline-none">
-              <option value="user">user</option>
-              <option value="admin">admin</option>
-              <option value="super_admin">super_admin</option>
-            </select>
-            {msg && <p className="text-sm text-green-400">{msg}</p>}
-            <div className="flex gap-3">
+          <div className="w-full max-w-lg rounded-2xl bg-card border border-border overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between p-5 border-b border-border">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center text-lg font-bold text-primary">
+                  {(editUser.full_name || editUser.email || 'U')[0].toUpperCase()}
+                </div>
+                <div>
+                  <h2 className="font-bold">{editUser.full_name || editUser.email}</h2>
+                  <p className="text-xs text-muted-foreground">{editUser.id.slice(0,8)}...</p>
+                </div>
+              </div>
+              <Button variant="ghost" size="sm" onClick={() => setEditUser(null)}>✕</Button>
+            </div>
+
+            {/* Body */}
+            <div className="p-5 space-y-4 max-h-[70vh] overflow-y-auto">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-muted-foreground block mb-1">Nome completo</label>
+                  <input className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    defaultValue={editUser.full_name || ''} id="edit_full_name" />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground block mb-1">Email</label>
+                  <input className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm opacity-60" disabled
+                    defaultValue={editUser.email || ''} />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground block mb-1">CPF</label>
+                  <input className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    defaultValue={editUser.cpf || ''} id="edit_cpf" placeholder="000.000.000-00" />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground block mb-1">Telefone</label>
+                  <input className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    defaultValue={editUser.phone || ''} id="edit_phone" placeholder="+55 (11) 99999-9999" />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground block mb-1">Chave PIX</label>
+                  <input className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    defaultValue={editUser.pix_key || ''} id="edit_pix_key" placeholder="CPF, email ou telefone" />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground block mb-1">Role</label>
+                  <select id="edit_role" defaultValue={editUser.role || 'user'}
+                    className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40">
+                    <option value="user">Usuário</option>
+                    <option value="influencer">Influencer</option>
+                    <option value="admin">Admin</option>
+                    <option value="super_admin">Super Admin</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Influencer fields */}
+              <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 space-y-2">
+                <p className="text-xs font-semibold text-primary">⭐ Configurações de Influencer</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-xs text-muted-foreground block mb-1">Código de referral</label>
+                    <input className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:outline-none"
+                      defaultValue={editUser.referral_code || ''} id="edit_referral_code" placeholder="ex: joao2024" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground block mb-1">Comissão (%)</label>
+                    <input type="number" min="0" max="20" step="0.5"
+                      className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:outline-none"
+                      defaultValue={editUser.commission_pct || 2} id="edit_commission_pct" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Saldo */}
+              <div className="rounded-xl border border-border bg-muted/20 p-3 flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-muted-foreground">Saldo disponível</p>
+                  <p className="font-bold text-green-400">R$ {(editUser.available_balance || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">KYC Status</p>
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${editUser.kyc_status === 'approved' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
+                    {editUser.kyc_status || 'pendente'}
+                  </span>
+                </div>
+              </div>
+
+              {msg && <p className={`text-sm font-medium ${msg.includes('✅') ? 'text-green-400' : 'text-red-400'}`}>{msg}</p>}
+            </div>
+
+            {/* Footer */}
+            <div className="flex gap-3 p-5 border-t border-border">
               <Button variant="outline" className="flex-1" onClick={() => setEditUser(null)}>Cancelar</Button>
-              <Button className="flex-1" disabled={saving} onClick={() => changeRole(editUser.id, newRole)}>
-                {saving ? 'Salvando...' : 'Salvar'}
+              <Button className="flex-1" disabled={saving} onClick={async () => {
+                setSaving(true)
+                const supabase = createClient()
+                const full_name = (document.getElementById('edit_full_name') as HTMLInputElement)?.value
+                const cpf = (document.getElementById('edit_cpf') as HTMLInputElement)?.value
+                const phone = (document.getElementById('edit_phone') as HTMLInputElement)?.value
+                const pix_key = (document.getElementById('edit_pix_key') as HTMLInputElement)?.value
+                const role = (document.getElementById('edit_role') as HTMLSelectElement)?.value
+                const referral_code = (document.getElementById('edit_referral_code') as HTMLInputElement)?.value
+                const commission_pct = parseFloat((document.getElementById('edit_commission_pct') as HTMLInputElement)?.value || '2')
+
+                const { error } = await supabase.from('profiles').update({
+                  full_name, cpf, phone, pix_key, role, referral_code,
+                }).eq('id', editUser.id)
+
+                // Se influencer, atualizar/criar entrada na tabela influencers
+                if (role === 'influencer' && referral_code) {
+                  await supabase.from('influencers').upsert({
+                    user_id: editUser.id, name: full_name || editUser.email,
+                    referral_code, commission_pct, is_active: true,
+                  }, { onConflict: 'user_id' })
+                }
+
+                if (error) setMsg('❌ ' + error.message)
+                else { setMsg('✅ Usuário atualizado!'); loadUsers() }
+                setSaving(false)
+              }}>
+                {saving ? 'Salvando...' : '💾 Salvar alterações'}
               </Button>
             </div>
           </div>

@@ -92,55 +92,6 @@ export default async function HomePage() {
 
       <div className="mx-auto max-w-6xl px-4 py-5 sm:px-6 space-y-6">
 
-        {/* Mercados em destaque */}
-        {featured.length > 0 && (
-          <section className="space-y-3">
-            <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-              <TrendingUp className="h-3.5 w-3.5 text-primary" /> Em destaque
-            </h2>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {featured.map((m: any) => <MarketCard key={m.id} market={m} featured />)}
-            </div>
-          </section>
-        )}
-
-        {/* Filtros rápidos */}
-        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none -mx-4 px-4 sm:mx-0 sm:px-0">
-          {CATEGORIES.map(cat => (
-            <Link key={cat}
-              href={cat === 'Todos' ? '/mercados' : `/mercados?categoria=${encodeURIComponent(cat)}`}
-              className="flex-shrink-0 rounded-full border border-border bg-card px-4 py-2 text-xs font-medium text-muted-foreground hover:border-primary/50 hover:text-foreground transition-colors">
-              {cat === 'Todos' ? '🔥 ' + cat : cat}
-            </Link>
-          ))}
-        </div>
-
-        {/* Grid de mercados */}
-        {trending.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-border bg-card/30 py-16 text-center space-y-3">
-            <TrendingUp className="h-10 w-10 mx-auto text-muted-foreground/30" />
-            <p className="text-sm font-medium text-foreground">Nenhum mercado aberto ainda</p>
-            <p className="text-xs text-muted-foreground">Use o Admin para criar mercados</p>
-            <Link href="/admin/mercados/ia" className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline">
-              Criar com IA agora →
-            </Link>
-          </div>
-        ) : (
-          <section className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                Tendências · {trending.length} mercados abertos
-              </h2>
-              <Link href="/mercados" className="text-xs text-primary hover:underline flex items-center gap-1">
-                Ver todos <ChevronRight className="h-3.5 w-3.5" />
-              </Link>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {trending.map((m: any) => <MarketCard key={m.id} market={m} />)}
-            </div>
-          </section>
-        )}
-
         {/* Ao Vivo + Rápidos */}
         <div className="grid gap-3 sm:grid-cols-2">
           <Link href="/ao-vivo" className="group rounded-2xl border border-red-500/20 bg-gradient-to-br from-red-500/10 to-transparent p-5 hover:border-red-500/40 transition-all">
@@ -248,3 +199,53 @@ function MarketCard({ market, featured }: { market: any; featured?: boolean }) {
     </Link>
   )
 }
+        {/* Mercados em destaque */}
+        {featured.length > 0 && (
+          <section className="space-y-3">
+            <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+              <TrendingUp className="h-3.5 w-3.5 text-primary" /> Em destaque
+            </h2>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {featured.map((m: any) => <MarketCard key={m.id} market={m} featured />)}
+            </div>
+          </section>
+        )}
+
+        {/* Filtros rápidos */}
+        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none -mx-4 px-4 sm:mx-0 sm:px-0">
+          {CATEGORIES.map(cat => (
+            <Link key={cat}
+              href={cat === 'Todos' ? '/mercados' : `/mercados?categoria=${encodeURIComponent(cat)}`}
+              className="flex-shrink-0 rounded-full border border-border bg-card px-4 py-2 text-xs font-medium text-muted-foreground hover:border-primary/50 hover:text-foreground transition-colors">
+              {cat === 'Todos' ? '🔥 ' + cat : cat}
+            </Link>
+          ))}
+        </div>
+
+        {/* Grid de mercados */}
+        {trending.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-border bg-card/30 py-16 text-center space-y-3">
+            <TrendingUp className="h-10 w-10 mx-auto text-muted-foreground/30" />
+            <p className="text-sm font-medium text-foreground">Nenhum mercado aberto ainda</p>
+            <p className="text-xs text-muted-foreground">Use o Admin para criar mercados</p>
+            <Link href="/admin/mercados/ia" className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline">
+              Criar com IA agora →
+            </Link>
+          </div>
+        ) : (
+          <section className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                Tendências · {trending.length} mercados abertos
+              </h2>
+              <Link href="/mercados" className="text-xs text-primary hover:underline flex items-center gap-1">
+                Ver todos <ChevronRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {trending.map((m: any) => <MarketCard key={m.id} market={m} />)}
+            </div>
+          </section>
+        )}
+
+

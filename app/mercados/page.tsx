@@ -260,7 +260,7 @@ export default function MercadosPage() {
             {categories.map(cat => (
               <button
                 key={cat}
-                onClick={() => { setCategory(cat); setActiveTag('') }}
+                onClick={() => { setCategory(cat); setActiveTag(''); setShowMovers(false) }}
                 className={`px-4 py-2 rounded-lg whitespace-nowrap transition-colors ${
                   category === cat 
                     ? 'bg-primary text-primary-foreground' 
@@ -288,6 +288,14 @@ export default function MercadosPage() {
           )}
         </div>
 
+        {/* Filtros ativos + contador */}
+        {(marketType !== 'todos' || category !== 'todos' || activeTag || showMovers || search) && (
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs text-muted-foreground">{filtered.length} mercados</span>
+            <button onClick={() => { setMarketType('todos'); setCategory('todos'); setActiveTag(''); setShowMovers(false); setSearch('') }}
+              className="text-xs text-primary hover:underline">Limpar filtros ✕</button>
+          </div>
+        )}
         {/* Sort & Results */}
         <div className="flex items-center justify-between mb-6">
           <p className="text-muted-foreground">

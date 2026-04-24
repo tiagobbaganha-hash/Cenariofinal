@@ -14,7 +14,7 @@ const navigation = [
   { label: 'Mercados', href: '/mercados' },
   { label: '🔥 Burn', href: '/burn' },
   { label: 'Apostas', href: '/apostas' },
-  { label: 'Leaderboard', href: '/leaderboard' },
+  { label: 'Ranking', href: '/leaderboard' },
   { label: '⚡ Atividade', href: '/atividade' },
   { label: 'Comunidade', href: '/comunidade' },
 ]
