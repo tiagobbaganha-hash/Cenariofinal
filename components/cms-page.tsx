@@ -13,12 +13,19 @@ export function CmsPage({ slug, fallback }: CmsPageProps) {
 
   useEffect(() => {
     createClient().from('cms_pages')
-      .select('title, content_md')
+      .select('title, content_md, content')
       .eq('slug', slug)
       .eq('is_published', true)
       .single()
       .then(({ data }) => {
-        setContent(data)
+        if (data) {
+          setContent({
+            title: data.title,
+            content_md: data.content_md || data.content || '# ' + data.title + '
+
+Conteúdo em breve...'
+          })
+        }
         setLoading(false)
       })
   }, [slug])

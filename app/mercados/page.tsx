@@ -58,7 +58,7 @@ export default function MercadosPage() {
   const [activeTag, setActiveTag] = useState('')
   const [showMovers, setShowMovers] = useState(false)
 
-  const categories = ['todos', 'politica', 'esportes', 'economia', 'cultura', 'entretenimento', 'tecnologia']
+  const categories = ['todos', 'politica', 'esportes', 'cripto', 'economia', 'cultura', 'entretenimento', 'tecnologia']
 
   // Binance WebSocket para preços de mercados rápidos em tempo real
   const wsRef = useRef<WebSocket | null>(null)
@@ -143,7 +143,7 @@ export default function MercadosPage() {
     }
 
     if (category !== 'todos') {
-      list = list.filter(m => m.category?.toLowerCase() === category)
+      list = list.filter(m => m.category?.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') === category.normalize('NFD').replace(/[\u0300-\u036f]/g, ''))
     }
 
     if (activeTag) {

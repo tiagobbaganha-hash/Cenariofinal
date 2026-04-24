@@ -469,6 +469,16 @@ export default function CarteiraPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold text-foreground">{tx.description}</p>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+                            tx.direction === 'credit' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
+                          }`}>
+                            {tx.direction === 'credit' ? '↑ Entrada' : '↓ Saída'}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground">
+                            {tx.entry_type?.replace(/_/g, ' ') || tx.type || '—'}
+                          </span>
+                        </div>
                         {tx.market_title && (
                           <p className="text-xs text-muted-foreground truncate mt-0.5">
                             {tx.market_slug ? (

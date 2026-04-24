@@ -331,7 +331,7 @@ export function SupportChat() {
       {/* Botão flutuante */}
       <button
         onClick={() => { setOpen(v => !v); setMinimized(false); setUnread(0) }}
-        className="fixed bottom-4 right-4 sm:right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 hover:scale-105 active:scale-95 transition-all"
+        className="fixed bottom-4 left-4 sm:left-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 hover:scale-105 active:scale-95 transition-all"
         title="Suporte"
       >
         {open && !minimized ? (

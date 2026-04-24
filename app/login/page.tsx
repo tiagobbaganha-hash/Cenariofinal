@@ -50,14 +50,18 @@ export default function LoginPage() {
         })
         if (error) throw error
         
-        // Vincular ao influencer se veio por link de indicação
+        // Creditar bônus de indicação (usuário → usuário ou influencer → usuário)
         if (refCode) {
           const { data: { user } } = await supabase.auth.getUser()
           if (user) {
-            const { data: inf } = await supabase.from('influencers').select('id').eq('referral_code', refCode).eq('is_active', true).single()
-            if (inf) {
-              await supabase.from('profiles').update({ referred_by_influencer: inf.id }).eq('id', user.id)
-            }
+            // Chamar API de referral para creditar R$10 para ambos
+            fetch('/api/referral', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ referred_id: user.id, referral_code: refCode })
+            }).catch(() => {})
+            // Registrar no perfil
+            await supabase.from('profiles').update({ referred_by: refCode }).eq('id', user.id)
           }
         }
 

@@ -153,7 +153,18 @@ export default function AdminBranding() {
           <ImageUpload value={form.login_background_url} onChange={(url) => setForm({ ...form, login_background_url: url })} bucket="market-images" folder="branding" />
         </div>
 
-        <Field label="Fonte" field="font_family" />
+        <div>
+          <label className="block text-xs text-muted-foreground mb-1.5">Fonte principal</label>
+          <select value={form.font_family} onChange={e => setForm({...form, font_family: e.target.value})}
+            className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40">
+            <option value="Inter">Inter (padrão — recomendado)</option>
+            <option value="Poppins">Poppins (moderna, geométrica)</option>
+            <option value="Nunito">Nunito (amigável, arredondada)</option>
+            <option value="Roboto">Roboto (Google, familiar)</option>
+            <option value="Sora">Sora (futurista)</option>
+          </select>
+          <p className="text-xs text-muted-foreground mt-1">Aplicada em todo o site após salvar</p>
+        </div>
       </div>
 
       {/* Colors */}

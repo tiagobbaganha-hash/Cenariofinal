@@ -195,3 +195,5 @@ export interface AdminAudit {
   metadata?: any
   created_at: string
 }
+
+export type RankingRow = LeaderboardRow
