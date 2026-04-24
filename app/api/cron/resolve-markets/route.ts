@@ -180,13 +180,47 @@ async function settleOrders(db: any, marketId: string, winOptionId: string) {
       await db.from('wallets').update({ available_balance: newAvailable, locked_balance: newLocked }).eq('user_id', o.user_id)
     }
 
+    // Calcular e reter IR sobre ganhos líquidos (Lei 14.790/2023)
+    const ISENCAO_MENSAL = 2112.00
+    const IR_ALIQUOTA = 0.15
+    let irRetido = 0
+    let payoutLiquido = payout
+
+    if (isWin) {
+      const ganhoLiquido = payout - stake // lucro líquido
+      if (ganhoLiquido > ISENCAO_MENSAL) {
+        irRetido = ganhoLiquido * IR_ALIQUOTA
+        payoutLiquido = payout - irRetido
+        // Creditar apenas o valor líquido
+        if (wallet) {
+          const newAvailable = parseFloat(wallet.available_balance) + payoutLiquido - payout // ajuste (já creditou payout acima)
+          // Reverter e recriar com valor correto
+          await db.from('wallets').update({
+            available_balance: parseFloat(wallet.available_balance) + payoutLiquido,
+            locked_balance: Math.max(0, parseFloat(wallet.locked_balance) - stake),
+          }).eq('user_id', o.user_id)
+        }
+        // Registrar IR retido
+        await db.from('platform_ledger').insert({
+          market_id: marketId,
+          entry_type: 'ir_retencao',
+          gross_volume: ganhoLiquido,
+          platform_commission_pct: IR_ALIQUOTA * 100,
+          platform_amount: irRetido,
+          net_platform_profit: irRetido,
+          metadata: { user_id: o.user_id, order_id: o.id, base_calculo: ganhoLiquido }
+        }).catch(() => {})
+      }
+    }
+
     // Ledger do usuário
     await db.from('wallet_ledger').insert({
       user_id: o.user_id,
       entry_type: isWin ? 'bet_settle_win' : 'bet_settle_loss',
       direction: isWin ? 'credit' : 'debit',
-      amount: isWin ? payout : stake,
+      amount: isWin ? payoutLiquido : stake,
       reference_id: o.id,
+      metadata: irRetido > 0 ? { ir_retido: irRetido, payout_bruto: payout, payout_liquido: payoutLiquido } : null,
     }).catch(() => {})
 
     // Notificação
