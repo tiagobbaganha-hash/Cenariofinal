@@ -11,6 +11,7 @@ export default function ResolucaoPage() {
   const [manualMarketId, setManualMarketId] = useState('')
   const [manualOptionId, setManualOptionId] = useState('')
   const [markets, setMarkets] = useState<any[]>([])
+  const [marketOptions, setMarketOptions] = useState<any[]>([])
   const [loadingMarkets, setLoadingMarkets] = useState(false)
 
   async function runCron() {
@@ -32,10 +33,10 @@ export default function ResolucaoPage() {
     setLoadingMarkets(true)
     const supabase = createClient()
     const { data } = await supabase.from('markets')
-      .select('id, title, status, closes_at, result_option_id')
-      .in('status', ['open', 'closed', 'resolved'])
+      .select('id, title, status, closes_at, result_option_id, market_options(id, label, option_key)')
+      .in('status', ['open', 'closed'])
       .order('created_at', { ascending: false })
-      .limit(20)
+      .limit(50)
     setMarkets(data || [])
     setLoadingMarkets(false)
   }
@@ -142,7 +143,7 @@ export default function ResolucaoPage() {
 
         <div className="grid gap-3 sm:grid-cols-2">
           <div>
-            <label className="block text-xs text-muted-foreground mb-1.5">ID do Mercado</label>
+            <label className="block text-xs text-muted-foreground mb-1.5">Mercado a Resolver</label>
             {markets.length > 0 ? (
               <select className={inp} value={manualMarketId} onChange={e => setManualMarketId(e.target.value)}>
                 <option value="">Selecionar...</option>
@@ -153,12 +154,35 @@ export default function ResolucaoPage() {
                 ))}
               </select>
             ) : (
-              <input className={inp} placeholder="UUID do mercado" value={manualMarketId} onChange={e => setManualMarketId(e.target.value)} />
+              <select className={inp} value={manualMarketId} onChange={e => {
+              setManualMarketId(e.target.value)
+              setManualOptionId('')
+              const m = markets.find(m => m.id === e.target.value)
+              setMarketOptions((m as any)?.market_options || [])
+            }}>
+              <option value="">— Selecione um mercado —</option>
+              {markets.map(m => (
+                <option key={m.id} value={m.id}>
+                  [{m.status}] {m.title?.slice(0, 60)}
+                </option>
+              ))}
+            </select>
             )}
           </div>
           <div>
-            <label className="block text-xs text-muted-foreground mb-1.5">ID da Opção Vencedora</label>
-            <input className={inp} placeholder="UUID da opção correta" value={manualOptionId} onChange={e => setManualOptionId(e.target.value)} />
+            <label className="block text-xs text-muted-foreground mb-1.5">Opção Vencedora</label>
+            <select className={inp} value={manualOptionId} onChange={e => setManualOptionId(e.target.value)}
+              disabled={!manualMarketId || marketOptions.length === 0}>
+              <option value="">— Selecione a opção vencedora —</option>
+              {marketOptions.map((o: any) => (
+                <option key={o.id} value={o.id}>
+                  {o.label} ({o.option_key})
+                </option>
+              ))}
+              {manualMarketId && marketOptions.length === 0 && (
+                <option disabled>Nenhuma opção encontrada</option>
+              )}
+            </select>
           </div>
         </div>
 

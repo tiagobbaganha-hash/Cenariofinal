@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Send, Smile, Loader2 } from 'lucide-react'
-import EmojiPicker from 'emoji-picker-react'
 
 interface Message { id: string; user_id: string; message: string; created_at: string }
 const AVATARS = ['🚀','🐂','🦁','🔮','🎯','⚡','🌊','🔥','💎','🦅','🎲','🌙','☀️','🏆','⚔️','🦊','🐉','🌟','💫','🎪']
@@ -42,7 +41,7 @@ export function MarketChat({ marketId }: { marketId: string }) {
   async function send(override?: string) {
     const msg = override || text.trim()
     if (!msg || !userId) return
-    setSending(true); setShowEmoji(false); setShowGif(false)
+    setSending(true); setShowEmoji(false)
     try {
       await createClient().from('market_chat').insert({ market_id: marketId, user_id: userId, message: msg })
       setText('')
@@ -81,18 +80,25 @@ export function MarketChat({ marketId }: { marketId: string }) {
       {userId ? (
         <div className="border-t border-border/50 p-3 space-y-2">
           {showEmoji && (
-            <div className="rounded-xl overflow-hidden border border-border">
-              <EmojiPicker onEmojiClick={(d: any) => { setText(t => t + d.emoji); setShowEmoji(false) }}
-                width="100%" height={280} lazyLoadEmojis skinTonesDisabled theme={"dark" as any} previewConfig={{ showPreview: false }} />
+            <div className="rounded-xl border border-border bg-card p-3">
+              <div className="grid grid-cols-8 gap-1">
+                {['😂','🔥','💯','👍','🚀','😍','🤔','😱','💎','🏆','⚡','🎯','📈','💸','🤑','🎉',
+                  '😤','🥺','😎','🤯','💪','🫡','🙌','❤️','👀','✅','❌','⚽','🏀','🎾','🎲','🌙'
+                ].map(e => (
+                  <button key={e} type="button"
+                    onClick={() => { setText(t => t + e); setShowEmoji(false) }}
+                    className="text-xl p-1 hover:bg-muted rounded-lg transition-colors">
+                    {e}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
           <div className="flex gap-2">
-            <button onClick={() => { setShowEmoji(v => !v); setShowGif(false) }}
+            <button onClick={() => { setShowEmoji(v => !v) }}
               className={`flex-shrink-0 rounded-xl p-2 border transition-colors ${showEmoji ? 'border-primary/40 bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:text-foreground'}`}>
               <Smile className="h-4 w-4" />
             </button>
-            <button onClick={() => { setShowGif(v => !v); setShowEmoji(false) }}
-
             <input value={text} onChange={e => setText(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), send())}
               placeholder="Escreva sua análise..."

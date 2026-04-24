@@ -86,6 +86,22 @@ export default function AdminUsuarios() {
     setLoading(false)
   }
 
+  async function banUser(userId: string, ban: boolean) {
+    const supabase = createClient()
+    await supabase.from('profiles').update({ status: ban ? 'banned' : 'active' }).eq('id', userId)
+    setMsg(ban ? '✅ Usuário banido' : '✅ Usuário reativado')
+    loadUsers()
+  }
+
+  async function deleteUser(userId: string, email: string) {
+    if (!confirm(`Excluir permanentemente o usuário ${email}? Esta ação não pode ser desfeita.`)) return
+    const supabase = createClient()
+    // Soft delete: marcar como deleted
+    await supabase.from('profiles').update({ status: 'deleted', email: `DELETED_${Date.now()}_${email}` }).eq('id', userId)
+    setMsg('✅ Usuário removido')
+    loadUsers()
+  }
+
   async function changeRole(userId: string, role: string) {
     setSaving(true)
     try {
@@ -251,6 +267,16 @@ export default function AdminUsuarios() {
                           </Button>
                         )}
                         {/* Role */}
+                        <Button size="sm" variant="ghost" className="text-amber-400 text-xs"
+                          onClick={() => banUser(user.id, user.status !== 'banned')}
+                          title={user.status === 'banned' ? 'Reativar' : 'Banir'}>
+                          {user.status === 'banned' ? '✅' : '🚫'}
+                        </Button>
+                        <Button size="sm" variant="ghost" className="text-red-500 text-xs"
+                          onClick={() => deleteUser(user.id, user.email || user.id)}
+                          title="Excluir usuário">
+                          🗑️
+                        </Button>
                         <Button size="sm" variant="ghost" onClick={() => {
                           setEditUser(user)
                           setEditForm({
@@ -397,14 +423,21 @@ export default function AdminUsuarios() {
                   kyc_status: editForm.kyc_status,
                 }).eq('id', editUser.id)
 
-                if (editForm.role === 'influencer' && editForm.referral_code) {
+                if (editForm.role === 'influencer') {
+                  // Gerar código automático se não tiver
+                  const refCode = editForm.referral_code || editUser.id.slice(0, 8)
                   await supabase.from('influencers').upsert({
                     user_id: editUser.id,
-                    name: editForm.full_name || editUser.email,
-                    referral_code: editForm.referral_code,
-                    commission_pct: editForm.commission_pct,
+                    name: editForm.full_name || editUser.email?.split('@')[0] || 'Influencer',
+                    referral_code: refCode,
+                    commission_pct: editForm.commission_pct || 2,
                     is_active: true,
+                    email: editUser.email,
                   }, { onConflict: 'user_id' })
+                  // Atualizar referral_code no profile também
+                  if (!editForm.referral_code) {
+                    await supabase.from('profiles').update({ referral_code: refCode }).eq('id', editUser.id)
+                  }
                 }
 
                 if (error) setMsg('❌ ' + error.message)

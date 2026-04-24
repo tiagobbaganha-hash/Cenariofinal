@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { formatCurrency, cn } from '@/lib/utils'
-import type { LeaderboardRow } from '@/lib/types'
+import type { RankingRow } from '@/lib/types'
 import { Trophy, Flame, TrendingUp, Target, Star, Crown, Loader2 } from 'lucide-react'
 
 type Period = '7d' | '30d' | 'all'
@@ -46,12 +46,6 @@ function Avatar({ url, name, seed, size = 'md' }: { url?: string|null; name?: st
   return (
     <div className={`${sizeMap[size]} rounded-full flex items-center justify-center bg-primary/15 border border-primary/30 font-bold`}>
       {emoji}
-
-      {/* Mercados Quentes */}
-      <div className="mt-10">
-        <h2 className="text-xl font-bold mb-4 flex items-center gap-2">🔥 Mercados Quentes</h2>
-        <MercadosQuentes />
-      </div>
     </div>
   )
 }
@@ -76,18 +70,12 @@ function RankBadge({ rank }: { rank: number }) {
   return (
     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-muted-foreground font-bold text-sm">
       {rank}
-
-      {/* Mercados Quentes */}
-      <div className="mt-10">
-        <h2 className="text-xl font-bold mb-4 flex items-center gap-2">🔥 Mercados Quentes</h2>
-        <MercadosQuentes />
-      </div>
     </div>
   )
 }
 
 // ─── Card do Pódio (Top 3) ───────────────────────────────────────────────────
-function PodiumCard({ row, position }: { row: LeaderboardRow; position: 1|2|3 }) {
+function PodiumCard({ row, position }: { row: RankingRow; position: 1|2|3 }) {
   const level = getLevel(row.total_bets ?? 0)
   const progress = getLevelProgress(row.total_bets ?? 0)
   const heights = { 1: 'h-32', 2: 'h-24', 3: 'h-20' }
@@ -132,18 +120,12 @@ function PodiumCard({ row, position }: { row: LeaderboardRow; position: 1|2|3 })
       }`}>
         {position}
       </div>
-
-      {/* Mercados Quentes */}
-      <div className="mt-10">
-        <h2 className="text-xl font-bold mb-4 flex items-center gap-2">🔥 Mercados Quentes</h2>
-        <MercadosQuentes />
-      </div>
     </div>
   )
 }
 
 // ─── Linha da Tabela ─────────────────────────────────────────────────────────
-function LeaderRow({ row, rank, isMe }: { row: LeaderboardRow; rank: number; isMe: boolean }) {
+function LeaderRow({ row, rank, isMe }: { row: RankingRow; rank: number; isMe: boolean }) {
   const level = getLevel(row.total_bets ?? 0)
   const progress = getLevelProgress(row.total_bets ?? 0)
   const pnlPositive = (row.pnl ?? 0) >= 0
@@ -201,12 +183,6 @@ function LeaderRow({ row, rank, isMe }: { row: LeaderboardRow; rank: number; isM
         </p>
         <p className="text-[10px] text-muted-foreground">P&L</p>
       </div>
-
-      {/* Mercados Quentes */}
-      <div className="mt-10">
-        <h2 className="text-xl font-bold mb-4 flex items-center gap-2">🔥 Mercados Quentes</h2>
-        <MercadosQuentes />
-      </div>
     </div>
   )
 }
@@ -214,7 +190,7 @@ function LeaderRow({ row, rank, isMe }: { row: LeaderboardRow; rank: number; isM
 // ─── Página Principal ────────────────────────────────────────────────────────
 export default function RankingPage() {
   const [period, setPeriod] = useState<Period>('all')
-  const [rows, setRows] = useState<LeaderboardRow[]>([])
+  const [rows, setRows] = useState<RankingRow[]>([])
   const [loading, setLoading] = useState(true)
   const [myId, setMyId] = useState<string | null>(null)
   const [myRank, setMyRank] = useState<number | null>(null)
@@ -230,36 +206,13 @@ export default function RankingPage() {
       setLoading(true)
       try {
         const supabase = createClient()
-        // Tentar views do banco, fallback para wallets direto
-        let list: LeaderboardRow[] = []
-        try {
-          const viewMap: Record<Period, string> = {
-            '7d': 'v_ranking_7d',
-            '30d': 'v_ranking_30d',
-            'all': 'v_front_ranking_v1',
-          }
-          const { data, error } = await supabase.from(viewMap[period]).select('*').limit(100)
-          if (!error && data?.length) {
-            list = data as LeaderboardRow[]
-          }
-        } catch (_) {}
-        
-        // Fallback: buscar de wallets + profiles se view falhar
-        if (!list.length) {
-          const { data: wallets } = await supabase
-            .from('wallets')
-            .select('user_id, available_balance, profiles(full_name, email)')
-            .order('available_balance', { ascending: false })
-            .limit(100)
-          list = (wallets || []).map((w: any, i) => ({
-            user_id: w.user_id,
-            display_name: w.profiles?.full_name || w.profiles?.email?.split('@')[0] || 'Trader',
-            score: parseFloat(w.available_balance || 0),
-            rank: i + 1,
-            wins: 0, losses: 0, total_bets: 0,
-            win_rate: 0, profit: parseFloat(w.available_balance || 0), xp: 0,
-          }))
+        const viewMap: Record<Period, string> = {
+          '7d': 'v_ranking_7d',
+          '30d': 'v_ranking_30d',
+          'all': 'v_front_ranking_v1',
         }
+        const { data } = await supabase.from(viewMap[period]).select('*').limit(100)
+        const list = (data ?? []) as RankingRow[]
         setRows(list)
         if (myId) {
           const idx = list.findIndex(r => r.user_id === myId)
@@ -288,7 +241,7 @@ export default function RankingPage() {
             <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/15 text-primary ring-1 ring-primary/30">
               <Trophy className="h-6 w-6" />
             </span>
-            Leaderboard
+            Ranking
           </h1>
           <p className="mt-1 text-muted-foreground text-sm">Os melhores traders do CenárioX</p>
         </div>
@@ -428,7 +381,7 @@ export default function RankingPage() {
                       ['Badge exclusivo', lvl.emoji],
                       ['Avatar especial', '🎨'],
                       i >= 2 ? ['Chat em destaque', '💬'] : ['Acesso básico', '✅'],
-                      i >= 3 ? ['Mercados VIP', '🔑'] : i >= 2 ? ['Bônus de odds', '📈'] : ['Leaderboard', '🏆'],
+                      i >= 3 ? ['Mercados VIP', '🔑'] : i >= 2 ? ['Bônus de odds', '📈'] : ['Ranking', '🏆'],
                     ].map(([label, icon]) => (
                       <div key={label} className="flex items-center gap-1.5 text-xs text-muted-foreground">
                         <span>{icon}</span>
@@ -464,8 +417,15 @@ export default function RankingPage() {
         </div>
       )}
     </main>
+
+    {/* Mercados Quentes */}
+    <div className="mx-auto max-w-4xl px-4 sm:px-6 pb-12">
+      <h2 className="text-xl font-bold mb-4 flex items-center gap-2">🔥 Mercados Quentes</h2>
+      <MercadosQuentes />
+    </div>
   )
 }
+
 
 function MercadosQuentes() {
   const [markets, setMarkets] = useState<any[]>([])
@@ -478,7 +438,7 @@ function MercadosQuentes() {
       .limit(6)
       .then(({ data }) => setMarkets(data || []))
   }, [])
-
+  if (!markets.length) return null
   return (
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
       {markets.map((m, i) => (
@@ -498,4 +458,3 @@ function MercadosQuentes() {
     </div>
   )
 }
-

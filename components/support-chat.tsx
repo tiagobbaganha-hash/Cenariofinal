@@ -191,7 +191,7 @@ export function SupportChat() {
     <>
       {/* Widget flutuante */}
       {open && !minimized && (
-        <div className="fixed bottom-20 right-4 sm:right-6 z-50 w-[calc(100vw-2rem)] max-w-sm shadow-2xl rounded-2xl overflow-hidden border border-border flex flex-col bg-card"
+        <div className="fixed bottom-20 left-4 sm:left-6 z-50 w-[calc(100vw-2rem)] max-w-sm shadow-2xl rounded-2xl overflow-hidden border border-border flex flex-col bg-card"
           style={{ height: '480px' }}>
 
           {/* Header */}

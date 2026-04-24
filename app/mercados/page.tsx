@@ -238,21 +238,28 @@ export default function MercadosPage() {
               </button>
             ))}
           </div>
-          {/* Linha 4: tags por tópico (condicional) */}
-          {category !== 'todos' && !showMovers && CATEGORY_TAGS[category] && (
-            <div className="flex gap-2 overflow-x-auto pb-1">
-              <button onClick={() => setActiveTag('')}
-                className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors border flex-shrink-0 ${!activeTag ? 'bg-primary/20 border-primary/40 text-primary' : 'border-border text-muted-foreground hover:border-primary/40'}`}>
-                Todos
-              </button>
-              {CATEGORY_TAGS[category].map(tag => (
-                <button key={tag} onClick={() => setActiveTag(tag === activeTag ? '' : tag)}
-                  className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors border flex-shrink-0 ${activeTag === tag ? 'bg-primary/20 border-primary/40 text-primary' : 'border-border text-muted-foreground hover:border-primary/40'}`}>
-                  {tag}
+          {/* Linha 4: tags por tópico (só mostra tags com mercados reais) */}
+          {category !== 'todos' && !showMovers && CATEGORY_TAGS[category] && (() => {
+            const catMarkets = markets.filter(m => m.category?.toLowerCase() === category)
+            const availableTags = CATEGORY_TAGS[category].filter(tag =>
+              catMarkets.some(m => m.title?.toLowerCase().includes(tag.toLowerCase()))
+            )
+            if (!availableTags.length) return null
+            return (
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                <button onClick={() => setActiveTag('')}
+                  className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors border flex-shrink-0 ${!activeTag ? 'bg-primary/20 border-primary/40 text-primary' : 'border-border text-muted-foreground hover:border-primary/40'}`}>
+                  Todos
                 </button>
-              ))}
-            </div>
-          )}
+                {availableTags.map(tag => (
+                  <button key={tag} onClick={() => setActiveTag(tag === activeTag ? '' : tag)}
+                    className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors border flex-shrink-0 ${activeTag === tag ? 'bg-primary/20 border-primary/40 text-primary' : 'border-border text-muted-foreground hover:border-primary/40'}`}>
+                    {tag}
+                  </button>
+                ))}
+              </div>
+            )
+          })()}
         </div>
 
         {/* Filtros ativos + contador */}

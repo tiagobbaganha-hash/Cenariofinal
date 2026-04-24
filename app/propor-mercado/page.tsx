@@ -102,18 +102,23 @@ export default function ProporMercado() {
   }
 
   if (step === 'success') {
+    // Auto-redirecionar após 4 segundos
+    if (typeof window !== 'undefined') {
+      setTimeout(() => { window.location.href = '/mercados' }, 4000)
+    }
     return (
       <main className="mx-auto max-w-lg px-4 py-16 text-center space-y-5">
-        <div className="flex h-20 w-20 mx-auto items-center justify-center rounded-full bg-green-500/20">
+        <div className="flex h-20 w-20 mx-auto items-center justify-center rounded-full bg-green-500/20 animate-pulse">
           <CheckCircle className="h-10 w-10 text-green-400" />
         </div>
-        <h1 className="text-2xl font-bold text-foreground">Proposta enviada!</h1>
-        <p className="text-muted-foreground">Nossa equipe vai analisar sua sugestão. Se aprovada, o mercado será criado e você poderá ganhar comissão das apostas.</p>
+        <h1 className="text-2xl font-bold">Proposta enviada! ✅</h1>
+        <p className="text-muted-foreground">Nossa equipe vai analisar sua sugestão em até 48h. Se aprovada, o mercado será criado e você poderá acompanhar em <strong>Mercados</strong>.</p>
+        <p className="text-xs text-muted-foreground">Redirecionando para mercados em 4 segundos...</p>
         <div className="flex gap-3 justify-center">
           <Link href="/mercados">
-            <Button variant="outline">Ver mercados</Button>
+            <Button className="gap-2">Ver Mercados →</Button>
           </Link>
-          <Button onClick={() => { setStep('form'); setForm({ title: '', description: '', category: 'Política', fonte_resolucao: '' }) }}>
+          <Button variant="outline" onClick={() => { setStep('form'); setForm({ title: '', description: '', category: 'Política', fonte_resolucao: '' }) }}>
             Nova proposta
           </Button>
         </div>
