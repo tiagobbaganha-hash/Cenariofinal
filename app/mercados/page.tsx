@@ -219,68 +219,69 @@ export default function MercadosPage() {
         </div>
 
         {/* Search & Filters */}
-        <div className="flex flex-col lg:flex-row gap-4 mb-8">
-          <div className="relative flex-1">
+        <div className="flex flex-col gap-3 mb-8">
+          {/* Linha 1: busca */}
+          <div className="relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <input
               type="text"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => { setSearch(e.target.value); if (e.target.value) { setShowMovers(false); setMarketType('todos'); setCategory('todos'); setActiveTag('') } }}
               placeholder="Buscar mercados..."
               className="w-full h-12 pl-12 pr-4 rounded-xl bg-card border border-border focus:border-primary outline-none"
             />
           </div>
-          {/* Filtro por tipo de mercado */}
-          <div className="flex gap-2 overflow-x-auto pb-1">
+          {/* Linha 2: tipo + Em Movimento */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1">
             {[
               { id: 'todos', label: '🌐 Todos' },
               { id: 'normais', label: '📊 Normais' },
               { id: 'rapidos', label: '⚡ Rápidos' },
               { id: 'ao-vivo', label: '🔴 Ao Vivo' },
             ].map(t => (
-              <button key={t.id} onClick={() => setMarketType(t.id)}
-                className={`px-4 py-1.5 rounded-full text-sm whitespace-nowrap transition-colors border ${
-                  marketType === t.id
+              <button key={t.id} onClick={() => { setMarketType(t.id); setShowMovers(false); setActiveTag('') }}
+                className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors border flex-shrink-0 ${
+                  marketType === t.id && !showMovers
                     ? 'bg-primary text-primary-foreground border-primary'
-                    : 'bg-card border-border hover:border-primary/50'
+                    : 'bg-card border-border hover:border-primary/50 text-muted-foreground'
                 }`}>
                 {t.label}
               </button>
             ))}
-          </div>
-          {/* Movers */}
-          <div className="flex items-center gap-2">
+            <div className="w-px h-5 bg-border flex-shrink-0" />
             <button onClick={() => setShowMovers(v => !v)}
-              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium border transition-colors ${showMovers ? 'bg-orange-500/20 border-orange-500/40 text-orange-400' : 'border-border text-muted-foreground hover:border-orange-500/40 hover:text-orange-400'}`}>
+              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium border transition-colors flex-shrink-0 ${
+                showMovers ? 'bg-orange-500/20 border-orange-500/40 text-orange-400' : 'border-border text-muted-foreground hover:border-orange-500/40 hover:text-orange-400'
+              }`}>
               🔥 Em Movimento
             </button>
           </div>
-          {/* Filtro por categoria */}
-          <div className="flex gap-2 overflow-x-auto pb-2 lg:pb-0">
+          {/* Linha 3: categorias */}
+          <div className="flex gap-2 overflow-x-auto pb-1">
             {categories.map(cat => (
               <button
                 key={cat}
                 onClick={() => { setCategory(cat); setActiveTag(''); setShowMovers(false) }}
-                className={`px-4 py-2 rounded-lg whitespace-nowrap transition-colors ${
-                  category === cat 
-                    ? 'bg-primary text-primary-foreground' 
-                    : 'bg-card border border-border hover:border-primary/50'
+                className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors border flex-shrink-0 ${
+                  category === cat && !showMovers
+                    ? 'bg-primary text-primary-foreground border-primary'
+                    : 'bg-card border-border hover:border-primary/50 text-muted-foreground'
                 }`}
               >
-                {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                {cat === 'todos' ? '🌍 Todos' : cat.charAt(0).toUpperCase() + cat.slice(1)}
               </button>
             ))}
           </div>
-          {/* Tags por tópico — aparecem quando categoria selecionada */}
-          {category !== 'todos' && CATEGORY_TAGS[category] && (
+          {/* Linha 4: tags por tópico (condicional) */}
+          {category !== 'todos' && !showMovers && CATEGORY_TAGS[category] && (
             <div className="flex gap-2 overflow-x-auto pb-1">
               <button onClick={() => setActiveTag('')}
-                className={`px-3 py-1 rounded-full text-xs whitespace-nowrap transition-colors border ${!activeTag ? 'bg-primary/20 border-primary/40 text-primary' : 'border-border text-muted-foreground hover:border-primary/40'}`}>
+                className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors border flex-shrink-0 ${!activeTag ? 'bg-primary/20 border-primary/40 text-primary' : 'border-border text-muted-foreground hover:border-primary/40'}`}>
                 Todos
               </button>
               {CATEGORY_TAGS[category].map(tag => (
                 <button key={tag} onClick={() => setActiveTag(tag === activeTag ? '' : tag)}
-                  className={`px-3 py-1 rounded-full text-xs whitespace-nowrap transition-colors border ${activeTag === tag ? 'bg-primary/20 border-primary/40 text-primary' : 'border-border text-muted-foreground hover:border-primary/40'}`}>
+                  className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors border flex-shrink-0 ${activeTag === tag ? 'bg-primary/20 border-primary/40 text-primary' : 'border-border text-muted-foreground hover:border-primary/40'}`}>
                   {tag}
                 </button>
               ))}
