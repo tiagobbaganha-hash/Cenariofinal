@@ -201,19 +201,43 @@ export default function PropostasPage() {
 
               {/* Ações */}
               {p.status === 'pending' && (
-                <div className="flex gap-2 flex-wrap">
-                  <button onClick={() => updateStatus(p.id, 'approved')}
-                    className="flex items-center gap-1.5 rounded-lg bg-green-500/10 border border-green-500/30 text-green-400 px-3 py-1.5 text-xs font-medium hover:bg-green-500/20 transition-colors">
-                    <CheckCircle className="h-3.5 w-3.5" /> Aprovar
-                  </button>
-                  <button onClick={() => updateStatus(p.id, 'rejected')}
-                    className="flex items-center gap-1.5 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 px-3 py-1.5 text-xs font-medium hover:bg-red-500/20 transition-colors">
-                    <XCircle className="h-3.5 w-3.5" /> Rejeitar
-                  </button>
-                  <Link href={`/admin/mercados/novo?from_proposal=${p.id}&title=${encodeURIComponent(p.title)}&category=${encodeURIComponent(p.category)}&description=${encodeURIComponent(p.description || '')}`}
-                    className="flex items-center gap-1.5 rounded-lg bg-primary/10 border border-primary/30 text-primary px-3 py-1.5 text-xs font-medium hover:bg-primary/20 transition-colors">
-                    <ExternalLink className="h-3.5 w-3.5" /> Converter em Mercado
-                  </Link>
+                <div className="border-t border-border/50 pt-3 space-y-2">
+                  <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wide">O que fazer com esta sugestão?</p>
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                    {/* Opção 1: Converter direto em mercado (RECOMENDADO) */}
+                    <Link href={`/admin/mercados/novo?from_proposal=${p.id}&title=${encodeURIComponent(p.title)}&category=${encodeURIComponent(p.category)}&description=${encodeURIComponent(p.description || '')}`}
+                      className="flex flex-col gap-1 rounded-xl bg-primary/10 border border-primary/30 text-primary px-4 py-3 hover:bg-primary/20 transition-colors group">
+                      <div className="flex items-center gap-1.5 font-semibold text-sm">
+                        <ExternalLink className="h-4 w-4" />
+                        Criar o Mercado
+                      </div>
+                      <p className="text-[10px] text-primary/70 leading-tight">
+                        Abre a tela de criação já preenchida com o título e categoria desta sugestão. Você revisa e publica.
+                      </p>
+                    </Link>
+                    {/* Opção 2: Só aprovar (sem criar mercado agora) */}
+                    <button onClick={() => updateStatus(p.id, 'approved')}
+                      className="flex flex-col gap-1 rounded-xl bg-green-500/10 border border-green-500/30 text-green-400 px-4 py-3 hover:bg-green-500/20 transition-colors text-left">
+                      <div className="flex items-center gap-1.5 font-semibold text-sm">
+                        <CheckCircle className="h-4 w-4" />
+                        Aprovar
+                      </div>
+                      <p className="text-[10px] text-green-400/70 leading-tight">
+                        Marca como aprovada e notifica o usuário. Crie o mercado depois quando quiser.
+                      </p>
+                    </button>
+                    {/* Opção 3: Rejeitar */}
+                    <button onClick={() => updateStatus(p.id, 'rejected')}
+                      className="flex flex-col gap-1 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 hover:bg-red-500/20 transition-colors text-left">
+                      <div className="flex items-center gap-1.5 font-semibold text-sm">
+                        <XCircle className="h-4 w-4" />
+                        Rejeitar
+                      </div>
+                      <p className="text-[10px] text-red-400/70 leading-tight">
+                        Recusa a sugestão e notifica o usuário que ela não foi aprovada.
+                      </p>
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
