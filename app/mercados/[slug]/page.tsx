@@ -79,10 +79,18 @@ export default async function MarketDetailPage({
 
   // Load market stats + options direto do banco
   const supabase = createClient()
+  // Buscar influencer_id direto da tabela markets (a view pode não ter esse campo)
+  const { data: marketRaw } = await supabase
+    .from('markets')
+    .select('influencer_id')
+    .eq('id', market.id)
+    .single()
+  const influencerId = (marketRaw as any)?.influencer_id || market.influencer_id
+
   const [{ data: statsData }, { data: influencerData }, { data: liveOptions }] = await Promise.all([
     supabase.from('orders').select('stake_amount').eq('market_id', market.id),
-    market.influencer_id
-      ? supabase.from('influencers').select('id, name, photo_url, referral_code, bio').eq('id', market.influencer_id).single()
+    influencerId
+      ? supabase.from('influencers').select('id, name, photo_url, referral_code, bio, user_id').eq('id', influencerId).single()
       : Promise.resolve({ data: null }),
     supabase.from('market_options')
       .select('id, label, odds, probability, option_key, sort_order, is_active')
@@ -92,10 +100,21 @@ export default async function MarketDetailPage({
   ])
   
   // Injetar dados do influencer no market
+  // Buscar avatar do perfil do influencer como fallback
+  let influencerPhotoUrl = (influencerData as any)?.photo_url || null
+  if (!influencerPhotoUrl && (influencerData as any)?.user_id) {
+    const { data: infProfile } = await supabase
+      .from('profiles')
+      .select('avatar_url')
+      .eq('id', (influencerData as any).user_id)
+      .single()
+    influencerPhotoUrl = (infProfile as any)?.avatar_url || null
+  }
+
   const marketWithInfluencer = {
     ...market,
     influencer_name: (influencerData as any)?.name || null,
-    influencer_photo: (influencerData as any)?.photo_url || null,
+    influencer_photo: influencerPhotoUrl,
     influencer_bio: (influencerData as any)?.bio || null,
   }
 
