@@ -105,13 +105,34 @@ export default function AdminCms() {
   async function seedDefaultPages() {
     const supabase = createClient()
     const defaults = [
-      { slug: 'termos', title: 'Termos de Uso', content_md: '# Termos de Uso\n\nBem-vindo ao CenárioX. Ao usar nossa plataforma, você concorda com estes termos.\n\n## 1. Aceitação\n\nAo acessar ou usar o CenárioX, você concorda em cumprir estes Termos de Uso.\n\n## 2. Plataforma\n\nO CenárioX é uma plataforma de mercados preditivos. As apostas são simulações e não envolvem dinheiro real até a regulamentação aplicável.\n\n## 3. Conta\n\nVocê é responsável por manter a confidencialidade de sua senha e por todas as atividades que ocorram em sua conta.' },
-      { slug: 'privacidade', title: 'Política de Privacidade', content_md: '# Política de Privacidade\n\n## Coleta de Dados\n\nColetamos informações necessárias para operar a plataforma: nome, e-mail, CPF (para KYC) e dados de uso.\n\n## Uso dos Dados\n\nSeus dados são usados para autenticação, personalização e cumprimento de obrigações legais.\n\n## Compartilhamento\n\nNão vendemos seus dados a terceiros. Compartilhamos apenas quando exigido por lei.' },
-      { slug: 'sobre', title: 'Sobre o CenárioX', content_md: '# Sobre o CenárioX\n\nO CenárioX é a principal plataforma brasileira de mercados preditivos.\n\n## Nossa Missão\n\nDemocratizar o acesso a mercados de previsão no Brasil, permitindo que qualquer pessoa aposte em eventos reais com transparência e segurança.\n\n## Como Funciona\n\nCrie uma conta, adicione saldo, escolha um mercado e faça sua previsão. Se acertar, você ganha!' },
-      { slug: 'como-funciona', title: 'Como Funciona', content_md: '# Como Funciona\n\n## 1. Crie sua Conta\n\nCadastre-se gratuitamente e complete seu perfil.\n\n## 2. Adicione Saldo\n\nDeposite via PIX de forma rápida e segura.\n\n## 3. Escolha um Mercado\n\nNavegue pelos mercados disponíveis em política, esportes, economia e mais.\n\n## 4. Faça sua Previsão\n\nEscolha Sim ou Não e defina o valor da sua aposta.\n\n## 5. Acompanhe\n\nSiga o mercado em tempo real e receba seus ganhos automaticamente.' },
-      { slug: 'regras', title: 'Regras da Plataforma', content_md: '# Regras da Plataforma\n\n## Conduta\n\n- Use o chat com respeito\n- Não manipule mercados\n- Uma conta por usuário\n\n## Apostas\n\n- Valor mínimo: R$ 1,00\n- Apostas são definitivas após confirmação\n- Resultados baseados em fontes confiáveis\n\n## Saques\n\n- Processados em até 24h úteis\n- Requerem KYC aprovado' },
-      { slug: 'riscos', title: 'Política de Riscos', content_md: '# Política de Riscos\n\n## Riscos da Plataforma\n\nO CenárioX envolve previsões de eventos futuros. Resultados passados não garantem resultados futuros.\n\n## Gestão de Risco\n\nAposte apenas o que pode perder. Defina limites pessoais de apostas.\n\n## Suporte\n\nSe sentir que está perdendo o controle, entre em contato com nosso suporte.' },
-      { slug: 'o-que-e', title: 'O que é o CenárioX?', content_md: '# O que é o CenárioX?\n\nO CenárioX é uma plataforma de **mercados preditivos** — um lugar onde você pode apostar em eventos reais usando análise e conhecimento.\n\n## Diferente das Apostas Tradicionais\n\nNos mercados preditivos, você negocia probabilidades. Quanto mais cedo acertar, mais você ganha.\n\n## Transparente e Seguro\n\nTodos os mercados têm fontes de resolução claras e auditáveis.' },
+      {
+        slug: 'termos', title: 'Termos de Uso', sort_order: 1,
+        content_md: `# Termos de Uso\n\nBem-vindo ao **CenárioX** — a plataforma brasileira de mercados preditivos. Ao acessar ou usar nossos serviços, você concorda com estes Termos de Uso.\n\n## 1. Aceitação dos Termos\n\nAo criar uma conta ou usar qualquer funcionalidade do CenárioX, você declara ter lido, compreendido e aceitado integralmente estes Termos.\n\n## 2. Elegibilidade\n\nPara usar o CenárioX você deve ter pelo menos 18 anos de idade e estar apto legalmente a celebrar contratos na sua jurisdição.\n\n## 3. Cadastro e Conta\n\nVocê é responsável por manter a confidencialidade das suas credenciais de acesso. Notifique imediatamente qualquer uso não autorizado da sua conta.\n\n## 4. Mercados Preditivos\n\nOs mercados preditivos são instrumentos de previsão coletiva baseados em eventos reais. O CenárioX resolve os mercados com base em fontes confiáveis e previamente informadas.\n\n## 5. Depósitos e Saques\n\nDepósitos são realizados via PIX. Saques estão sujeitos à verificação KYC aprovada e ao prazo de processamento de até 24 horas úteis.\n\n## 6. Conduta Proibida\n\nÉ proibido: manipular mercados, criar múltiplas contas, usar bots ou automações não autorizadas, publicar conteúdo ofensivo no chat.\n\n## 7. Limitação de Responsabilidade\n\nO CenárioX não garante lucros. Mercados preditivos envolvem risco. Use apenas recursos que pode perder.`
+      },
+      {
+        slug: 'privacidade', title: 'Política de Privacidade', sort_order: 2,
+        content_md: `# Política de Privacidade\n\nO **CenárioX** está comprometido com a proteção dos seus dados pessoais, em conformidade com a LGPD (Lei 13.709/2018).\n\n## Dados que Coletamos\n\nColetamos: nome completo, CPF, data de nascimento (para KYC), e-mail, telefone, chave PIX, histórico de transações, dados de uso e dados técnicos.\n\n## Como Usamos seus Dados\n\nSeus dados são utilizados para: autenticação e segurança, processamento de pagamentos, verificação KYC, personalização da experiência e cumprimento de obrigações legais.\n\n## Compartilhamento de Dados\n\nNão vendemos seus dados pessoais. Compartilhamos apenas com processadores de pagamento e quando exigido por lei.\n\n## Segurança\n\nSeus dados são protegidos por criptografia TLS em trânsito e em repouso, com controles de acesso rigorosos.\n\n## Seus Direitos (LGPD)\n\nVocê tem direito a: acessar, corrigir, solicitar exclusão e portabilidade dos seus dados. Entre em contato com o suporte.`
+      },
+      {
+        slug: 'regras', title: 'Regras da Plataforma', sort_order: 3,
+        content_md: `# Regras da Plataforma\n\n## Regras Gerais\n\n- **Uma conta por usuário:** É proibido criar múltiplas contas\n- **Identidade real:** Use seu nome e CPF verdadeiros\n- **Sem automação:** Proibido usar bots ou scripts para apostas\n- **Respeito:** Trate todos os usuários com respeito\n\n## Regras de Apostas\n\n- Valor mínimo por aposta: **R$ 1,00**\n- Apostas são definitivas após confirmação\n- Proibido manipular mercados em coordenação com outros usuários\n\n## Regras do Chat\n\n- Proibido spam e conteúdo ofensivo\n- Proibido links maliciosos\n- Proibido solicitar dados pessoais de outros usuários\n\n## Saques\n\n- KYC aprovado é obrigatório\n- O nome na chave PIX deve corresponder ao CPF cadastrado`
+      },
+      {
+        slug: 'riscos', title: 'Política de Riscos', sort_order: 4,
+        content_md: `# Política de Riscos\n\n## Aviso Importante\n\nMercados preditivos envolvem **risco real de perda financeira**. Aposte apenas recursos que você pode perder.\n\n## Jogo Responsável\n\n- Defina um orçamento mensal e respeite-o\n- Nunca aposte dinheiro que precisa para necessidades básicas\n- Não aposte em estado emocional alterado\n- Não persiga prejuízos\n\n## Sinais de Alerta\n\nBusque ajuda se: apostar mais do que planejado, esconder apostas de familiares, apostar para aliviar estresse.\n\n## Recursos de Apoio\n\nJogo Apoio Brasil: www.jogoresponsavel.com.br | CVV: 188`
+      },
+      {
+        slug: 'sobre', title: 'Sobre o CenárioX', sort_order: 5,
+        content_md: `# Sobre o CenárioX\n\n## Nossa Missão\n\nDemocratizar o acesso a mercados de previsão no Brasil, criando um espaço transparente onde o conhecimento coletivo gera oportunidades para todos.\n\n## O que Fazemos\n\nSomos a principal plataforma brasileira de **mercados preditivos**. Qualquer pessoa pode apostar em resultados de eventos reais, competindo com base em conhecimento e análise.\n\n## Diferenciais\n\n**Mercados brasileiros:** Focamos em política, Brasileirão, Fórmula 1, BBB, economia nacional e muito mais.\n\n**Resolução transparente:** Cada mercado especifica claramente a fonte de resolução antes de abrir para apostas.\n\n**Tecnologia:** Preços em tempo real via WebSocket, IA para análise de mercados e segurança bancária para transações.`
+      },
+      {
+        slug: 'como-funciona', title: 'Como Funciona', sort_order: 6,
+        content_md: `# Como Funciona\n\n## Passo 1: Crie sua Conta\n\nClique em "Começar grátis". Use e-mail ou login com Google. Leva menos de 2 minutos.\n\n## Passo 2: Adicione Saldo\n\nAcesse **Carteira → Depositar**. Gere o código PIX e pague pelo app do banco. Saldo creditado em menos de 1 minuto.\n\n## Passo 3: Escolha um Mercado\n\nNavegue por Política, Esportes, Economia e Entretenimento. Cada mercado tem uma pergunta clara com data de encerramento.\n\n## Passo 4: Aposte\n\nEscolha sua opção, informe o valor e confirme. As odds mostram quanto você recebe se ganhar.\n\n## Passo 5: Receba seus Ganhos\n\nQuando o mercado é resolvido, ganhos são creditados automaticamente. Saque via PIX quando quiser.\n\n## Tipos de Mercado\n\n**📊 Normais:** Resolução manual com data definida | **⚡ Rápidos:** 2 a 30 min, criptomoedas, automático | **🔴 Ao Vivo:** Eventos em andamento, resolução manual`
+      },
+      {
+        slug: 'o-que-e', title: 'O que é o CenárioX?', sort_order: 7,
+        content_md: `# O que é o CenárioX?\n\n## Mercados Preditivos — Uma Nova Forma de Usar seu Conhecimento\n\nO **CenárioX** é uma plataforma onde você aposta em resultados de eventos reais usando conhecimento, análise e intuição.\n\n## Diferente das Apostas Tradicionais\n\nNas apostas tradicionais, você aposta contra a casa. No CenárioX, você aposta contra outros usuários. As probabilidades são definidas coletivamente.\n\n## Exemplos de Mercados\n\n- "Lula termina o mandato em 2026?" → SIM ou NÃO\n- "Brasil vai para a Copa de 2026?" → SIM ou NÃO\n- "BTC supera R$ 600.000 até dezembro?" → SIM ou NÃO\n- "Quem vence o BBB 25?" → Múltiplas opções\n\n## Por que Usar?\n\n**Para se divertir:** Transforme seu conhecimento em ganhos reais.\n**Para aprender:** Acompanhe como probabilidades evoluem.\n**Para ganhar:** Usuários com boas análises superam consistentemente a média.`
+      },
     ]
     
     for (const page of defaults) {
@@ -120,12 +141,11 @@ export default function AdminCms() {
         content: page.content_md,
         is_published: true,
         published: true,
-        sort_order: 0,
         show_in_footer: true,
       }, { onConflict: 'slug' })
     }
     
-    toast({ type: 'success', title: '✅ Páginas padrão criadas!', description: 'Todas as páginas foram criadas e publicadas.' })
+    toast({ type: 'success', title: '✅ Páginas carregadas!', description: 'Todo o conteúdo foi carregado no editor. Agora edite à vontade.' })
     loadPages()
   }
 
