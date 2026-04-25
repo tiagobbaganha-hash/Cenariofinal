@@ -46,7 +46,7 @@ export function MarketComments({ marketId }: { marketId: string }) {
     
     const { data } = await supabase
       .from('market_comments')
-      .select('id, content, author_name, author_id, user_id, created_at')
+      .select('id, content, author_name, author_id, user_id, created_at, profiles:user_id(avatar_url)')
       .eq('market_id', marketId)
       .order('created_at', { ascending: false })
       .limit(50)
@@ -71,7 +71,12 @@ export function MarketComments({ marketId }: { marketId: string }) {
         userLiked = !!myLike
       }
       
-      return { ...c, likes_count: count || 0, user_liked: userLiked }
+      return { 
+        ...c, 
+        author_avatar: (c as any).profiles?.avatar_url || null,
+        likes_count: count || 0, 
+        user_liked: userLiked 
+      }
     }))
     
     setComments(commentsWithLikes)
@@ -179,8 +184,11 @@ export function MarketComments({ marketId }: { marketId: string }) {
         <div className="space-y-3">
           {comments.map(c => (
             <div key={c.id} className="flex gap-3 group">
-              <div className="flex-shrink-0 h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center text-sm font-bold text-primary">
-                {c.author_name?.charAt(0)?.toUpperCase() || '?'}
+              <div className="flex-shrink-0 h-8 w-8 rounded-full overflow-hidden bg-primary/20 flex items-center justify-center text-sm font-bold text-primary">
+                {(c as any).author_avatar
+                  ? <img src={(c as any).author_avatar} alt="" className="h-full w-full object-cover" />
+                  : c.author_name?.charAt(0)?.toUpperCase() || '?'
+                }
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">

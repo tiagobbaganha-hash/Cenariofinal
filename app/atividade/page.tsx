@@ -84,7 +84,7 @@ export default function AtividadePage() {
         id, stake_amount, status, created_at, settlement_amount,
         market_options(label),
         markets(title, slug),
-        profiles(full_name, email)
+        profiles(full_name, email, avatar_url)
       `)
       .in('status', ['open', 'settled_win', 'settled_loss'])
       .order('created_at', { ascending: false })
@@ -94,7 +94,7 @@ export default function AtividadePage() {
     // Buscar mercados recentes
     const { data: markets } = await supabase
       .from('markets')
-      .select('id, title, slug, created_at, created_by, profiles(full_name, email)')
+      .select('id, title, slug, created_at, created_by, profiles(full_name, email, avatar_url)')
       .eq('status', 'open')
       .order('created_at', { ascending: false })
       .limit(10)
@@ -133,7 +133,7 @@ export default function AtividadePage() {
         id: o.id,
         type: o.status === 'settled_win' ? 'win' : 'bet',
         user_name: name,
-        user_avatar: AVATARS[seed],
+        user_avatar: profile?.avatar_url || AVATARS[seed],
         market_title: market.title,
         market_slug: market.slug,
         amount: o.status === 'settled_win' ? o.settlement_amount : o.stake_amount,

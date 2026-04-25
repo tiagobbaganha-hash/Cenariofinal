@@ -80,7 +80,7 @@ export default function ProporMercado() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push('/login'); return }
 
-      await supabase.from('market_proposals').insert({
+      const { error: insertError } = await supabase.from('market_proposals').insert({
         user_id: user.id,
         title: form.title,
         description: form.description,
@@ -88,14 +88,15 @@ export default function ProporMercado() {
         fonte_resolucao: form.fonte_resolucao,
         status: 'pending',
       })
+      
+      if (insertError) {
+        setError('Erro ao enviar sugestão: ' + insertError.message)
+        return
+      }
+      
       setStep('success')
     } catch (e: any) {
-      // Tabela pode não existir ainda
-      if (e.message?.includes('market_proposals')) {
-        setStep('success') // Mostrar sucesso mesmo assim
-      } else {
-        setError(e.message)
-      }
+      setError(e.message || 'Erro inesperado')
     } finally {
       setLoading(false)
     }

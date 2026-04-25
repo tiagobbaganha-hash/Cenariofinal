@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Send, Smile, Loader2 } from 'lucide-react'
 
-interface Message { id: string; user_id: string; message: string; created_at: string }
+interface Message { id: string; user_id: string; message: string; created_at: string; profiles?: { avatar_url?: string } }
 const AVATARS = ['🚀','🐂','🦁','🔮','🎯','⚡','🌊','🔥','💎','🦅','🎲','🌙','☀️','🏆','⚔️','🦊','🐉','🌟','💫','🎪']
 
 function timeAgo(iso: string) {
@@ -26,7 +26,7 @@ export function MarketChat({ marketId }: { marketId: string }) {
   useEffect(() => {
     const supabase = createClient()
     supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id || null))
-    supabase.from('market_chat').select('id,user_id,message,created_at')
+    supabase.from('market_chat').select('id,user_id,message,created_at,profiles:user_id(avatar_url)')
       .eq('market_id', marketId).order('created_at', { ascending: true }).limit(50)
       .then(({ data }) => { setMessages(data || []); setLoading(false) })
     const ch = supabase.channel(`chat:${marketId}`)
@@ -61,12 +61,18 @@ export function MarketChat({ marketId }: { marketId: string }) {
         : messages.length === 0 ? <div className="flex flex-col items-center justify-center h-full gap-2"><span className="text-3xl">💬</span><p className="text-xs text-muted-foreground">Seja o primeiro!</p></div>
         : messages.map(m => {
           const isMe = m.user_id === userId
+          const avatarUrl = (m as any).profiles?.avatar_url
           const av = AVATARS[(m.user_id?.charCodeAt(0) || 0) % AVATARS.length]
           const isGif = m.message.startsWith('__GIF__:')
           const gifUrl = isGif ? m.message.replace('__GIF__:', '') : null
           return (
             <div key={m.id} className={`flex items-end gap-2 ${isMe ? 'flex-row-reverse' : ''}`}>
-              <div className="text-base flex-shrink-0">{av}</div>
+              <div className="h-7 w-7 rounded-full overflow-hidden flex-shrink-0 bg-muted flex items-center justify-center text-sm">
+                {avatarUrl
+                  ? <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
+                  : av
+                }
+              </div>
               <div className={`max-w-[75%] rounded-2xl px-3 py-2 ${isMe ? 'bg-primary/20 border border-primary/30' : 'bg-muted border border-border'}`}>
                 {gifUrl ? <img src={gifUrl} alt="GIF" className="rounded-xl max-w-[160px]" />
                   : <p className="text-sm break-words">{m.message}</p>}

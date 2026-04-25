@@ -50,6 +50,9 @@ export function SiteHeader() {
           .eq('user_id', data.user.id)
           .single()
         setBalance(wallet?.available_balance ?? null)
+        // Buscar avatar do usuário
+        const { data: profileData } = await supabase.from('profiles').select('avatar_url').eq('id', data.user.id).single()
+        if (profileData?.avatar_url) setUserAvatar(profileData.avatar_url)
 
         // Count unread notifications
         const { count } = await supabase
