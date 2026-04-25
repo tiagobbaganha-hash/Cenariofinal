@@ -183,7 +183,7 @@ export default function MercadosPage() {
     }
 
     return list
-  }, [markets, category, search, sortBy])
+  }, [markets, marketType, category, activeTag, showMovers, search, sortBy])
 
   return (
     <div className="min-h-screen bg-background pb-24">

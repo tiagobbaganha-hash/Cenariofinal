@@ -52,10 +52,27 @@ export function BrandingProvider() {
           root.style.setProperty('--card-foreground', hexToHsl(data.color_text))
         }
 
-        // Fonte
-        if (data.font_family) {
-          root.style.setProperty('--font-sans', `'${data.font_family}', Inter, sans-serif`)
-          document.body.style.fontFamily = `'${data.font_family}', Inter, sans-serif`
+        // Fonte — carregar do Google Fonts e aplicar
+        if (data.font_family && data.font_family !== 'Inter') {
+          // Carregar fonte do Google Fonts se não for Inter (que já está carregada)
+          const fontName = data.font_family.replace(' ', '+')
+          const existingLink = document.querySelector(`link[data-font="${data.font_family}"]`)
+          if (!existingLink) {
+            const link = document.createElement('link')
+            link.rel = 'stylesheet'
+            link.setAttribute('data-font', data.font_family)
+            link.href = `https://fonts.googleapis.com/css2?family=${fontName}:wght@400;500;600;700;800&display=swap`
+            document.head.appendChild(link)
+          }
+          // Aguardar um tick para a fonte carregar
+          setTimeout(() => {
+            root.style.setProperty('--font-sans', `'${data.font_family}', Inter, sans-serif`)
+            document.body.style.fontFamily = `'${data.font_family}', Inter, sans-serif`
+            // Aplicar em todos os elementos de texto
+            document.querySelectorAll('p, h1, h2, h3, h4, h5, h6, span, button, a, input, textarea, label').forEach((el: any) => {
+              if (!el.style.fontFamily) el.style.fontFamily = `'${data.font_family}', Inter, sans-serif`
+            })
+          }, 500)
         }
 
         // Título da aba

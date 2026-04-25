@@ -108,16 +108,22 @@ export default function ProporMercado() {
     }
     return (
       <main className="mx-auto max-w-lg px-4 py-16 text-center space-y-5">
-        <div className="flex h-20 w-20 mx-auto items-center justify-center rounded-full bg-green-500/20 animate-pulse">
+        <div className="flex h-20 w-20 mx-auto items-center justify-center rounded-full bg-green-500/20">
           <CheckCircle className="h-10 w-10 text-green-400" />
         </div>
         <h1 className="text-2xl font-bold">Proposta enviada! ✅</h1>
-        <p className="text-muted-foreground">Nossa equipe vai analisar sua sugestão em até 48h. Se aprovada, o mercado será criado e você poderá acompanhar em <strong>Mercados</strong>.</p>
-        <p className="text-xs text-muted-foreground">Redirecionando para mercados em 4 segundos...</p>
+        <div className="rounded-xl border border-border bg-card p-4 text-left space-y-2">
+          <p className="text-sm font-semibold text-foreground">O que acontece agora:</p>
+          <ul className="text-sm text-muted-foreground space-y-1.5">
+            <li>📋 Sua proposta foi salva e está em análise</li>
+            <li>⏱️ O admin avalia em até 48h</li>
+            <li>✅ Se aprovada, o mercado é criado e fica disponível em <strong>Mercados</strong></li>
+            <li>🔔 Você recebe uma notificação quando houver resposta</li>
+          </ul>
+        </div>
+        <p className="text-xs text-muted-foreground">Redirecionando para os mercados em 4 segundos...</p>
         <div className="flex gap-3 justify-center">
-          <Link href="/mercados">
-            <Button className="gap-2">Ver Mercados →</Button>
-          </Link>
+          <Link href="/mercados"><Button className="gap-2">Ver Mercados →</Button></Link>
           <Button variant="outline" onClick={() => { setStep('form'); setForm({ title: '', description: '', category: 'Política', fonte_resolucao: '' }) }}>
             Nova proposta
           </Button>

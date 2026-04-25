@@ -15,7 +15,6 @@ export function CmsPage({ slug, fallback }: CmsPageProps) {
     createClient().from('cms_pages')
       .select('title, content_md, content')
       .eq('slug', slug)
-      .eq('is_published', true)
       .single()
       .then(({ data }) => {
         if (data) {
@@ -39,7 +38,7 @@ export function CmsPage({ slug, fallback }: CmsPageProps) {
   // Renderizar markdown simples
   const html = content.content_md
     .replace(/^# (.+)$/gm, '<h1 class="text-3xl font-bold mt-8 mb-4">$1</h1>')
-    .replace(/^## (.+)$/gm, '<h2 class="text-xl font-bold mt-6 mb-3 text-primary">$2</h2>')
+    .replace(/^## (.+)$/gm, '<h2 class="text-xl font-bold mt-6 mb-3 text-primary">$1</h2>')
     .replace(/^### (.+)$/gm, '<h3 class="text-lg font-semibold mt-4 mb-2">$1</h3>')
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/^- (.+)$/gm, '<li class="ml-4 list-disc text-muted-foreground">$1</li>')
