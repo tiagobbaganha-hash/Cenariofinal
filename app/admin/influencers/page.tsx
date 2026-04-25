@@ -1,377 +1,258 @@
 'use client'
-
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Button } from '@/components/ui/button'
-import { useToast } from '@/hooks/useToast'
-import { Users, Plus, Copy, Loader2, TrendingUp, DollarSign, Camera, Link2, X, ChevronDown, ChevronUp } from 'lucide-react'
+import { CheckCircle, XCircle, RefreshCw, Star, User, Mail } from 'lucide-react'
 
-interface Influencer {
-  id: string; name: string; social_url: string; referral_code: string
-  commission_percent: number; is_active: boolean; photo_url?: string
-  bio?: string; email?: string
-  total_referred: number; total_volume: number; total_commission: number
+interface Application {
+  id: string
+  user_id: string
+  name: string
+  email: string
+  status: string
+  message: string
+  created_at: string
+  referral_code?: string
 }
-interface Market { id: string; title: string; category: string; status: string }
 
-export default function AdminInfluencers() {
-  const { toast } = useToast()
-  const [influencers, setInfluencers] = useState<Influencer[]>([])
-  const [markets, setMarkets] = useState<Market[]>([])
+function timeAgo(iso: string) {
+  const d = Date.now() - new Date(iso).getTime()
+  if (d < 3600000) return `${Math.floor(d / 60000)}min atrás`
+  if (d < 86400000) return `${Math.floor(d / 3600000)}h atrás`
+  return `${Math.floor(d / 86400000)}d atrás`
+}
+
+export default function InfluencersAdminPage() {
+  const [applications, setApplications] = useState<Application[]>([])
   const [loading, setLoading] = useState(true)
-  const [showForm, setShowForm] = useState(false)
-  const [saving, setSaving] = useState(false)
-  const [expanded, setExpanded] = useState<string | null>(null)
-  const [linkedMarkets, setLinkedMarkets] = useState<Record<string, any[]>>({})
-  const [linkingMarket, setLinkingMarket] = useState<{ influencerId: string; marketId: string; commission: string } | null>(null)
-  const [origin, setOrigin] = useState('')
-  useEffect(() => { setOrigin(window.location.origin) }, [])
+  const [filter, setFilter] = useState('pending')
+  const [msg, setMsg] = useState('')
 
-  const [form, setForm] = useState({
-    name: '', social_url: '', commission_percent: '5', referral_code: '',
-    bio: '', email: '', photo_url: '', user_id: ''
-  })
-  const [userSearch, setUserSearch] = useState('')
-  const [userResults, setUserResults] = useState<any[]>([])
-
-  useEffect(() => { load() }, [])
+  useEffect(() => { load() }, [filter])
 
   async function load() {
+    setLoading(true)
     const supabase = createClient()
-    const [infRes, mktRes] = await Promise.all([
-      supabase.from('influencers').select('*').order('total_commission', { ascending: false }),
-      supabase.from('markets').select('id, title, category, status').eq('status', 'open').limit(50)
-    ])
-    setInfluencers((infRes.data || []) as Influencer[])
-    setMarkets((mktRes.data || []) as Market[])
+    
+    // Buscar candidaturas da tabela influencer_applications
+    let q = supabase.from('influencer_applications').select('*').order('created_at', { ascending: false })
+    if (filter !== 'all') q = q.eq('status', filter)
+    const { data: apps } = await q
+
+    // Também buscar candidaturas antigas que foram para market_proposals
+    let q2 = supabase.from('market_proposals')
+      .select('id, user_id, created_at, status')
+      .or("title.like.%CANDIDATURA INFLUENCER%,category.eq.__influencer__")
+      .order('created_at', { ascending: false })
+    if (filter !== 'all') q2 = q2.eq('status', filter)
+    const { data: legacyApps } = await q2
+
+    // Buscar nomes dos usuários legados
+    const userIds = (legacyApps || []).map(a => a.user_id)
+    let profilesMap: Record<string, any> = {}
+    if (userIds.length > 0) {
+      const { data: profiles } = await supabase.from('profiles').select('id, full_name, email').in('id', userIds)
+      ;(profiles || []).forEach(p => { profilesMap[p.id] = p })
+    }
+
+    const legacyFormatted = (legacyApps || []).map(a => ({
+      id: `legacy_${a.id}`,
+      user_id: a.user_id,
+      name: profilesMap[a.user_id]?.full_name || profilesMap[a.user_id]?.email?.split('@')[0] || 'Sem nome',
+      email: profilesMap[a.user_id]?.email || '',
+      status: a.status,
+      message: 'Candidatura via painel de upgrade',
+      created_at: a.created_at,
+    }))
+
+    setApplications([...(apps || []), ...legacyFormatted])
     setLoading(false)
   }
 
-  async function loadLinkedMarkets(influencerId: string) {
-    if (linkedMarkets[influencerId]) return
+  async function approve(app: Application) {
     const supabase = createClient()
-    const { data } = await supabase
-      .from('influencer_market_commission')
-      .select('id, market_id, commission_percent, total_volume, total_commission, status')
-      .eq('influencer_id', influencerId)
-    const ids = (data || []).map(d => d.market_id)
-    if (ids.length === 0) { setLinkedMarkets(m => ({ ...m, [influencerId]: [] })); return }
-    const { data: mkt } = await supabase.from('markets').select('id, title, category, status').in('id', ids)
-    const merged = (data || []).map(d => ({
-      ...d,
-      market: (mkt || []).find(m => m.id === d.market_id)
-    }))
-    setLinkedMarkets(m => ({ ...m, [influencerId]: merged }))
-  }
-
-  function generateCode(name: string) {
-    return name.toUpperCase().replace(/\s+/g, '').slice(0, 8) + Math.random().toString(36).slice(2, 5).toUpperCase()
-  }
-
-  async function searchUsers(q: string) {
-    if (q.length < 3) { setUserResults([]); return }
-    const supabase = createClient()
-    const { data } = await supabase.from('profiles')
-      .select('id, full_name, email, role')
-      .or(`full_name.ilike.%${q}%,email.ilike.%${q}%`)
-      .limit(5)
-    setUserResults(data || [])
-  }
-
-  async function handlePhotoUpload(e: React.ChangeEvent<HTMLInputElement>, influencerId?: string) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    const supabase = createClient()
-    const path = `influencers/${influencerId || 'new'}-${Date.now()}.${file.name.split('.').pop()}`
-    const { data, error } = await supabase.storage.from('market-images').upload(path, file, { upsert: true })
-    if (error) { toast({ title: 'Erro no upload', description: error.message, variant: 'destructive' }); return }
-    const { data: { publicUrl } } = supabase.storage.from('market-images').getPublicUrl(data.path)
-    if (influencerId) {
-      await supabase.from('influencers').update({ photo_url: publicUrl }).eq('id', influencerId)
-      setInfluencers(prev => prev.map(i => i.id === influencerId ? { ...i, photo_url: publicUrl } : i))
-      toast({ title: '✅ Foto atualizada' })
+    const code = app.referral_code || app.user_id.slice(0, 8)
+    
+    // 1. Atualizar role do usuário para influencer
+    await supabase.from('profiles').update({ role: 'influencer', referral_code: code }).eq('id', app.user_id)
+    
+    // 2. Criar na tabela influencers
+    await supabase.from('influencers').upsert({
+      user_id: app.user_id,
+      name: app.name,
+      email: app.email,
+      referral_code: code,
+      commission_pct: 2,
+      is_active: true,
+    }, { onConflict: 'user_id' })
+    
+    // 3. Atualizar status da candidatura
+    if (app.id.startsWith('legacy_')) {
+      await supabase.from('market_proposals').update({ status: 'approved' }).eq('id', app.id.replace('legacy_', ''))
     } else {
-      setForm(f => ({ ...f, photo_url: publicUrl }))
+      await supabase.from('influencer_applications').update({ status: 'approved', referral_code: code }).eq('id', app.id)
     }
+    
+    // 4. Notificar usuário
+    await supabase.from('user_notifications').insert({
+      user_id: app.user_id,
+      type: 'influencer_approved',
+      title: '🎉 Você é um Influencer!',
+      body: `Sua candidatura foi aprovada! Seu código de indicação é ${code}. Acesse /indicacao para ver seu link.`,
+      link: '/indicacao',
+    })
+    
+    setMsg(`✅ ${app.name} aprovado como influencer! Código: ${code}`)
+    load()
   }
 
-  async function handleCreate() {
-    if (!form.name.trim()) return
-    setSaving(true)
-    try {
-      const supabase = createClient()
-      const { error } = await supabase.from('influencers').insert({
-        name: form.name, social_url: form.social_url, bio: form.bio, email: form.email,
-        user_id: form.user_id || null,
-        commission_percent: parseFloat(form.commission_percent) || 5,
-        referral_code: form.referral_code || generateCode(form.name),
-        photo_url: form.photo_url || null,
-        is_active: true
-      })
-      if (error) throw error
-      toast({ title: '✅ Influencer criado' })
-      setShowForm(false)
-      setForm({ name: '', social_url: '', commission_percent: '5', referral_code: '', bio: '', email: '', photo_url: '' })
-      load()
-    } catch (e: any) {
-      toast({ title: 'Erro', description: e.message, variant: 'destructive' })
-    } finally { setSaving(false) }
-  }
-
-  async function handleLinkMarket() {
-    if (!linkingMarket?.influencerId || !linkingMarket?.marketId) return
+  async function reject(app: Application) {
     const supabase = createClient()
-    const { error } = await supabase.from('influencer_market_commission').upsert({
-      influencer_id: linkingMarket.influencerId,
-      market_id: linkingMarket.marketId,
-      commission_percent: parseFloat(linkingMarket.commission) || 5,
-    }, { onConflict: 'influencer_id,market_id' })
-    if (error) { toast({ title: 'Erro', description: error.message, variant: 'destructive' }); return }
-    toast({ title: '✅ Mercado vinculado' })
-    setLinkingMarket(null)
-    delete linkedMarkets[linkingMarket.influencerId]
-    loadLinkedMarkets(linkingMarket.influencerId)
+    if (app.id.startsWith('legacy_')) {
+      await supabase.from('market_proposals').update({ status: 'rejected' }).eq('id', app.id.replace('legacy_', ''))
+    } else {
+      await supabase.from('influencer_applications').update({ status: 'rejected' }).eq('id', app.id)
+    }
+    await supabase.from('user_notifications').insert({
+      user_id: app.user_id,
+      type: 'influencer_rejected',
+      title: 'Candidatura analisada',
+      body: 'Sua candidatura para influencer não foi aprovada desta vez. Continue participando da plataforma!',
+      link: '/upgrade',
+    })
+    setMsg(`❌ ${app.name} rejeitado`)
+    load()
   }
 
-  async function handleUnlinkMarket(influencerId: string, linkId: string) {
-    const supabase = createClient()
-    await supabase.from('influencer_market_commission').delete().eq('id', linkId)
-    delete linkedMarkets[influencerId]
-    loadLinkedMarkets(influencerId)
-    toast({ title: '✅ Mercado desvinculado' })
-  }
+  const badgeClass = (s: string) => ({
+    pending: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
+    approved: 'bg-green-500/20 text-green-400 border-green-500/30',
+    rejected: 'bg-red-500/20 text-red-400 border-red-500/30',
+  }[s] || 'bg-muted text-muted-foreground border-border')
 
-  const inputCls = 'w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40'
+  const counts = {
+    pending: applications.filter(a => a.status === 'pending').length,
+    approved: applications.filter(a => a.status === 'approved').length,
+    rejected: applications.filter(a => a.status === 'rejected').length,
+  }
 
   return (
     <div className="space-y-6 pb-12">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/20">
-            <Users className="h-4 w-4 text-primary" />
+            <Star className="h-4 w-4 text-primary" />
           </div>
-          <h1 className="text-xl font-bold">Influencers</h1>
+          <div>
+            <h1 className="text-xl font-bold">Candidaturas de Influencer</h1>
+            <p className="text-sm text-muted-foreground">Usuários que querem se tornar influencers</p>
+          </div>
         </div>
-        <Button onClick={() => setShowForm(!showForm)} size="sm" className="gap-2">
-          <Plus className="h-4 w-4" /> Novo
-        </Button>
+        <button onClick={load} className="flex items-center gap-1.5 text-xs border border-border rounded-lg px-3 py-1.5 text-muted-foreground hover:text-foreground transition-colors">
+          <RefreshCw className="h-3 w-3" /> Atualizar
+        </button>
       </div>
 
-      {/* Formulário novo influencer */}
-      {showForm && (
-        <div className="rounded-2xl border border-primary/20 bg-card p-5 space-y-4">
-          <p className="text-sm font-semibold">Novo Influencer</p>
-          <div className="flex items-center gap-4">
-            {form.photo_url ? (
-              <img src={form.photo_url} className="h-16 w-16 rounded-full object-cover border border-border" />
-            ) : (
-              <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center border border-dashed border-border">
-                <Camera className="h-6 w-6 text-muted-foreground" />
-              </div>
-            )}
-            <label className="cursor-pointer text-xs text-primary hover:underline">
-              Upload foto
-              <input type="file" accept="image/*" className="hidden" onChange={e => handlePhotoUpload(e)} />
-            </label>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <input className={inputCls} placeholder="Nome *" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value, referral_code: f.referral_code || generateCode(e.target.value) }))} />
-            <input className={inputCls} placeholder="E-mail" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} />
-            <input className={inputCls} placeholder="URL Social (Instagram, TikTok...)" value={form.social_url} onChange={e => setForm(f => ({ ...f, social_url: e.target.value }))} />
-            <input className={inputCls} placeholder="Código referral" value={form.referral_code} onChange={e => setForm(f => ({ ...f, referral_code: e.target.value }))} />
-            <div className="relative">
-              <input className={inputCls + ' pr-8'} placeholder="Comissão %" type="number" min="0" max="50" step="0.5" value={form.commission_percent} onChange={e => setForm(f => ({ ...f, commission_percent: e.target.value }))} />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span>
-            </div>
-          </div>
-          <textarea className={inputCls} rows={2} placeholder="Bio (opcional)" value={form.bio} onChange={e => setForm(f => ({ ...f, bio: e.target.value }))} />
-          <div>
-            <label className="block text-xs text-muted-foreground mb-1.5">Vincular a usuário existente (opcional)</label>
-            <input
-              className={inputCls}
-              placeholder="Buscar por nome ou e-mail..."
-              value={userSearch}
-              onChange={e => { setUserSearch(e.target.value); searchUsers(e.target.value) }}
-            />
-            {userResults.length > 0 && (
-              <div className="mt-1 rounded-xl border border-border bg-card overflow-hidden">
-                {userResults.map(u => (
-                  <button key={u.id} onClick={() => {
-                    setForm(f => ({ ...f, user_id: u.id, name: f.name || u.full_name || '', email: f.email || u.email || '' }))
-                    setUserSearch(u.full_name || u.email)
-                    setUserResults([])
-                  }} className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-primary/5 text-left border-b border-border/50 last:border-0">
-                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary flex-shrink-0">
-                      {(u.full_name || u.email || '?').charAt(0).toUpperCase()}
-                    </div>
-                    <div>
-                      <p className="text-sm text-foreground">{u.full_name || 'Sem nome'}</p>
-                      <p className="text-xs text-muted-foreground">{u.email} · {u.role}</p>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
-            {form.user_id && (
-              <p className="text-xs text-green-400 mt-1">✅ Usuário vinculado: {userSearch}</p>
-            )}
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setShowForm(false)} className="flex-1">Cancelar</Button>
-            <Button onClick={handleCreate} disabled={saving} className="flex-1 gap-2">
-              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-              Criar
-            </Button>
-          </div>
+      {msg && (
+        <div className="rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-primary">
+          {msg}
         </div>
       )}
 
+      {/* KPIs */}
+      <div className="grid grid-cols-3 gap-3">
+        {[
+          { label: 'Pendentes', count: counts.pending, color: 'text-yellow-400', bg: 'bg-yellow-500/10 border-yellow-500/20' },
+          { label: 'Aprovados', count: counts.approved, color: 'text-green-400', bg: 'bg-green-500/10 border-green-500/20' },
+          { label: 'Rejeitados', count: counts.rejected, color: 'text-red-400', bg: 'bg-red-500/10 border-red-500/20' },
+        ].map(k => (
+          <div key={k.label} className={`rounded-xl border p-3 text-center ${k.bg}`}>
+            <p className={`text-2xl font-black ${k.color}`}>{k.count}</p>
+            <p className="text-xs text-muted-foreground">{k.label}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Filtros */}
+      <div className="flex gap-2">
+        {[
+          { id: 'pending', label: '⏳ Pendentes' },
+          { id: 'approved', label: '✅ Aprovados' },
+          { id: 'rejected', label: '❌ Rejeitados' },
+          { id: 'all', label: 'Todos' },
+        ].map(f => (
+          <button key={f.id} onClick={() => setFilter(f.id)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${filter === f.id ? 'bg-primary text-primary-foreground border-primary' : 'border-border text-muted-foreground hover:border-primary/40'}`}>
+            {f.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Lista */}
       {loading ? (
-        <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
-      ) : influencers.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground text-sm">Nenhum influencer cadastrado</div>
+        <div className="flex justify-center py-12">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        </div>
+      ) : applications.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-border p-12 text-center">
+          <Star className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
+          <p className="text-sm text-muted-foreground">Nenhuma candidatura {filter !== 'all' ? 'pendente' : ''}</p>
+        </div>
       ) : (
         <div className="space-y-3">
-          {influencers.map(inf => (
-            <div key={inf.id} className="rounded-2xl border border-border bg-card overflow-hidden">
-              {/* Card principal */}
-              <div className="p-4">
-                <div className="flex items-start gap-4">
-                  {/* Foto */}
-                  <div className="relative flex-shrink-0">
-                    {inf.photo_url ? (
-                      <img src={inf.photo_url} className="h-14 w-14 rounded-full object-cover border-2 border-border" />
-                    ) : (
-                      <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center border-2 border-dashed border-border text-lg font-bold text-primary">
-                        {inf.name.charAt(0)}
-                      </div>
-                    )}
-                    <label className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-primary flex items-center justify-center cursor-pointer hover:bg-primary/80 transition-colors">
-                      <Camera className="h-3 w-3 text-primary-foreground" />
-                      <input type="file" accept="image/*" className="hidden" onChange={e => handlePhotoUpload(e, inf.id)} />
-                    </label>
+          {applications.map(app => (
+            <div key={app.id} className={`rounded-xl border bg-card p-4 space-y-3 ${app.status === 'pending' ? 'border-yellow-500/30' : 'border-border'}`}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center">
+                    <User className="h-5 w-5 text-primary" />
                   </div>
-
-                  {/* Info */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <div>
-                        <p className="font-semibold text-foreground">{inf.name}</p>
-                        {inf.bio && <p className="text-xs text-muted-foreground mt-0.5">{inf.bio}</p>}
-                        {inf.social_url && (
-                          <a href={inf.social_url} target="_blank" className="text-xs text-primary hover:underline">{inf.social_url}</a>
-                        )}
-                      </div>
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${inf.is_active ? 'bg-green-500/20 text-green-400' : 'bg-muted text-muted-foreground'}`}>
-                        {inf.is_active ? 'Ativo' : 'Inativo'}
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <p className="font-semibold text-sm">{app.name}</p>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${badgeClass(app.status)}`}>
+                        {app.status === 'pending' ? '⏳ Pendente' : app.status === 'approved' ? '✅ Aprovado' : '❌ Rejeitado'}
                       </span>
                     </div>
-
-                    {/* Stats */}
-                    <div className="flex gap-4 mt-3">
-                      <div className="text-center">
-                        <p className="text-xs text-muted-foreground">Comissão</p>
-                        <p className="text-sm font-bold text-primary">{inf.commission_percent}%</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-xs text-muted-foreground">Volume</p>
-                        <p className="text-sm font-semibold text-foreground">R$ {(inf.total_volume || 0).toFixed(0)}</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-xs text-muted-foreground">Ganho</p>
-                        <p className="text-sm font-semibold text-green-400">R$ {(inf.total_commission || 0).toFixed(2)}</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-xs text-muted-foreground">Indicados</p>
-                        <p className="text-sm font-semibold text-foreground">{inf.total_referred || 0}</p>
-                      </div>
+                    <div className="flex items-center gap-3 mt-0.5">
+                      <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <Mail className="h-3 w-3" /> {app.email}
+                      </span>
+                      <span className="text-xs text-muted-foreground">{timeAgo(app.created_at)}</span>
                     </div>
                   </div>
                 </div>
-
-                {/* Código referral */}
-                <div className="mt-3 flex items-center gap-2">
-                  <div className="flex-1 rounded-lg bg-background border border-border px-3 py-1.5 text-xs font-mono text-muted-foreground">
-                    {origin || 'cenariox.com.br'}/?ref={inf.referral_code}
-                  </div>
-                  <button
-                    onClick={() => { navigator.clipboard.writeText(`${origin}/?ref=${inf.referral_code}`); toast({ title: '✅ Link copiado' }) }}
-                    className="p-1.5 rounded-lg border border-border hover:bg-primary/10 transition-colors"
-                  >
-                    <Copy className="h-3.5 w-3.5 text-muted-foreground" />
-                  </button>
-                </div>
-
-                {/* Toggle mercados */}
-                <button
-                  onClick={() => {
-                    if (expanded === inf.id) { setExpanded(null) }
-                    else { setExpanded(inf.id); loadLinkedMarkets(inf.id) }
-                  }}
-                  className="mt-3 flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors w-full"
-                >
-                  <Link2 className="h-3.5 w-3.5" />
-                  <span>Mercados vinculados</span>
-                  {expanded === inf.id ? <ChevronUp className="h-3 w-3 ml-auto" /> : <ChevronDown className="h-3 w-3 ml-auto" />}
-                </button>
               </div>
 
-              {/* Mercados vinculados */}
-              {expanded === inf.id && (
-                <div className="border-t border-border p-4 space-y-3 bg-background/50">
-                  {/* Mercados existentes */}
-                  {(linkedMarkets[inf.id] || []).length === 0 ? (
-                    <p className="text-xs text-muted-foreground">Nenhum mercado vinculado</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {(linkedMarkets[inf.id] || []).map(lm => (
-                        <div key={lm.id} className="flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-2">
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-medium text-foreground truncate">{lm.market?.title || 'Mercado'}</p>
-                            <p className="text-xs text-muted-foreground">{lm.commission_percent}% · R$ {(lm.total_volume||0).toFixed(0)} vol · R$ {(lm.total_commission||0).toFixed(2)} ganho</p>
-                          </div>
-                          <button onClick={() => handleUnlinkMarket(inf.id, lm.id)} className="text-red-400 hover:text-red-300 p-1 flex-shrink-0">
-                            <X className="h-3.5 w-3.5" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+              {app.message && (
+                <p className="text-sm text-muted-foreground">{app.message}</p>
+              )}
 
-                  {/* Vincular novo mercado */}
-                  {linkingMarket?.influencerId === inf.id ? (
-                    <div className="space-y-2">
-                      <select
-                        className="w-full rounded-xl border border-border bg-card px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
-                        value={linkingMarket.marketId}
-                        onChange={e => setLinkingMarket(m => m ? { ...m, marketId: e.target.value } : m)}
-                      >
-                        <option value="">Escolha um mercado</option>
-                        {markets.map(m => <option key={m.id} value={m.id}>{m.title}</option>)}
-                      </select>
-                      <div className="flex gap-2">
-                        <div className="relative flex-1">
-                          <input
-                            className="w-full rounded-xl border border-border bg-card px-3 py-2 text-sm pr-6 focus:outline-none focus:ring-2 focus:ring-primary/40"
-                            type="number" min="0" max="50" step="0.5" placeholder="Comissão"
-                            value={linkingMarket.commission}
-                            onChange={e => setLinkingMarket(m => m ? { ...m, commission: e.target.value } : m)}
-                          />
-                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span>
-                        </div>
-                        <Button onClick={handleLinkMarket} size="sm" disabled={!linkingMarket.marketId}>Vincular</Button>
-                        <Button variant="outline" size="sm" onClick={() => setLinkingMarket(null)}>Cancelar</Button>
-                      </div>
+              {app.status === 'approved' && app.referral_code && (
+                <p className="text-xs text-green-400">
+                  🔗 Código de indicação: <strong>{app.referral_code}</strong>
+                </p>
+              )}
+
+              {app.status === 'pending' && (
+                <div className="border-t border-border/50 pt-3 grid grid-cols-2 gap-2">
+                  <button onClick={() => approve(app)}
+                    className="flex flex-col gap-1 rounded-xl bg-green-500/10 border border-green-500/30 text-green-400 px-4 py-3 hover:bg-green-500/20 transition-colors text-left">
+                    <div className="flex items-center gap-1.5 font-semibold text-sm">
+                      <CheckCircle className="h-4 w-4" /> Aprovar
                     </div>
-                  ) : (
-                    <button
-                      onClick={() => setLinkingMarket({ influencerId: inf.id, marketId: '', commission: String(inf.commission_percent) })}
-                      className="flex items-center gap-2 text-xs text-primary hover:underline"
-                    >
-                      <Plus className="h-3.5 w-3.5" /> Vincular mercado com comissão personalizada
-                    </button>
-                  )}
+                    <p className="text-[10px] text-green-400/70 leading-tight">
+                      Ativa o papel de influencer, gera código de indicação e notifica o usuário.
+                    </p>
+                  </button>
+                  <button onClick={() => reject(app)}
+                    className="flex flex-col gap-1 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 hover:bg-red-500/20 transition-colors text-left">
+                    <div className="flex items-center gap-1.5 font-semibold text-sm">
+                      <XCircle className="h-4 w-4" /> Rejeitar
+                    </div>
+                    <p className="text-[10px] text-red-400/70 leading-tight">
+                      Recusa a candidatura e notifica o usuário.
+                    </p>
+                  </button>
                 </div>
               )}
             </div>

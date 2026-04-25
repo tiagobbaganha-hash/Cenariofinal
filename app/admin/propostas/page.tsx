@@ -36,6 +36,9 @@ export default function PropostasPage() {
     let q = supabase.from('market_proposals')
       .select('*')
       .order('created_at', { ascending: false })
+    // Excluir candidaturas de influencer das sugestões de mercado
+    q = q.not('category', 'eq', '__influencer__')
+    q = q.not('title', 'like', '%CANDIDATURA INFLUENCER%')
     if (filter !== 'all') q = q.eq('status', filter)
     const { data, error } = await q
     

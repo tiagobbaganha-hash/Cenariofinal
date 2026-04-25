@@ -85,13 +85,30 @@ export default function UpgradePage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push('/login'); return }
 
-      await supabase.from('market_proposals').insert({
+      // Buscar dados do perfil para a candidatura
+      const { data: profile } = await supabase.from('profiles')
+        .select('full_name, email')
+        .eq('id', user.id)
+        .single()
+      
+      const { error: appError } = await supabase.from('influencer_applications').insert({
         user_id: user.id,
-        title: '[CANDIDATURA INFLUENCER]',
-        description: 'Usuário se candidatou para o plano Influencer',
-        category: 'Geral',
+        name: (profile as any)?.full_name || (profile as any)?.email?.split('@')[0] || 'Candidato',
+        email: (profile as any)?.email || '',
         status: 'pending',
+        message: 'Candidatura enviada pelo painel de upgrade',
       })
+      
+      if (appError) {
+        // Fallback: usar market_proposals com tipo específico
+        await supabase.from('market_proposals').insert({
+          user_id: user.id,
+          title: '[CANDIDATURA INFLUENCER]',
+          description: 'Usuário se candidatou para o plano Influencer',
+          category: '__influencer__',
+          status: 'pending',
+        })
+      }
 
       setSuccess('✅ Candidatura enviada! Nossa equipe vai analisar em até 48h. Você receberá uma notificação quando sua conta for aprovada como influencer. Enquanto isso, explore os mercados e comece a indicar amigos com seu link de indicação.')
       // Redirecionar para conta após 4s
