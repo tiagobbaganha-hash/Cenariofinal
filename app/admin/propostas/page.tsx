@@ -34,11 +34,36 @@ export default function PropostasPage() {
     setLoading(true)
     const supabase = createClient()
     let q = supabase.from('market_proposals')
-      .select('*, profiles(full_name, email)')
+      .select('*')
       .order('created_at', { ascending: false })
     if (filter !== 'all') q = q.eq('status', filter)
-    const { data } = await q
-    setProposals(data || [])
+    const { data, error } = await q
+    
+    if (error) {
+      console.error('Erro ao carregar propostas:', error.message)
+      setLoading(false)
+      return
+    }
+    
+    // Buscar nomes dos usuários separadamente
+    const proposals = data || []
+    const userIds = [...new Set(proposals.map(p => p.user_id).filter(Boolean))]
+    let profilesMap: Record<string, any> = {}
+    
+    if (userIds.length > 0) {
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('id, full_name, email')
+        .in('id', userIds)
+      ;(profilesData || []).forEach(p => { profilesMap[p.id] = p })
+    }
+    
+    const enriched = proposals.map(p => ({
+      ...p,
+      profiles: profilesMap[p.user_id] || null
+    }))
+    
+    setProposals(enriched)
     setLoading(false)
   }
 
