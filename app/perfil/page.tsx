@@ -274,9 +274,24 @@ export default function PerfilPage() {
                 onChange={async e => {
                   const file = e.target.files?.[0]
                   if (!file) return
+                  if (file.size > 5 * 1024 * 1024) { alert('Máximo 5MB'); return }
                   setUploadingPhoto(true)
-                  const url = await uploadFoto(file)
-                  if (url) setAvatarUrl(url)
+                  try {
+                    const supabase = createClient()
+                    const ext = file.name.split('.').pop() || 'jpg'
+                    const path = `avatars/${userId}_${Date.now()}.${ext}`
+                    const { error } = await supabase.storage
+                      .from('market-images')
+                      .upload(path, file, { upsert: true })
+                    if (error) {
+                      alert('Erro ao enviar: ' + error.message)
+                    } else {
+                      const { data } = supabase.storage.from('market-images').getPublicUrl(path)
+                      setAvatarUrl(data.publicUrl)
+                    }
+                  } catch (err: any) {
+                    alert('Erro: ' + err.message)
+                  }
                   setUploadingPhoto(false)
                 }} />
             </label>
