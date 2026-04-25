@@ -26,6 +26,7 @@ function timeAgo(iso: string) {
 export default function PropostasPage() {
   const [proposals, setProposals] = useState<Proposal[]>([])
   const [loading, setLoading] = useState(true)
+  const [msg, setMsg] = useState('')
   const [filter, setFilter] = useState('pending')
 
   useEffect(() => { load() }, [filter])
@@ -68,6 +69,14 @@ export default function PropostasPage() {
     
     setProposals(enriched)
     setLoading(false)
+  }
+
+  async function deleteProposal(id: string, title: string) {
+    if (!confirm(`Excluir permanentemente a sugestão "${title}"?`)) return
+    const supabase = createClient()
+    await supabase.from('market_proposals').delete().eq('id', id)
+    setProposals(prev => prev.filter(p => p.id !== id))
+    setMsg('🗑️ Sugestão excluída')
   }
 
   async function updateStatus(id: string, status: string) {
@@ -121,6 +130,13 @@ export default function PropostasPage() {
           <RefreshCw className="h-3 w-3" /> Atualizar
         </button>
       </div>
+
+      {msg && (
+        <div className="rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-primary flex items-center justify-between">
+          <span>{msg}</span>
+          <button onClick={() => setMsg('')} className="text-primary/60 hover:text-primary ml-3">✕</button>
+        </div>
+      )}
 
       {/* KPIs */}
       <div className="grid grid-cols-3 gap-3">
@@ -202,47 +218,41 @@ export default function PropostasPage() {
                 </p>
               )}
 
-              {/* Ações */}
-              {p.status === 'pending' && (
-                <div className="border-t border-border/50 pt-3 space-y-2">
-                  <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wide">O que fazer com esta sugestão?</p>
-                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-                    {/* Opção 1: Converter direto em mercado (RECOMENDADO) */}
-                    <Link href={`/admin/mercados/novo?from_proposal=${p.id}&title=${encodeURIComponent(p.title)}&category=${encodeURIComponent(p.category)}&description=${encodeURIComponent(p.description || '')}`}
-                      className="flex flex-col gap-1 rounded-xl bg-primary/10 border border-primary/30 text-primary px-4 py-3 hover:bg-primary/20 transition-colors group">
-                      <div className="flex items-center gap-1.5 font-semibold text-sm">
-                        <ExternalLink className="h-4 w-4" />
-                        Criar o Mercado
-                      </div>
-                      <p className="text-[10px] text-primary/70 leading-tight">
-                        Abre a tela de criação já preenchida com o título e categoria desta sugestão. Você revisa e publica.
-                      </p>
-                    </Link>
-                    {/* Opção 2: Só aprovar (sem criar mercado agora) */}
+              {/* Ações — sempre visíveis */}
+              <div className="border-t border-border/50 pt-3 space-y-2">
+                {/* Criar mercado — sempre disponível */}
+                <Link href={`/admin/mercados/novo?from_proposal=${p.id}&title=${encodeURIComponent(p.title)}&category=${encodeURIComponent(p.category)}&description=${encodeURIComponent(p.description || '')}`}
+                  className="flex items-center gap-2 rounded-xl bg-primary/10 border border-primary/30 text-primary px-4 py-2.5 hover:bg-primary/20 transition-colors text-sm font-medium w-full">
+                  <ExternalLink className="h-4 w-4 flex-shrink-0" />
+                  Criar Mercado com esta sugestão
+                </Link>
+
+                {/* Ações de status */}
+                <div className="flex gap-2 flex-wrap">
+                  {p.status !== 'pending' && (
+                    <button onClick={() => updateStatus(p.id, 'pending')}
+                      className="flex items-center gap-1.5 rounded-lg bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 px-3 py-1.5 text-xs font-medium hover:bg-yellow-500/20 transition-colors">
+                      ↩️ Reverter para Pendente
+                    </button>
+                  )}
+                  {p.status !== 'approved' && (
                     <button onClick={() => updateStatus(p.id, 'approved')}
-                      className="flex flex-col gap-1 rounded-xl bg-green-500/10 border border-green-500/30 text-green-400 px-4 py-3 hover:bg-green-500/20 transition-colors text-left">
-                      <div className="flex items-center gap-1.5 font-semibold text-sm">
-                        <CheckCircle className="h-4 w-4" />
-                        Aprovar
-                      </div>
-                      <p className="text-[10px] text-green-400/70 leading-tight">
-                        Marca como aprovada e notifica o usuário. Crie o mercado depois quando quiser.
-                      </p>
+                      className="flex items-center gap-1.5 rounded-lg bg-green-500/10 border border-green-500/30 text-green-400 px-3 py-1.5 text-xs font-medium hover:bg-green-500/20 transition-colors">
+                      <CheckCircle className="h-3.5 w-3.5" /> Aprovar
                     </button>
-                    {/* Opção 3: Rejeitar */}
+                  )}
+                  {p.status !== 'rejected' && (
                     <button onClick={() => updateStatus(p.id, 'rejected')}
-                      className="flex flex-col gap-1 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 hover:bg-red-500/20 transition-colors text-left">
-                      <div className="flex items-center gap-1.5 font-semibold text-sm">
-                        <XCircle className="h-4 w-4" />
-                        Rejeitar
-                      </div>
-                      <p className="text-[10px] text-red-400/70 leading-tight">
-                        Recusa a sugestão e notifica o usuário que ela não foi aprovada.
-                      </p>
+                      className="flex items-center gap-1.5 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 px-3 py-1.5 text-xs font-medium hover:bg-red-500/20 transition-colors">
+                      <XCircle className="h-3.5 w-3.5" /> Rejeitar
                     </button>
-                  </div>
+                  )}
+                  <button onClick={() => deleteProposal(p.id, p.title)}
+                    className="flex items-center gap-1.5 rounded-lg bg-muted border border-border text-muted-foreground px-3 py-1.5 text-xs font-medium hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 transition-colors ml-auto">
+                    🗑️ Excluir
+                  </button>
                 </div>
-              )}
+              </div>
             </div>
           ))}
         </div>
