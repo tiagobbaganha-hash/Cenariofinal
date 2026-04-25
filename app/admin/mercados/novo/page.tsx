@@ -19,6 +19,22 @@ export default function NovoMercado() {
   const [coverFiles, setCoverFiles] = useState<File[]>([])
   const [coverPreview, setCoverPreview] = useState<string[]>([])
 
+  // Pré-preencher com dados de proposta se vier de uma sugestão
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      const title = params.get('title')
+      const category = params.get('category')
+      const description = params.get('description')
+      const proposal_id = params.get('from_proposal')
+      if (title) setForm(f => ({ ...f, title, slug: title.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 60) }))
+      if (category) setForm(f => ({ ...f, category }))
+      if (description) setForm(f => ({ ...f, description }))
+      if (proposal_id) setProposalId(proposal_id)
+    }
+  }, [])
+
+  const [proposalId, setProposalId] = useState('')
   const [form, setForm] = useState({
     title: '',
     slug: '',

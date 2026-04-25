@@ -68,6 +68,11 @@ function NavMenu({ pathname, onClose }: { pathname: string; onClose?: () => void
                   }`}>
                   <item.icon className="h-4 w-4 flex-shrink-0" />
                   {item.label}
+                  {item.href === '/admin/propostas' && pendingProposals > 0 && (
+                    <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-orange-500 px-1 text-[10px] font-bold text-white">
+                      {pendingProposals}
+                    </span>
+                  )}
                 </Link>
               ))}
             </div>
@@ -81,6 +86,7 @@ function NavMenu({ pathname, onClose }: { pathname: string; onClose?: () => void
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
+  const [pendingProposals, setPendingProposals] = useState(0)
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)

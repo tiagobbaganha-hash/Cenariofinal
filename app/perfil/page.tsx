@@ -100,7 +100,7 @@ export default function PerfilPage() {
       setUserId(user.id)
       setSelectedAvatar(user.id.charCodeAt(0) % AVATARS.length)
 
-      const { data: p } = await supabase.from('profiles').select('id, full_name, email, phone, cpf, birth_date, address, kyc_status, city, state').eq('id', user.id).single()
+      const { data: p } = await supabase.from('profiles').select('id, full_name, email, phone, cpf, birth_date, address, kyc_status, city, state, avatar_url').eq('id', user.id).single()
       if (p) {
         setNome((p as any).full_name || '')
         if ((p as any).avatar_url) setAvatarUrl((p as any).avatar_url)
@@ -287,7 +287,10 @@ export default function PerfilPage() {
                       alert('Erro ao enviar: ' + error.message)
                     } else {
                       const { data } = supabase.storage.from('market-images').getPublicUrl(path)
-                      setAvatarUrl(data.publicUrl)
+                      const newUrl = data.publicUrl
+                      setAvatarUrl(newUrl)
+                      // Salvar avatar imediatamente no banco sem precisar clicar em Salvar
+                      await supabase.from('profiles').update({ avatar_url: newUrl }).eq('id', userId)
                     }
                   } catch (err: any) {
                     alert('Erro: ' + err.message)
