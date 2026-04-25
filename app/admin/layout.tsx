@@ -50,7 +50,7 @@ const NAV_GROUPS = [
 ]
 
 
-function NavMenu({ pathname, onClose }: { pathname: string; onClose?: () => void }) {
+function NavMenu({ pathname, onClose, pendingProposals = 0 }: { pathname: string; onClose?: () => void; pendingProposals?: number }) {
   return (
     <nav className="space-y-4">
       {NAV_GROUPS.map(group => {
@@ -104,8 +104,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       // Check admin role
       const { data: profile } = await supabase
-        .from('v_front_me')
+        .from('profiles')
         .select('role')
+        .eq('id', user.id)
         .single()
       
       const role = (profile as any)?.role ?? 'user'
@@ -175,7 +176,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <NavMenu pathname={pathname} onClose={() => setSidebarOpen(false)} />
+            <NavMenu pathname={pathname} pendingProposals={pendingProposals} onClose={() => setSidebarOpen(false)} />
           </div>
         </div>
       )}

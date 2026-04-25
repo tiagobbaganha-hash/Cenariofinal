@@ -43,9 +43,9 @@ export default function AccountPage() {
 
       try {
         const [meRes, notifRes, txRes] = await Promise.all([
-          supabase.from('v_front_me').select('*').single(),
+          supabase.from('profiles').select('id, full_name, email, avatar_url, username, kyc_status, plan, role, referral_code').eq('id', (await supabase.auth.getUser()).data.user!.id).single(),
           supabase
-            .from('v_my_notifications')
+            .from('user_notifications')
             .select('*')
             .order('created_at', { ascending: false })
             .limit(10),
@@ -183,8 +183,13 @@ export default function AccountPage() {
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-center gap-4">
-                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-3xl ring-2 ring-primary/20">
-                    {['🚀','🐂','🦁','🔮','🎯','⚡','🌊','🔥','💎','🦅'][(me?.id?.charCodeAt(0) ?? 0) % 10]}
+                  <div className="flex-shrink-0 h-16 w-16 rounded-full overflow-hidden ring-2 ring-primary/20">
+                    {me?.avatar_url
+                      ? <img src={me.avatar_url} alt="" className="h-full w-full object-cover" />
+                      : <div className="h-full w-full bg-primary/10 flex items-center justify-center text-3xl">
+                          {['🚀','🐂','🦁','🔮','🎯','⚡','🌊','🔥','💎','🦅'][(me?.id?.charCodeAt(0) ?? 0) % 10]}
+                        </div>
+                    }
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="truncate font-semibold">
