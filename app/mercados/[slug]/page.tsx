@@ -91,6 +91,14 @@ export default async function MarketDetailPage({
       .order('sort_order'),
   ])
   
+  // Injetar dados do influencer no market
+  const marketWithInfluencer = {
+    ...market,
+    influencer_name: (influencerData as any)?.name || null,
+    influencer_photo: (influencerData as any)?.photo_url || null,
+    influencer_bio: (influencerData as any)?.bio || null,
+  }
+
   const totalVolume = (statsData || []).reduce((sum: number, o: any) => sum + parseFloat(o.stake_amount || '0'), 0)
   const betCount = (statsData || []).length
 
@@ -168,17 +176,17 @@ export default async function MarketDetailPage({
               )}
 
               {/* Badge do influencer */}
-              {(market as any).influencer_name && (
+              {(marketWithInfluencer as any).influencer_name && (
                 <div className="flex items-center gap-2 rounded-xl border border-border bg-card/60 px-3 py-2 w-fit">
-                  {(market as any).influencer_photo ? (
-                    <img src={(market as any).influencer_photo} className="h-6 w-6 rounded-full object-cover" />
+                  {(marketWithInfluencer as any).influencer_photo ? (
+                    <img src={(marketWithInfluencer as any).influencer_photo} className="h-6 w-6 rounded-full object-cover" />
                   ) : (
                     <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary">
-                      {(market as any).influencer_name.charAt(0)}
+                      {(marketWithInfluencer as any).influencer_name?.charAt(0)}
                     </div>
                   )}
                   <span className="text-xs text-muted-foreground">Mercado de</span>
-                  <span className="text-xs font-semibold text-foreground">{(market as any).influencer_name}</span>
+                  <span className="text-xs font-semibold text-foreground">{(marketWithInfluencer as any).influencer_name}</span>
                 </div>
               )}
 

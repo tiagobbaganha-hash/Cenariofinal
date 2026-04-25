@@ -38,7 +38,7 @@ export default function AdminUsuarios() {
   const [editUser, setEditUser] = useState<User | null>(null)
   const [editForm, setEditForm] = useState({
     full_name: '', cpf: '', phone: '', pix_key: '', role: 'user',
-    referral_code: '', commission_pct: 2, kyc_status: 'pending'
+    referral_code: '', commission_pct: 2, kyc_status: 'pending', account_status: 'active'
   })
   const [newRole, setNewRole] = useState('')
   const [saving, setSaving] = useState(false)
@@ -288,6 +288,7 @@ export default function AdminUsuarios() {
                             referral_code: user.referral_code || '',
                             commission_pct: user.commission_pct || 2,
                             kyc_status: user.kyc_status || 'pending',
+                            account_status: user.status || 'active',
                           })
                           setMsg(null)
                         }}>
@@ -421,6 +422,7 @@ export default function AdminUsuarios() {
                   role: editForm.role,
                   referral_code: editForm.referral_code,
                   kyc_status: editForm.kyc_status,
+                  status: editForm.account_status,
                 }).eq('id', editUser.id)
 
                 if (editForm.role === 'influencer') {

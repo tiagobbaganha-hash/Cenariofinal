@@ -39,18 +39,9 @@ export function BrandingProvider() {
         if (data.color_accent && data.color_accent.startsWith('#')) {
           root.style.setProperty('--accent', hexToHsl(data.color_accent))
         }
-        // Aplicar background e card se houver configuração válida
-        if (data.color_bg && data.color_bg.startsWith('#') && data.color_bg !== '#0B0F14') {
-          root.style.setProperty('--background', hexToHsl(data.color_bg))
-        }
-        if (data.color_surface && data.color_surface.startsWith('#') && data.color_surface !== '#111827') {
-          root.style.setProperty('--card', hexToHsl(data.color_surface))
-          root.style.setProperty('--popover', hexToHsl(data.color_surface))
-        }
-        if (data.color_text && data.color_text.startsWith('#') && data.color_text !== '#E5E7EB') {
-          root.style.setProperty('--foreground', hexToHsl(data.color_text))
-          root.style.setProperty('--card-foreground', hexToHsl(data.color_text))
-        }
+        // Nota: background, foreground e card NÃO são sobrescritos pelo branding
+        // Eles são controlados pelo tema (claro/escuro) via data-theme no globals.css
+        // Isso garante que ao trocar entre claro/escuro as cores de texto se adaptam corretamente
 
         // Fonte — carregar do Google Fonts e aplicar
         if (data.font_family && data.font_family !== 'Inter') {

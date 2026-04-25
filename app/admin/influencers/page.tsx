@@ -70,13 +70,16 @@ export default function InfluencersAdminPage() {
 
   async function approve(app: Application) {
     const supabase = createClient()
-    const code = app.referral_code || app.user_id.slice(0, 8)
+    const code = app.referral_code || app.name?.toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,8) || app.user_id.slice(0, 8)
     
     // 1. Atualizar role do usuário para influencer
-    await supabase.from('profiles').update({ role: 'influencer', referral_code: code }).eq('id', app.user_id)
+    const { error: roleError } = await supabase.from('profiles')
+      .update({ role: 'influencer', referral_code: code })
+      .eq('id', app.user_id)
+    if (roleError) { setMsg('❌ Erro ao atualizar role: ' + roleError.message); return }
     
     // 2. Criar na tabela influencers
-    await supabase.from('influencers').upsert({
+    const { error: infError } = await supabase.from('influencers').upsert({
       user_id: app.user_id,
       name: app.name,
       email: app.email,
@@ -84,6 +87,7 @@ export default function InfluencersAdminPage() {
       commission_pct: 2,
       is_active: true,
     }, { onConflict: 'user_id' })
+    if (infError) { setMsg('❌ Erro ao criar influencer: ' + infError.message); return }
     
     // 3. Atualizar status da candidatura
     if (app.id.startsWith('legacy_')) {
@@ -108,9 +112,11 @@ export default function InfluencersAdminPage() {
   async function reject(app: Application) {
     const supabase = createClient()
     if (app.id.startsWith('legacy_')) {
-      await supabase.from('market_proposals').update({ status: 'rejected' }).eq('id', app.id.replace('legacy_', ''))
+      const { error } = await supabase.from('market_proposals').update({ status: 'rejected' }).eq('id', app.id.replace('legacy_', ''))
+      if (error) { setMsg('❌ Erro: ' + error.message); return }
     } else {
-      await supabase.from('influencer_applications').update({ status: 'rejected' }).eq('id', app.id)
+      const { error } = await supabase.from('influencer_applications').update({ status: 'rejected' }).eq('id', app.id)
+      if (error) { setMsg('❌ Erro: ' + error.message); return }
     }
     await supabase.from('user_notifications').insert({
       user_id: app.user_id,
