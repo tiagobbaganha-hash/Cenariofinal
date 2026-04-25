@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { 
-  LayoutDashboard, BarChart3, CheckCircle,
+  LayoutDashboard, BarChart3, CheckCircle, Star,
   TrendingUp, 
   Users, 
   Wallet,
