@@ -184,9 +184,12 @@ export default function AdminBranding() {
         <h2 className="font-semibold">Contato & Redes</h2>
         <Field label="Email de suporte" field="support_email" />
         <Field label="WhatsApp" field="support_whatsapp" />
-        <Field label="Instagram" field="instagram_url" />
-        <Field label="YouTube" field="youtube_url" />
-        <Field label="Telegram" field="telegram_url" />
+        <Field label="Instagram (usuário ou URL)" field="instagram_url" />
+        <Field label="X / Twitter (usuário ou URL)" field="x_url" />
+        <Field label="TikTok (usuário ou URL)" field="tiktok_url" />
+        <Field label="YouTube (canal ou URL)" field="youtube_url" />
+        <Field label="Telegram (usuário ou URL)" field="telegram_url" />
+        <Field label="WhatsApp (número com DDD)" field="support_whatsapp" />
         <Field label="Twitter/X" field="x_url" />
       </div>
 

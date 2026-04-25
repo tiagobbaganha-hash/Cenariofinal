@@ -216,7 +216,7 @@ export default function MercadosPage() {
               { id: 'rapidos', label: '⚡ Rápidos' },
               { id: 'ao-vivo', label: '🔴 Ao Vivo' },
             ].map(t => (
-              <button key={t.id} onClick={() => { setMarketType(t.id); setShowMovers(false); setActiveTag('') }}
+              <button key={t.id} onClick={() => { setMarketType(t.id); setShowMovers(false); setActiveTag(''); setCategory('todos') }}
                 className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors border flex-shrink-0 ${
                   marketType === t.id && !showMovers
                     ? 'bg-primary text-primary-foreground border-primary'
@@ -239,7 +239,7 @@ export default function MercadosPage() {
             {categories.map(cat => (
               <button
                 key={cat}
-                onClick={() => { setCategory(cat); setActiveTag(''); setShowMovers(false) }}
+                onClick={() => { setCategory(cat); setActiveTag(''); setShowMovers(false); if (cat !== 'todos') setMarketType('todos') }}
                 className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors border flex-shrink-0 ${
                   category === cat && !showMovers
                     ? 'bg-primary text-primary-foreground border-primary'

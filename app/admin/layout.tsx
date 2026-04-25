@@ -33,6 +33,7 @@ const navItems = [
   { href: '/admin/mercados', label: 'Todos os Mercados', icon: TrendingUp, group: 'mercados' },
   { href: '/admin/mercados/novo', label: 'Criar Mercado', icon: Zap, group: 'mercados' },
   { href: '/admin/resolucao', label: 'Resolução', icon: CheckCircle, group: 'mercados' },
+  { href: '/admin/propostas', label: 'Propostas', icon: MessageSquare, group: 'mercados' },
   // Usuários
   { href: '/admin/usuarios', label: 'Usuários', icon: Users, group: 'usuarios' },
   { href: '/admin/financeiro', label: 'Financeiro', icon: Wallet, group: 'usuarios' },
