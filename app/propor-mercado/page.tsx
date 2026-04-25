@@ -85,7 +85,6 @@ export default function ProporMercado() {
         title: form.title,
         description: form.description,
         category: form.category,
-        fonte_resolucao: form.fonte_resolucao,
         status: 'pending',
       })
       

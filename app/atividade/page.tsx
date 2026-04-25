@@ -151,7 +151,7 @@ export default function AtividadePage() {
         id: `market-${m.id}`,
         type: 'market_created',
         user_name: name,
-        user_avatar: AVATARS[seed],
+        user_avatar: profile?.avatar_url || AVATARS[seed],
         market_title: m.title,
         market_slug: m.slug,
         created_at: m.created_at,
@@ -239,7 +239,12 @@ export default function AtividadePage() {
             </div>
           ) : items.map(item => (
             <div key={item.id} className={`rounded-xl border bg-card p-4 flex items-center gap-3 transition-all ${item.type === 'win' ? 'border-yellow-500/30 bg-yellow-500/5' : 'border-border hover:border-border/80'}`}>
-              <div className="text-2xl flex-shrink-0">{item.user_avatar}</div>
+              <div className="h-9 w-9 rounded-full overflow-hidden flex-shrink-0 bg-primary/10 flex items-center justify-center text-xl">
+                {item.user_avatar?.startsWith('http')
+                  ? <img src={item.user_avatar} alt="" className="h-full w-full object-cover" />
+                  : item.user_avatar
+                }
+              </div>
               <div className="flex-1 min-w-0">
                 <ActivityText item={item} />
                 <p className="text-[10px] text-muted-foreground mt-0.5">{timeAgo(item.created_at)}</p>
