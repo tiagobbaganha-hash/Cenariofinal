@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Copy, Plus, Minus, RefreshCw, ArrowUpRight, ArrowDownLeft } from 'lucide-react'
+import { Copy, RefreshCw, ArrowUpRight, ArrowDownLeft } from 'lucide-react'
 
 export default function CarteiraPage() {
   const router = useRouter()
@@ -11,46 +11,35 @@ export default function CarteiraPage() {
   const [saldo, setSaldo] = useState(0)
   const [txs, setTxs] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [tab, setTab] = useState<'depositar' | 'sacar' | null>(null)
-  const [amount, setAmount] = useState('')
+  const [amountDep, setAmountDep] = useState('')
+  const [amountSaq, setAmountSaq] = useState('')
   const [pixKey, setPixKey] = useState('')
   const [pixCode, setPixCode] = useState('')
   const [processing, setProcessing] = useState(false)
-  const [msg, setMsg] = useState<{type: 'ok'|'err', text: string} | null>(null)
+  const [msgDep, setMsgDep] = useState('')
+  const [msgSaq, setMsgSaq] = useState('')
+  const [errDep, setErrDep] = useState('')
+  const [errSaq, setErrSaq] = useState('')
 
   useEffect(() => {
-    async function load() {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
+    createClient().auth.getUser().then(({ data: { user } }) => {
       if (!user) { router.push('/login'); return }
       setUserId(user.id)
       setUserEmail(user.email || '')
-
-      // Saldo
-      const { data: w } = await supabase.from('wallets')
-        .select('available_balance')
-        .eq('user_id', user.id)
-        .maybeSingle()
-      setSaldo(parseFloat(w?.available_balance || '0'))
-      setLoading(false) // Mostrar botões imediatamente após saldo
-
-      // Histórico (carrega em background, não bloqueia)
-      supabase.from('wallet_ledger')
-        .select('id, entry_type, direction, amount, description, created_at')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(20)
-        .then(({ data: t }) => setTxs(t || []))
-        .catch(() => {})
-    }
-    load().catch(() => setLoading(false))
+      createClient().from('wallets').select('available_balance').eq('user_id', user.id).maybeSingle()
+        .then(({ data: w }) => { setSaldo(parseFloat(w?.available_balance || '0')); setLoading(false) })
+        .catch(() => setLoading(false))
+      createClient().from('wallet_ledger').select('id,entry_type,direction,amount,description,created_at')
+        .eq('user_id', user.id).order('created_at', { ascending: false }).limit(20)
+        .then(({ data: t }) => setTxs(t || [])).catch(() => {})
+    }).catch(() => setLoading(false))
   }, [router])
 
   async function depositar() {
-    const val = parseFloat(amount)
-    if (!val || val < 10) { setMsg({ type: 'err', text: 'Mínimo R$ 10,00' }); return }
+    setErrDep(''); setMsgDep('')
+    const val = parseFloat(amountDep)
+    if (!val || val < 10) { setErrDep('Mínimo R$ 10,00'); return }
     setProcessing(true)
-    setMsg(null)
     try {
       const res = await fetch('/api/pagamentos/pix', {
         method: 'POST',
@@ -58,42 +47,27 @@ export default function CarteiraPage() {
         body: JSON.stringify({ user_id: userId, amount: val, email: userEmail })
       })
       const data = await res.json()
-      if (data.error) throw new Error(data.error)
+      if (data.error) { setErrDep(data.error); setProcessing(false); return }
       setPixCode(data.pix_code)
-      setMsg({ type: 'ok', text: '✅ PIX gerado! Escaneie o QR Code abaixo.' })
+      setMsgDep('PIX gerado com sucesso!')
     } catch (e: any) {
-      setMsg({ type: 'err', text: 'Erro: ' + e.message })
+      setErrDep(e.message)
     }
     setProcessing(false)
   }
 
   async function sacar() {
-    const val = parseFloat(amount)
-    if (!val || val < 20) { setMsg({ type: 'err', text: 'Mínimo R$ 20,00' }); return }
-    if (!pixKey) { setMsg({ type: 'err', text: 'Informe sua chave PIX' }); return }
-    if (val > saldo) { setMsg({ type: 'err', text: 'Saldo insuficiente' }); return }
+    setErrSaq(''); setMsgSaq('')
+    const val = parseFloat(amountSaq)
+    if (!val || val < 20) { setErrSaq('Mínimo R$ 20,00'); return }
+    if (!pixKey.trim()) { setErrSaq('Informe sua chave PIX'); return }
+    if (val > saldo) { setErrSaq('Saldo insuficiente'); return }
     setProcessing(true)
-    setMsg(null)
-    const supabase = createClient()
-    const { error } = await supabase.from('withdrawal_requests')
+    const { error } = await createClient().from('withdrawal_requests')
       .insert({ user_id: userId, amount: val, pix_key: pixKey, status: 'pending' })
-    if (error) {
-      setMsg({ type: 'err', text: error.message })
-    } else {
-      setMsg({ type: 'ok', text: '✅ Saque solicitado! Processado em até 24h.' })
-      setTab(null)
-      setAmount('')
-      setPixKey('')
-    }
+    if (error) { setErrSaq(error.message) } 
+    else { setMsgSaq('Saque solicitado! Processado em até 24h.'); setAmountSaq(''); setPixKey('') }
     setProcessing(false)
-  }
-
-  function fechar() {
-    setTab(null)
-    setAmount('')
-    setPixKey('')
-    setPixCode('')
-    setMsg(null)
   }
 
   if (loading) return (
@@ -105,110 +79,92 @@ export default function CarteiraPage() {
   return (
     <div className="min-h-screen bg-background">
       <main className="mx-auto max-w-lg px-4 py-8 space-y-6">
-        <h1 className="text-2xl font-bold">Carteira</h1>
-
+        
         {/* Saldo */}
-        <div className="rounded-2xl bg-gradient-to-br from-primary/20 to-card border border-primary/20 p-6">
+        <div className="rounded-2xl bg-gradient-to-br from-primary/20 to-card border border-primary/20 p-6 text-center">
           <p className="text-sm text-muted-foreground mb-1">Saldo disponível</p>
-          <p className="text-4xl font-black text-primary">R$ {saldo.toFixed(2)}</p>
-          <div className="flex gap-3 mt-5">
-            <button
-              onClick={() => { setTab('depositar'); setPixCode(''); setMsg(null) }}
-              className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-primary text-primary-foreground h-12 font-semibold hover:bg-primary/90 transition-colors"
-            >
-              <Plus className="h-4 w-4" /> Depositar
-            </button>
-            <button
-              onClick={() => { setTab('sacar'); setPixCode(''); setMsg(null) }}
-              className="flex-1 flex items-center justify-center gap-2 rounded-xl border border-border bg-card h-12 font-semibold hover:border-primary/40 transition-colors"
-            >
-              <Minus className="h-4 w-4" /> Sacar
-            </button>
-          </div>
+          <p className="text-5xl font-black text-primary">R$ {saldo.toFixed(2)}</p>
         </div>
 
-        {/* Formulário */}
-        {tab && (
-          <div className="rounded-2xl border border-border bg-card p-5 space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="font-bold">{tab === 'depositar' ? '💰 Depositar via PIX' : '💸 Solicitar Saque'}</h2>
-              <button onClick={fechar} className="text-muted-foreground hover:text-foreground text-xl">✕</button>
-            </div>
-
-            {msg && (
-              <div className={`rounded-xl px-4 py-3 text-sm ${msg.type === 'ok' ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
-                {msg.text}
+        {/* Depositar */}
+        <div className="rounded-2xl border border-border bg-card p-5 space-y-4">
+          <h2 className="font-bold text-lg flex items-center gap-2">💰 Depositar via PIX</h2>
+          
+          {errDep && <div className="rounded-xl bg-red-500/10 text-red-400 border border-red-500/20 px-4 py-3 text-sm">{errDep}</div>}
+          {msgDep && <div className="rounded-xl bg-green-500/10 text-green-400 border border-green-500/20 px-4 py-3 text-sm">✅ {msgDep}</div>}
+          
+          {pixCode ? (
+            <div className="space-y-4">
+              <div className="flex flex-col items-center gap-3 p-4 rounded-xl bg-white">
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(pixCode)}&bgcolor=ffffff&color=000000`}
+                  alt="QR PIX" className="h-52 w-52"
+                />
               </div>
-            )}
-
-            {pixCode ? (
-              <div className="space-y-4">
-                <div className="flex flex-col items-center gap-3 p-4 rounded-xl border border-primary/20 bg-primary/5">
-                  <p className="text-sm font-semibold">📱 Escaneie o QR Code</p>
-                  <img
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(pixCode)}&bgcolor=ffffff&color=000000`}
-                    alt="QR PIX"
-                    className="h-44 w-44 rounded-xl"
-                  />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1.5">Ou copie o código PIX:</p>
-                  <div className="flex gap-2">
-                    <input readOnly value={pixCode} className="flex-1 rounded-xl border border-border bg-background px-3 py-2 text-xs font-mono truncate" />
-                    <button onClick={() => { navigator.clipboard.writeText(pixCode); setMsg({ type: 'ok', text: '✅ Copiado!' }) }}
-                      className="flex-shrink-0 rounded-xl border border-border bg-card px-3 py-2 hover:border-primary/40 transition-colors">
-                      <Copy className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
-                <p className="text-xs text-yellow-400 text-center">⚡ Saldo creditado automaticamente em até 5 min após o pagamento</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <div>
-                  <label className="text-sm font-medium block mb-1.5">Valor (R$)</label>
-                  <input
-                    type="number"
-                    value={amount}
-                    onChange={e => setAmount(e.target.value)}
-                    placeholder={tab === 'depositar' ? 'Mínimo R$ 10,00' : 'Mínimo R$ 20,00'}
-                    className="w-full h-12 rounded-xl border border-border bg-background px-4 focus:outline-none focus:ring-2 focus:ring-primary/40"
-                  />
-                </div>
-                <div className="flex gap-2">
-                  {(tab === 'depositar' ? [10, 50, 100, 200] : [20, 50, 100, 200]).map(v => (
-                    <button key={v} onClick={() => setAmount(v.toString())}
-                      className="flex-1 py-2 rounded-xl border border-border bg-background text-sm font-medium hover:border-primary/40 transition-colors">
-                      R$ {v}
-                    </button>
-                  ))}
-                </div>
-                {tab === 'sacar' && (
-                  <div>
-                    <label className="text-sm font-medium block mb-1.5">Sua chave PIX</label>
-                    <input
-                      type="text"
-                      value={pixKey}
-                      onChange={e => setPixKey(e.target.value)}
-                      placeholder="CPF, e-mail, telefone ou chave aleatória"
-                      className="w-full h-12 rounded-xl border border-border bg-background px-4 focus:outline-none focus:ring-2 focus:ring-primary/40"
-                    />
-                  </div>
-                )}
-                <button
-                  onClick={tab === 'depositar' ? depositar : sacar}
-                  disabled={processing}
-                  className="w-full h-12 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
-                >
-                  {processing
-                    ? <><RefreshCw className="h-4 w-4 animate-spin" /> Processando...</>
-                    : tab === 'depositar' ? 'Gerar PIX' : 'Solicitar Saque'
-                  }
+              <p className="text-xs text-center text-muted-foreground">Escaneie com o app do seu banco</p>
+              <div className="flex gap-2">
+                <input readOnly value={pixCode} className="flex-1 rounded-xl border border-border bg-background px-3 py-2 text-xs font-mono truncate" />
+                <button onClick={() => { navigator.clipboard.writeText(pixCode); alert('Copiado!') }}
+                  className="flex-shrink-0 rounded-xl border border-border px-3 py-2 text-xs font-medium hover:bg-muted transition-colors">
+                  <Copy className="h-4 w-4" />
                 </button>
               </div>
-            )}
+              <button onClick={() => { setPixCode(''); setAmountDep(''); setMsgDep('') }}
+                className="w-full rounded-xl border border-border py-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+                Novo depósito
+              </button>
+              <p className="text-xs text-yellow-400 text-center">⚡ Saldo creditado em até 5 min após pagamento</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex gap-2">
+                {[10, 50, 100, 200].map(v => (
+                  <button key={v} onClick={() => setAmountDep(v.toString())}
+                    className={`flex-1 py-2.5 rounded-xl border text-sm font-semibold transition-colors ${amountDep === v.toString() ? 'border-primary bg-primary/10 text-primary' : 'border-border hover:border-primary/40'}`}>
+                    R$ {v}
+                  </button>
+                ))}
+              </div>
+              <input type="number" value={amountDep} onChange={e => setAmountDep(e.target.value)}
+                placeholder="Ou digite o valor (mín. R$ 10)"
+                className="w-full h-12 rounded-xl border border-border bg-background px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40" />
+              <button onClick={depositar} disabled={processing}
+                className="w-full h-12 rounded-xl bg-primary text-primary-foreground font-bold text-sm hover:bg-primary/90 disabled:opacity-50 transition-colors">
+                {processing ? 'Gerando PIX...' : '📱 Gerar PIX'}
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Sacar */}
+        <div className="rounded-2xl border border-border bg-card p-5 space-y-4">
+          <h2 className="font-bold text-lg flex items-center gap-2">💸 Solicitar Saque</h2>
+          
+          {errSaq && <div className="rounded-xl bg-red-500/10 text-red-400 border border-red-500/20 px-4 py-3 text-sm">{errSaq}</div>}
+          {msgSaq && <div className="rounded-xl bg-green-500/10 text-green-400 border border-green-500/20 px-4 py-3 text-sm">✅ {msgSaq}</div>}
+          
+          <div className="space-y-3">
+            <div className="flex gap-2">
+              {[20, 50, 100, 200].map(v => (
+                <button key={v} onClick={() => setAmountSaq(v.toString())}
+                  className={`flex-1 py-2.5 rounded-xl border text-sm font-semibold transition-colors ${amountSaq === v.toString() ? 'border-primary bg-primary/10 text-primary' : 'border-border hover:border-primary/40'}`}>
+                  R$ {v}
+                </button>
+              ))}
+            </div>
+            <input type="number" value={amountSaq} onChange={e => setAmountSaq(e.target.value)}
+              placeholder="Valor do saque (mín. R$ 20)"
+              className="w-full h-12 rounded-xl border border-border bg-background px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40" />
+            <input type="text" value={pixKey} onChange={e => setPixKey(e.target.value)}
+              placeholder="Sua chave PIX (CPF, email, telefone...)"
+              className="w-full h-12 rounded-xl border border-border bg-background px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40" />
+            <button onClick={sacar} disabled={processing}
+              className="w-full h-12 rounded-xl bg-card border border-border font-bold text-sm hover:border-primary/40 disabled:opacity-50 transition-colors">
+              {processing ? 'Solicitando...' : '✉️ Solicitar Saque via PIX'}
+            </button>
+            <p className="text-xs text-muted-foreground text-center">Processamento em até 24 horas úteis</p>
           </div>
-        )}
+        </div>
 
         {/* Histórico */}
         <div className="space-y-2">
@@ -236,6 +192,7 @@ export default function CarteiraPage() {
             </div>
           )}
         </div>
+
       </main>
     </div>
   )
