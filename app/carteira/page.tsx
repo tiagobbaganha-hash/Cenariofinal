@@ -37,14 +37,18 @@ export default function CarteiraPage() {
 
   async function depositar() {
     setErrDep(''); setMsgDep('')
-    const val = parseFloat(amountDep)
-    if (!val || val < 10) { setErrDep('Mínimo R$ 10,00'); return }
+    const cleanAmount = String(amountDep).replace(',', '.').trim()
+    const val = parseFloat(cleanAmount)
+    if (isNaN(val) || val < 10) { 
+      setErrDep(`Mínimo R$ 10,00. Valor digitado: "${amountDep}"`)
+      return 
+    }
     setProcessing(true)
     try {
       const res = await fetch('/api/pagamentos/pix', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: userId, amount: val, email: userEmail })
+        body: JSON.stringify({ user_id: userId, amount: Number(val), email: userEmail })
       })
       const data = await res.json()
       if (data.error) { setErrDep(data.error); setProcessing(false); return }
@@ -140,7 +144,7 @@ export default function CarteiraPage() {
                 className="w-full h-12 rounded-xl border border-border bg-background px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40" />
               <button onClick={depositar} disabled={processing}
                 className="w-full h-12 rounded-xl bg-primary text-primary-foreground font-bold text-sm hover:bg-primary/90 disabled:opacity-50 transition-colors">
-                {processing ? 'Gerando PIX...' : '📱 Gerar PIX'}
+                {processing ? 'Gerando PIX...' : amountDep ? `📱 Gerar PIX - R$ ${amountDep}` : '📱 Gerar PIX'}
               </button>
             </div>
           )}
