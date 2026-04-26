@@ -14,9 +14,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Valor mínimo: R$ 10,00' }, { status: 400 })
     }
 
+    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
+
     // Se não tem token do Mercado Pago configurado, usar PIX estático de desenvolvimento
     if (!MP_ACCESS_TOKEN) {
-      const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
       const { data: req_data, error } = await supabase.from('deposit_requests').insert({
         user_id, amount, status: 'pending', payment_method: 'pix',
         metadata: { mode: 'manual' }
@@ -89,7 +90,6 @@ export async function POST(req: NextRequest) {
     const paymentId = mpData.id
 
     // Salvar no banco
-    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
     await supabase.from('deposit_requests').insert({
       user_id, amount, status: 'pending', payment_method: 'pix',
       metadata: { mp_payment_id: paymentId, pix_code: pixCode }
