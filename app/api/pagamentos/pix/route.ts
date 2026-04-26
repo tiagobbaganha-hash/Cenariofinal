@@ -57,13 +57,34 @@ export async function POST(req: NextRequest) {
       })
     })
 
-    if (!mpResponse.ok) {
-      const err = await mpResponse.json()
-      return NextResponse.json({ error: err.message || 'Erro Mercado Pago' }, { status: 500 })
+    const mpData = await mpResponse.json()
+    
+    // Se MP falhou ou não retornou PIX, usar PIX estático com CPF
+    const pixCode = mpData.point_of_interaction?.transaction_data?.qr_code
+    
+    if (!mpResponse.ok || !pixCode) {
+      // Fallback: PIX estático com chave CPF do dono
+      const rawKey = process.env.PIX_KEY_CNPJ || ''
+      const pixKey = rawKey.replace(/[^0-9a-zA-Z@._+-]/g, '')
+      if (!pixKey) return NextResponse.json({ error: 'Configure PIX_KEY_CNPJ no Vercel' }, { status: 500 })
+      
+      const { data: req_data, error: dbErr } = await supabase.from('deposit_requests').insert({
+        user_id, amount, status: 'pending', payment_method: 'pix',
+        metadata: { mode: 'manual_fallback', mp_error: mpData.message || 'MP sem PIX' }
+      }).select().single()
+      
+      if (dbErr) return NextResponse.json({ error: dbErr.message }, { status: 500 })
+      
+      const staticPix = generatePixPayload(pixKey, amount, req_data.id.slice(0,10))
+      return NextResponse.json({
+        pix_code: staticPix,
+        payment_id: req_data.id,
+        amount,
+        mode: 'manual',
+        instructions: `Pague via PIX e envie o comprovante pelo suporte. Crédito em até 2h.`
+      })
     }
 
-    const mpData = await mpResponse.json()
-    const pixCode = mpData.point_of_interaction?.transaction_data?.qr_code
     const pixQr = mpData.point_of_interaction?.transaction_data?.qr_code_base64
     const paymentId = mpData.id
 
