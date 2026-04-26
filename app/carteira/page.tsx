@@ -65,9 +65,11 @@ export default function CarteiraPage() {
     const supabase = createClient()
     
     async function loadData() {
+      try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
         router.push('/login')
+        setLoading(false)
         return
       }
       setUser(user)
@@ -130,10 +132,14 @@ export default function CarteiraPage() {
         })))
       }
 
-      setLoading(false)
+      } catch(e) {
+        console.error('Erro ao carregar carteira:', e)
+      } finally {
+        setLoading(false)
+      }
     }
 
-    loadData()
+    loadData().catch(() => setLoading(false))
   }, [router])
 
   function getDescription(type: string | null | undefined): string {
