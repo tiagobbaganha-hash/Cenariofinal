@@ -59,7 +59,7 @@ export default function SaquesAdminPage() {
 
     await supabase.from('wallet_ledger').insert({
       user_id: w.user_id, entry_type: 'withdrawal', direction: 'debit',
-      amount: w.amount, description: `Saque PIX para ${w.pix_key}`,
+      amount: w.amount,
     })
 
     await supabase.from('withdrawal_requests').update({ status: 'approved', notes: 'Aprovado pelo admin' }).eq('id', w.id)

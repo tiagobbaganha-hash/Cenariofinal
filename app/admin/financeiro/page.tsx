@@ -91,7 +91,7 @@ export default function FinanceiroAdminPage() {
 
     await supabase.from('wallet_ledger').insert({
       user_id: profile.id, entry_type: 'manual_credit', direction: 'credit',
-      amount: val, description: creditNote || 'Crédito manual pelo admin'
+      amount: val,
     })
     await supabase.from('user_notifications').insert({
       user_id: profile.id, type: 'credit', title: '💰 Saldo creditado!',
