@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { 
-  LayoutDashboard, BarChart3, CheckCircle, Star,
+  LayoutDashboard, BarChart3, CheckCircle, Star, Wallet,
   TrendingUp, 
   Users, 
   Wallet,
@@ -51,7 +51,7 @@ const NAV_GROUPS = [
 ]
 
 
-function NavMenu({ pathname, onClose, pendingProposals = 0 }: { pathname: string; onClose?: () => void; pendingProposals?: number }) {
+function NavMenu({ pathname, onClose, pendingProposals = 0, pendingSaques = 0 }: { pathname: string; onClose?: () => void; pendingProposals?: number; pendingSaques?: number }) {
   return (
     <nav className="space-y-4">
       {NAV_GROUPS.map(group => {
@@ -69,6 +69,11 @@ function NavMenu({ pathname, onClose, pendingProposals = 0 }: { pathname: string
                   }`}>
                   <item.icon className="h-4 w-4 flex-shrink-0" />
                   {item.label}
+                  {item.href === '/admin/saques' && pendingSaques > 0 && (
+                    <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+                      {pendingSaques}
+                    </span>
+                  )}
                   {item.href === '/admin/propostas' && pendingProposals > 0 && (
                     <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-orange-500 px-1 text-[10px] font-bold text-white">
                       {pendingProposals}
@@ -88,6 +93,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname()
   const router = useRouter()
   const [pendingProposals, setPendingProposals] = useState(0)
+  const [pendingSaques, setPendingSaques] = useState(0)
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
@@ -177,7 +183,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <NavMenu pathname={pathname} pendingProposals={pendingProposals} onClose={() => setSidebarOpen(false)} />
+            <NavMenu pathname={pathname} pendingProposals={pendingProposals} pendingSaques={pendingSaques} onClose={() => setSidebarOpen(false)} />
           </div>
         </div>
       )}
