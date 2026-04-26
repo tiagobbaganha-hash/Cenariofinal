@@ -105,27 +105,25 @@ export default function CarteiraPage() {
         setWallet({ available_balance: 0, locked_balance: 0, pendingDeposits: 0, pendingWithdrawals: 0 })
       }
 
-      // Load transactions com dados completos
-      let txQuery = supabase
+      // Load transactions sem join complexo para evitar erros
+      const { data: txs } = await supabase
         .from('wallet_ledger')
-        .select('*, orders(market_id, markets(title, slug))')
+        .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(21)
-
-      const { data: txs } = await txQuery
 
       if (txs) {
         setHasMore(txs.length > 20)
         setTransactions(txs.slice(0, 20).map((t: any) => ({
           id: t.id,
-          type: t.entry_type || (t.direction === 'credit' ? 'deposit' : 'debit'),
+          type: t.entry_type || t.type || (t.direction === 'credit' ? 'deposit' : 'debit'),
           entry_type: t.entry_type || t.type || (t.direction === 'credit' ? 'deposit' : 'debit'),
           amount: parseFloat(t.amount || '0'),
-          direction: t.direction === 'credit' ? 'credit' : 'debit',
+          direction: t.direction || (t.amount > 0 ? 'credit' : 'debit'),
           description: getDescription(t.entry_type || t.type),
-          market_title: t.orders?.markets?.title || null,
-          market_slug: t.orders?.markets?.slug || null,
+          market_title: null,
+          market_slug: null,
           reference_id: t.reference_id || null,
           created_at: t.created_at,
           balance_after: t.balance_after ? parseFloat(t.balance_after) : null,
