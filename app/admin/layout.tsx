@@ -37,6 +37,7 @@ const navItems = [
   { href: '/admin/influencers', label: 'Influencers', icon: Star, group: 'usuarios' },
   // Usuários
   { href: '/admin/usuarios', label: 'Usuários', icon: Users, group: 'usuarios' },
+  { href: '/admin/kyc', label: 'KYC', icon: Shield, group: 'usuarios' },
   { href: '/admin/financeiro', label: 'Financeiro', icon: Wallet, group: 'usuarios' },
   // Plataforma
   { href: '/admin/cms', label: 'CMS / Páginas', icon: FileText, group: 'plataforma' },
@@ -51,7 +52,7 @@ const NAV_GROUPS = [
 ]
 
 
-function NavMenu({ pathname, onClose, pendingProposals = 0, pendingSaques = 0 }: { pathname: string; onClose?: () => void; pendingProposals?: number; pendingSaques?: number }) {
+function NavMenu({ pathname, onClose, pendingProposals = 0, pendingSaques = 0, pendingKyc = 0 }: { pathname: string; onClose?: () => void; pendingProposals?: number; pendingSaques?: number; pendingKyc?: number }) {
   return (
     <nav className="space-y-4">
       {NAV_GROUPS.map(group => {
@@ -69,6 +70,11 @@ function NavMenu({ pathname, onClose, pendingProposals = 0, pendingSaques = 0 }:
                   }`}>
                   <item.icon className="h-4 w-4 flex-shrink-0" />
                   {item.label}
+                  {item.href === '/admin/kyc' && pendingKyc > 0 && (
+                    <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-yellow-500 px-1 text-[10px] font-bold text-white">
+                      {pendingKyc}
+                    </span>
+                  )}
                   {item.href === '/admin/saques' && pendingSaques > 0 && (
                     <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
                       {pendingSaques}
@@ -94,6 +100,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const router = useRouter()
   const [pendingProposals, setPendingProposals] = useState(0)
   const [pendingSaques, setPendingSaques] = useState(0)
+  const [pendingKyc, setPendingKyc] = useState(0)
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
@@ -183,7 +190,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <NavMenu pathname={pathname} pendingProposals={pendingProposals} pendingSaques={pendingSaques} onClose={() => setSidebarOpen(false)} />
+            <NavMenu pathname={pathname} pendingProposals={pendingProposals} pendingSaques={pendingSaques} pendingKyc={pendingKyc} onClose={() => setSidebarOpen(false)} />
           </div>
         </div>
       )}

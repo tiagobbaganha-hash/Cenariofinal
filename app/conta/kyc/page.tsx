@@ -1,10 +1,34 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
-import { Shield, CheckCircle, Loader2, Upload, AlertCircle, User, FileText, Camera } from 'lucide-react'
+import { Shield, CheckCircle, Loader2, Upload, AlertCircle, Camera, FileText, User, Clock } from 'lucide-react'
 
 type KycStatus = 'not_started' | 'pending' | 'approved' | 'rejected'
+
+function validateCPF(cpf: string): boolean {
+  const c = cpf.replace(/\D/g, '')
+  if (c.length !== 11 || /^(\d)\1+$/.test(c)) return false
+  let sum = 0
+  for (let i = 0; i < 9; i++) sum += parseInt(c[i]) * (10 - i)
+  let rev = 11 - (sum % 11)
+  if (rev >= 10) rev = 0
+  if (rev !== parseInt(c[9])) return false
+  sum = 0
+  for (let i = 0; i < 10; i++) sum += parseInt(c[i]) * (11 - i)
+  rev = 11 - (sum % 11)
+  if (rev >= 10) rev = 0
+  return rev === parseInt(c[10])
+}
+
+function calcAge(birthDate: string): number {
+  const today = new Date()
+  const birth = new Date(birthDate)
+  let age = today.getFullYear() - birth.getFullYear()
+  const m = today.getMonth() - birth.getMonth()
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--
+  return age
+}
 
 export default function KycPage() {
   const router = useRouter()
@@ -12,76 +36,122 @@ export default function KycPage() {
   const [saving, setSaving] = useState(false)
   const [status, setStatus] = useState<KycStatus>('not_started')
   const [step, setStep] = useState(1)
-  const [msg, setMsg] = useState('')
+  const [error, setError] = useState('')
   const [userId, setUserId] = useState('')
-  const [form, setForm] = useState({
-    full_name: '', cpf: '', birth_date: '', phone: '',
-    address_city: '', address_state: '',
-  })
+  const [userEmail, setUserEmail] = useState('')
+  const [form, setForm] = useState({ full_name: '', cpf: '', birth_date: '', phone: '' })
+  const [docFront, setDocFront] = useState<File | null>(null)
+  const [selfie, setSelfie] = useState<File | null>(null)
+  const [docFrontPreview, setDocFrontPreview] = useState('')
+  const [selfiePreview, setSelfiePreview] = useState('')
 
   useEffect(() => {
-    async function load() {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
+    createClient().auth.getUser().then(({ data: { user } }) => {
       if (!user) { router.push('/login'); return }
       setUserId(user.id)
-
-      const { data: profile } = await supabase.from('profiles')
-        .select('full_name, cpf, birth_date, phone, address_city, address_state, kyc_status')
+      setUserEmail(user.email || '')
+      createClient().from('profiles')
+        .select('full_name, cpf, birth_date, phone, kyc_status')
         .eq('id', user.id).single()
-
-      if (profile) {
-        setStatus((profile.kyc_status as KycStatus) || 'not_started')
-        setForm({
-          full_name: profile.full_name || '',
-          cpf: profile.cpf || '',
-          birth_date: profile.birth_date || '',
-          phone: profile.phone || '',
-          address_city: profile.address_city || '',
-          address_state: profile.address_state || '',
+        .then(({ data: p }) => {
+          if (p) {
+            setStatus((p.kyc_status as KycStatus) || 'not_started')
+            setForm({ full_name: p.full_name || '', cpf: p.cpf || '', birth_date: p.birth_date || '', phone: p.phone || '' })
+            if (p.kyc_status === 'pending' || p.kyc_status === 'approved') setStep(3)
+          }
+          setLoading(false)
         })
-      }
-      setLoading(false)
-    }
-    load()
+    })
   }, [router])
 
-  async function saveStep1() {
-    if (!form.full_name || !form.cpf || !form.birth_date) {
-      setMsg('❌ Preencha todos os campos obrigatórios')
-      return
-    }
-    const cpfClean = form.cpf.replace(/\D/g, '')
-    if (cpfClean.length !== 11) { setMsg('❌ CPF inválido'); return }
-
+  async function submitStep1() {
+    setError('')
+    if (!form.full_name.trim()) { setError('Nome completo é obrigatório'); return }
+    if (!validateCPF(form.cpf)) { setError('CPF inválido'); return }
+    if (!form.birth_date) { setError('Data de nascimento é obrigatória'); return }
+    const age = calcAge(form.birth_date)
+    if (age < 18) { setError(`Você tem ${age} anos. Esta plataforma é exclusiva para maiores de 18 anos.`); return }
+    if (!form.phone) { setError('Telefone é obrigatório'); return }
     setSaving(true)
-    const supabase = createClient()
-    const { error } = await supabase.from('profiles').update({
-      full_name: form.full_name, cpf: form.cpf, birth_date: form.birth_date,
-      phone: form.phone, address_city: form.address_city, address_state: form.address_state,
+    await createClient().from('profiles').update({
+      full_name: form.full_name,
+      cpf: form.cpf.replace(/\D/g, ''),
+      birth_date: form.birth_date,
+      phone: form.phone,
     }).eq('id', userId)
-
-    if (error) { setMsg('❌ ' + error.message) }
-    else { setMsg(''); setStep(2) }
     setSaving(false)
+    setStep(2)
   }
 
-  async function submitKyc() {
-    setSaving(true)
-    const supabase = createClient()
-    const { error } = await supabase.from('profiles').update({
-      kyc_status: 'pending',
-    }).eq('id', userId)
+  async function compressImage(file: File): Promise<Blob> {
+    return new Promise(res => {
+      const img = new Image()
+      const url = URL.createObjectURL(file)
+      img.onload = () => {
+        URL.revokeObjectURL(url)
+        const canvas = document.createElement('canvas')
+        const MAX = 1200
+        let w = img.width, h = img.height
+        if (w > MAX) { h = h * MAX / w; w = MAX }
+        canvas.width = w; canvas.height = h
+        canvas.getContext('2d')!.drawImage(img, 0, 0, w, h)
+        canvas.toBlob(b => res(b!), 'image/jpeg', 0.85)
+      }
+      img.src = url
+    })
+  }
 
-    if (error) { setMsg('❌ ' + error.message) }
-    else {
+  async function submitStep2() {
+    setError('')
+    if (!docFront) { setError('Envie a foto do documento (RG ou CNH)'); return }
+    if (!selfie) { setError('Envie a selfie segurando o documento'); return }
+    setSaving(true)
+    try {
+      const supabase = createClient()
+      // Upload documento
+      const docBlob = await compressImage(docFront)
+      const { error: e1 } = await supabase.storage.from('market-images')
+        .upload(`kyc/${userId}_doc.jpg`, docBlob, { upsert: true, contentType: 'image/jpeg' })
+      if (e1) throw new Error('Erro ao enviar documento: ' + e1.message)
+
+      // Upload selfie
+      const selfieBlob = await compressImage(selfie)
+      const { error: e2 } = await supabase.storage.from('market-images')
+        .upload(`kyc/${userId}_selfie.jpg`, selfieBlob, { upsert: true, contentType: 'image/jpeg' })
+      if (e2) throw new Error('Erro ao enviar selfie: ' + e2.message)
+
+      // URLs públicas
+      const docUrl = supabase.storage.from('market-images').getPublicUrl(`kyc/${userId}_doc.jpg`).data.publicUrl
+      const selfieUrl = supabase.storage.from('market-images').getPublicUrl(`kyc/${userId}_selfie.jpg`).data.publicUrl
+
+      // Atualizar perfil
+      await supabase.from('profiles').update({
+        kyc_status: 'pending',
+        kyc_doc_url: docUrl,
+        kyc_selfie_url: selfieUrl,
+        kyc_submitted_at: new Date().toISOString(),
+      }).eq('id', userId)
+
+      // Notificar admin via API
+      await fetch('/api/kyc/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, email: userEmail, name: form.full_name, docUrl, selfieUrl })
+      }).catch(() => {})
+
       setStatus('pending')
-      setMsg('✅ Documentos enviados! Análise em até 24h.')
+      setStep(3)
+    } catch (e: any) {
+      setError(e.message)
     }
     setSaving(false)
   }
 
-  const inp = 'w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40'
+  function handleFile(file: File, type: 'doc' | 'selfie') {
+    const preview = URL.createObjectURL(file)
+    if (type === 'doc') { setDocFront(file); setDocFrontPreview(preview) }
+    else { setSelfie(file); setSelfiePreview(preview) }
+  }
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center">
@@ -90,167 +160,172 @@ export default function KycPage() {
   )
 
   return (
-    <div className="min-h-screen bg-background pb-16">
-      <div className="max-w-lg mx-auto px-4 pt-8 space-y-6">
-        {/* Header */}
-        <div className="text-center">
-          <div className={`inline-flex h-16 w-16 items-center justify-center rounded-2xl mb-4 ${
-            status === 'approved' ? 'bg-green-500/20' :
-            status === 'pending' ? 'bg-yellow-500/20' :
-            status === 'rejected' ? 'bg-red-500/20' : 'bg-primary/20'
-          }`}>
-            {status === 'approved' ? <CheckCircle className="h-8 w-8 text-green-400" /> :
-             status === 'rejected' ? <AlertCircle className="h-8 w-8 text-red-400" /> :
-             <Shield className="h-8 w-8 text-primary" />}
+    <div className="min-h-screen bg-background">
+      <main className="mx-auto max-w-lg px-4 py-8 space-y-6">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-xl bg-primary/20 flex items-center justify-center">
+            <Shield className="h-5 w-5 text-primary" />
           </div>
-          <h1 className="text-2xl font-bold">Verificação de Identidade</h1>
-          <p className="text-muted-foreground mt-1 text-sm">
-            {status === 'approved' ? 'Identidade verificada! Você pode sacar livremente.' :
-             status === 'pending' ? 'Documentos em análise. Retorno em até 24h.' :
-             status === 'rejected' ? 'Verificação rejeitada. Reenvie seus dados.' :
-             'Necessária para saques. Leva menos de 2 minutos.'}
-          </p>
+          <div>
+            <h1 className="text-xl font-bold">Verificação de Identidade</h1>
+            <p className="text-sm text-muted-foreground">Obrigatória para saques • Aprovação em até 10 minutos</p>
+          </div>
         </div>
 
         {/* Status aprovado */}
         {status === 'approved' && (
-          <div className="rounded-2xl border border-green-500/30 bg-green-500/5 p-6 text-center">
-            <CheckCircle className="h-12 w-12 text-green-400 mx-auto mb-3" />
-            <p className="font-bold text-green-400">KYC Aprovado ✅</p>
-            <p className="text-sm text-muted-foreground mt-1">Sua identidade foi verificada com sucesso.</p>
+          <div className="rounded-2xl border border-green-500/30 bg-green-500/10 p-6 text-center space-y-3">
+            <CheckCircle className="h-12 w-12 text-green-400 mx-auto" />
+            <h2 className="text-lg font-bold text-green-400">✅ Identidade Verificada!</h2>
+            <p className="text-sm text-muted-foreground">Sua conta está liberada para saques.</p>
           </div>
         )}
 
         {/* Status pendente */}
         {status === 'pending' && (
-          <div className="rounded-2xl border border-yellow-500/30 bg-yellow-500/5 p-6 text-center">
-            <Loader2 className="h-12 w-12 text-yellow-400 mx-auto mb-3 animate-spin" />
-            <p className="font-bold text-yellow-400">Em análise</p>
-            <p className="text-sm text-muted-foreground mt-1">Seus documentos estão sendo analisados. Retorno em até 24 horas.</p>
+          <div className="rounded-2xl border border-yellow-500/30 bg-yellow-500/10 p-6 text-center space-y-3">
+            <Clock className="h-12 w-12 text-yellow-400 mx-auto animate-pulse" />
+            <h2 className="text-lg font-bold text-yellow-400">⏳ Em análise</h2>
+            <p className="text-sm text-muted-foreground">Documentos enviados. Aprovação em até <strong>10 minutos</strong>.</p>
+            <p className="text-xs text-muted-foreground">Você receberá uma notificação quando for aprovado.</p>
           </div>
         )}
 
-        {/* Formulário */}
+        {/* Status rejeitado */}
+        {status === 'rejected' && (
+          <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-6 space-y-3">
+            <div className="flex items-center gap-2 text-red-400">
+              <AlertCircle className="h-5 w-5" />
+              <h2 className="font-bold">Verificação não aprovada</h2>
+            </div>
+            <p className="text-sm text-muted-foreground">Tente novamente com documentos mais claros.</p>
+            <button onClick={() => { setStatus('not_started'); setStep(1) }}
+              className="text-sm text-primary hover:underline">
+              Reenviar documentos →
+            </button>
+          </div>
+        )}
+
+        {/* Passos */}
         {(status === 'not_started' || status === 'rejected') && (
           <>
-            {/* Steps */}
+            {/* Indicador de passos */}
             <div className="flex items-center gap-2">
-              {[1, 2, 3].map(s => (
-                <div key={s} className="flex items-center gap-2 flex-1">
-                  <div className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold transition-colors ${
-                    step >= s ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
-                  }`}>{step > s ? '✓' : s}</div>
-                  {s < 3 && <div className={`flex-1 h-0.5 ${step > s ? 'bg-primary' : 'bg-muted'}`} />}
+              {[1, 2].map(s => (
+                <div key={s} className="flex items-center gap-2">
+                  <div className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold ${step >= s ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
+                    {s}
+                  </div>
+                  {s < 2 && <div className={`h-0.5 flex-1 ${step >= 2 ? 'bg-primary' : 'bg-muted'}`} style={{width: '60px'}} />}
                 </div>
               ))}
+              <span className="text-xs text-muted-foreground ml-2">
+                {step === 1 ? 'Dados pessoais' : 'Documentos'}
+              </span>
             </div>
 
-            {/* Step 1: Dados pessoais */}
+            {error && (
+              <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400 flex items-start gap-2">
+                <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                {error}
+              </div>
+            )}
+
+            {/* Passo 1: Dados pessoais */}
             {step === 1 && (
               <div className="rounded-2xl border border-border bg-card p-5 space-y-4">
-                <div className="flex items-center gap-2 mb-2">
+                <div className="flex items-center gap-2">
                   <User className="h-4 w-4 text-primary" />
-                  <p className="font-semibold text-sm">Dados Pessoais</p>
+                  <h2 className="font-bold">Dados Pessoais</h2>
                 </div>
-                <div>
-                  <label className="text-xs text-muted-foreground block mb-1">Nome completo *</label>
-                  <input className={inp} value={form.full_name} onChange={e => setForm(f => ({...f, full_name: e.target.value}))} placeholder="Como no documento oficial" />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs text-muted-foreground block mb-1">CPF *</label>
-                    <input className={inp} value={form.cpf} onChange={e => setForm(f => ({...f, cpf: e.target.value}))} placeholder="000.000.000-00" />
+                {[
+                  { label: 'Nome completo (como no documento)', key: 'full_name', type: 'text', placeholder: 'Ex: João Silva Santos' },
+                  { label: 'CPF', key: 'cpf', type: 'text', placeholder: '000.000.000-00' },
+                  { label: 'Data de nascimento', key: 'birth_date', type: 'date', placeholder: '' },
+                  { label: 'Telefone celular', key: 'phone', type: 'tel', placeholder: '(66) 99999-9999' },
+                ].map(f => (
+                  <div key={f.key}>
+                    <label className="text-sm font-medium block mb-1.5">{f.label}</label>
+                    <input type={f.type} placeholder={f.placeholder}
+                      value={(form as any)[f.key]}
+                      onChange={e => setForm(prev => ({ ...prev, [f.key]: e.target.value }))}
+                      className="w-full h-12 rounded-xl border border-border bg-background px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40" />
                   </div>
-                  <div>
-                    <label className="text-xs text-muted-foreground block mb-1">Data de nascimento *</label>
-                    <input type="date" className={inp} value={form.birth_date} onChange={e => setForm(f => ({...f, birth_date: e.target.value}))} />
-                  </div>
-                  <div>
-                    <label className="text-xs text-muted-foreground block mb-1">Telefone</label>
-                    <input className={inp} value={form.phone} onChange={e => setForm(f => ({...f, phone: e.target.value}))} placeholder="+55 (11) 99999-9999" />
-                  </div>
-                  <div>
-                    <label className="text-xs text-muted-foreground block mb-1">Estado</label>
-                    <select className={inp} value={form.address_state} onChange={e => setForm(f => ({...f, address_state: e.target.value}))}>
-                      <option value="">Selecione</option>
-                      {['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'].map(s => <option key={s} value={s}>{s}</option>)}
-                    </select>
-                  </div>
-                </div>
-                {msg && <p className={`text-sm ${msg.startsWith('❌') ? 'text-red-400' : 'text-green-400'}`}>{msg}</p>}
-                <button onClick={saveStep1} disabled={saving}
-                  className="w-full rounded-xl bg-primary py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-50 hover:bg-primary/90 transition-colors">
-                  {saving ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : 'Continuar →'}
+                ))}
+                <button onClick={submitStep1} disabled={saving}
+                  className="w-full h-12 rounded-xl bg-primary text-primary-foreground font-bold text-sm hover:bg-primary/90 disabled:opacity-50 transition-colors flex items-center justify-center gap-2">
+                  {saving ? <><Loader2 className="h-4 w-4 animate-spin" /> Verificando...</> : 'Continuar →'}
                 </button>
               </div>
             )}
 
-            {/* Step 2: Documento */}
+            {/* Passo 2: Documentos */}
             {step === 2 && (
-              <div className="rounded-2xl border border-border bg-card p-5 space-y-4">
-                <div className="flex items-center gap-2 mb-2">
+              <div className="rounded-2xl border border-border bg-card p-5 space-y-5">
+                <div className="flex items-center gap-2">
                   <FileText className="h-4 w-4 text-primary" />
-                  <p className="font-semibold text-sm">Documento de Identidade</p>
+                  <h2 className="font-bold">Documentos</h2>
                 </div>
-                <p className="text-xs text-muted-foreground">Envie uma foto clara do seu RG, CNH ou Passaporte. O documento deve estar válido e com todos os dados visíveis.</p>
-                <div className="grid grid-cols-2 gap-3">
-                  {['Frente do documento', 'Verso do documento'].map(label => (
-                    <div key={label} className="rounded-xl border-2 border-dashed border-border p-4 text-center cursor-pointer hover:border-primary/40 transition-colors">
-                      <Upload className="h-6 w-6 text-muted-foreground mx-auto mb-2" />
-                      <p className="text-xs text-muted-foreground">{label}</p>
-                      <p className="text-[10px] text-muted-foreground/60 mt-1">JPG, PNG até 5MB</p>
-                    </div>
-                  ))}
-                </div>
-                <p className="text-xs text-muted-foreground text-center">⚠️ Upload de documentos via integração Veriff (em breve). Por enquanto, envie pelo suporte.</p>
-                <div className="flex gap-2">
-                  <button onClick={() => setStep(1)} className="flex-1 rounded-xl border border-border py-2.5 text-sm hover:bg-muted transition-colors">← Voltar</button>
-                  <button onClick={() => setStep(3)} className="flex-1 rounded-xl bg-primary py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors">Continuar →</button>
-                </div>
-              </div>
-            )}
 
-            {/* Step 3: Selfie + Confirmar */}
-            {step === 3 && (
-              <div className="rounded-2xl border border-border bg-card p-5 space-y-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <Camera className="h-4 w-4 text-primary" />
-                  <p className="font-semibold text-sm">Confirmar e Enviar</p>
+                <div className="rounded-xl bg-muted/30 border border-border p-3 text-xs text-muted-foreground space-y-1">
+                  <p>📋 Aceitos: <strong>RG</strong> ou <strong>CNH</strong></p>
+                  <p>📸 Fotos devem estar nítidas, sem cortes e sem reflexo</p>
+                  <p>⏱️ Aprovação em até <strong>10 minutos</strong> em horário comercial</p>
                 </div>
-                <div className="rounded-xl bg-muted/30 border border-border p-4 space-y-2 text-xs">
-                  <p className="font-semibold">Revise seus dados:</p>
-                  <p><span className="text-muted-foreground">Nome:</span> {form.full_name}</p>
-                  <p><span className="text-muted-foreground">CPF:</span> {form.cpf}</p>
-                  <p><span className="text-muted-foreground">Nascimento:</span> {form.birth_date ? new Date(form.birth_date + 'T00:00:00').toLocaleDateString('pt-BR') : '-'}</p>
-                  <p><span className="text-muted-foreground">Estado:</span> {form.address_state || '-'}</p>
+
+                {/* Upload Documento */}
+                <div>
+                  <label className="text-sm font-medium block mb-2">
+                    📄 Frente do documento (RG ou CNH)
+                  </label>
+                  <label className={`block w-full rounded-xl border-2 border-dashed cursor-pointer transition-colors ${docFront ? 'border-primary/40 bg-primary/5' : 'border-border hover:border-primary/40'}`}>
+                    <input type="file" accept="image/*" capture="environment" className="hidden"
+                      onChange={e => e.target.files?.[0] && handleFile(e.target.files[0], 'doc')} />
+                    {docFrontPreview ? (
+                      <img src={docFrontPreview} alt="Documento" className="w-full h-48 object-cover rounded-xl" />
+                    ) : (
+                      <div className="flex flex-col items-center gap-2 py-8">
+                        <Upload className="h-8 w-8 text-muted-foreground" />
+                        <p className="text-sm text-muted-foreground">Toque para tirar foto ou carregar</p>
+                      </div>
+                    )}
+                  </label>
                 </div>
-                <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 text-xs text-amber-400">
-                  Ao enviar, você confirma que os dados são verdadeiros. Dados falsos resultam em bloqueio da conta conforme nossos Termos de Uso.
+
+                {/* Upload Selfie */}
+                <div>
+                  <label className="text-sm font-medium block mb-2">
+                    🤳 Selfie segurando o documento
+                  </label>
+                  <label className={`block w-full rounded-xl border-2 border-dashed cursor-pointer transition-colors ${selfie ? 'border-primary/40 bg-primary/5' : 'border-border hover:border-primary/40'}`}>
+                    <input type="file" accept="image/*" capture="user" className="hidden"
+                      onChange={e => e.target.files?.[0] && handleFile(e.target.files[0], 'selfie')} />
+                    {selfiePreview ? (
+                      <img src={selfiePreview} alt="Selfie" className="w-full h-48 object-cover rounded-xl" />
+                    ) : (
+                      <div className="flex flex-col items-center gap-2 py-8">
+                        <Camera className="h-8 w-8 text-muted-foreground" />
+                        <p className="text-sm text-muted-foreground">Selfie com documento na mão</p>
+                      </div>
+                    )}
+                  </label>
                 </div>
-                {msg && <p className={`text-sm ${msg.startsWith('❌') ? 'text-red-400' : 'text-green-400'}`}>{msg}</p>}
-                <div className="flex gap-2">
-                  <button onClick={() => setStep(2)} className="flex-1 rounded-xl border border-border py-2.5 text-sm hover:bg-muted transition-colors">← Voltar</button>
-                  <button onClick={submitKyc} disabled={saving}
-                    className="flex-1 rounded-xl bg-primary py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-50 hover:bg-primary/90 transition-colors">
-                    {saving ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : '✅ Enviar para análise'}
+
+                <div className="flex gap-3">
+                  <button onClick={() => setStep(1)}
+                    className="flex-1 h-12 rounded-xl border border-border text-sm font-medium hover:border-primary/40 transition-colors">
+                    ← Voltar
+                  </button>
+                  <button onClick={submitStep2} disabled={saving}
+                    className="flex-1 h-12 rounded-xl bg-primary text-primary-foreground font-bold text-sm hover:bg-primary/90 disabled:opacity-50 transition-colors flex items-center justify-center gap-2">
+                    {saving ? <><Loader2 className="h-4 w-4 animate-spin" /> Enviando...</> : '✅ Enviar para análise'}
                   </button>
                 </div>
               </div>
             )}
           </>
         )}
-
-        {/* Info */}
-        <div className="rounded-xl border border-border bg-card p-4 space-y-2">
-          <p className="text-xs font-semibold">Por que verificamos sua identidade?</p>
-          <ul className="text-xs text-muted-foreground space-y-1">
-            <li>🔒 Segurança e prevenção de fraudes</li>
-            <li>📋 Conformidade com Lei 14.790/2023</li>
-            <li>💰 Obrigação de reter e recolher IR sobre prêmios</li>
-            <li>🏦 Necessário para saques via PIX</li>
-          </ul>
-        </div>
-      </div>
+      </main>
     </div>
   )
 }

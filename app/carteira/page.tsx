@@ -18,6 +18,7 @@ export default function CarteiraPage() {
   const [processing, setProcessing] = useState(false)
   const [msgDep, setMsgDep] = useState('')
   const [msgSaq, setMsgSaq] = useState('')
+  const [kycStatus, setKycStatus] = useState('')
   const [errDep, setErrDep] = useState('')
   const [errSaq, setErrSaq] = useState('')
 
@@ -26,6 +27,8 @@ export default function CarteiraPage() {
       if (!user) { router.push('/login'); return }
       setUserId(user.id)
       setUserEmail(user.email || '')
+      createClient().from('profiles').select('kyc_status').eq('id', user.id).single()
+        .then(({ data: p }) => setKycStatus(p?.kyc_status || ''))
       createClient().from('wallets').select('available_balance').eq('user_id', user.id).maybeSingle()
         .then(({ data: w }) => { setSaldo(parseFloat(w?.available_balance || '0')); setLoading(false) })
         .catch(() => setLoading(false))
