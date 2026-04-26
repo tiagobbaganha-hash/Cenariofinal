@@ -19,8 +19,7 @@ export async function POST(req: NextRequest) {
     // PIX estático sempre ativo (MP como opcional)
     if (true) {
       const { data: req_data, error } = await supabase.from('deposit_requests').insert({
-        user_id, amount, status: 'pending', payment_method: 'pix',
-        metadata: { mode: 'manual' }
+        user_id, amount, status: 'pending', payment_method: 'pix'
       }).select().single()
 
       if (error) return NextResponse.json({ error: error.message }, { status: 500 })

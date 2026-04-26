@@ -266,11 +266,11 @@ export default function AccountPage() {
                 )}
 
                 <div className="mt-5 grid grid-cols-2 gap-2">
-                  <Button className="gap-2">
+                  <Link href="/carteira"><Button className="gap-2">
                     <ArrowDownToLine className="h-4 w-4" />
                     Depositar
-                  </Button>
-                  <Button variant="outline" className="gap-2">
+                  </Button></Link>
+                  <Link href="/carteira"><Button variant="outline" className="gap-2">
                     <ArrowUpFromLine className="h-4 w-4" />
                     Sacar
                   </Button>
