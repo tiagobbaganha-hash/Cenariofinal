@@ -271,7 +271,7 @@ export default function AccountPage() {
                   <Link href="/carteira"><Button variant="outline" className="gap-2">
                     <ArrowUpFromLine className="h-4 w-4" />
                     Sacar
-                  </Button>
+                  </Button></Link>
                 </div>
 
                 <div className="mt-5 flex items-center justify-between border-t border-border/60 pt-4 text-xs">
