@@ -16,8 +16,8 @@ export async function POST(req: NextRequest) {
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
 
-    // Usar sempre PIX estático por enquanto (MP token inválido)
-    if (true || !MP_ACCESS_TOKEN) {
+    // Se não tem token MP, usar PIX estático
+    if (!MP_ACCESS_TOKEN) {
       const { data: req_data, error } = await supabase.from('deposit_requests').insert({
         user_id, amount, status: 'pending', payment_method: 'pix',
         metadata: { mode: 'manual' }
