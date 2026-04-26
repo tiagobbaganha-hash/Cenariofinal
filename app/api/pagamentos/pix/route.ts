@@ -25,7 +25,10 @@ export async function POST(req: NextRequest) {
       if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
       // PIX Copia-e-Cola estático (para testes — substitua pela chave PIX real)
-      const pixKey = process.env.PIX_KEY_CNPJ || 'cenariox@plataforma.com.br'
+      // Formatar chave PIX (CPF: só números)
+      const rawKey = process.env.PIX_KEY_CNPJ || ''
+      const pixKey = rawKey.replace(/[^0-9a-zA-Z@._+-]/g, '')
+      if (!pixKey) return NextResponse.json({ error: 'Chave PIX não configurada. Configure PIX_KEY_CNPJ no Vercel.' }, { status: 500 })
       const pixPayload = generatePixPayload(pixKey, amount, req_data.id.slice(0,10))
 
       return NextResponse.json({
@@ -80,7 +83,7 @@ export async function POST(req: NextRequest) {
 
 function generatePixPayload(key: string, amount: number, txId: string): string {
   const merchantName = 'CENARIOX'
-  const city = 'SAO PAULO'
+  const city = 'ALTA FLORESTA'
   const amountStr = amount.toFixed(2)
 
   function tlv(id: string, value: string) {
