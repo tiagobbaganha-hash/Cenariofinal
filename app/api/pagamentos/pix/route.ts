@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
     // PIX estático sempre ativo (MP como opcional)
     if (true) {
       const { data: req_data, error } = await supabase.from('deposit_requests').insert({
-        user_id, amount, status: 'pending', payment_method: 'pix'
+        user_id, amount, status: 'pending'
       }).select().single()
 
       if (error) return NextResponse.json({ error: error.message }, { status: 500 })
@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
       if (!pixKey) return NextResponse.json({ error: 'Configure PIX_KEY_CNPJ no Vercel' }, { status: 500 })
       
       const { data: req_data, error: dbErr } = await supabase.from('deposit_requests').insert({
-        user_id, amount, status: 'pending', payment_method: 'pix',
+        user_id, amount, status: 'pending',
         metadata: { mode: 'manual_fallback', mp_error: mpData.message || 'MP sem PIX' }
       }).select().single()
       
