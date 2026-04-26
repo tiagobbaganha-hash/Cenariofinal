@@ -36,7 +36,6 @@ export default function CarteiraPage() {
   }, [router])
 
   async function depositar() {
-    alert('depositar() chamada! val=' + amountDep)
     setErrDep(''); setMsgDep('')
     const val = parseFloat(amountDep)
     if (!val || val < 10) { setErrDep('Mínimo R$ 10,00'); return }
