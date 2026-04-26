@@ -37,10 +37,9 @@ export default function CarteiraPage() {
 
   async function depositar() {
     setErrDep(''); setMsgDep('')
-    const cleanAmount = String(amountDep).replace(',', '.').trim()
-    const val = parseFloat(cleanAmount)
-    if (isNaN(val) || val < 10) { 
-      setErrDep(`Mínimo R$ 10,00. Valor digitado: "${amountDep}"`)
+    const val = parseInt(amountDep || '0', 10)
+    if (!val || val < 10) { 
+      setErrDep('Selecione ou digite um valor mínimo de R$ 10,00')
       return 
     }
     setProcessing(true)
@@ -131,20 +130,42 @@ export default function CarteiraPage() {
             </div>
           ) : (
             <div className="space-y-3">
-              <div className="flex gap-2">
-                {[10, 50, 100, 200].map(v => (
-                  <button key={v} onClick={() => setAmountDep(v.toString())}
-                    className={`flex-1 py-2.5 rounded-xl border text-sm font-semibold transition-colors ${amountDep === v.toString() ? 'border-primary bg-primary/10 text-primary' : 'border-border hover:border-primary/40'}`}>
-                    R$ {v}
+              <p className="text-sm text-muted-foreground">Selecione o valor:</p>
+              <div className="grid grid-cols-2 gap-3">
+                {[10, 25, 50, 100, 200, 500].map(v => (
+                  <button key={v} 
+                    onClick={() => { setAmountDep(v.toString()); setErrDep('') }}
+                    className={`py-4 rounded-xl border text-base font-bold transition-all ${
+                      amountDep === v.toString() 
+                        ? 'border-primary bg-primary text-primary-foreground scale-105' 
+                        : 'border-border bg-card hover:border-primary/60 hover:bg-primary/10'
+                    }`}>
+                    R$ {v},00
                   </button>
                 ))}
               </div>
-              <input type="number" value={amountDep} onChange={e => setAmountDep(e.target.value)}
-                placeholder="Ou digite o valor (mín. R$ 10)"
-                className="w-full h-12 rounded-xl border border-border bg-background px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40" />
-              <button onClick={depositar} disabled={processing}
-                className="w-full h-12 rounded-xl bg-primary text-primary-foreground font-bold text-sm hover:bg-primary/90 disabled:opacity-50 transition-colors">
-                {processing ? 'Gerando PIX...' : amountDep ? `📱 Gerar PIX - R$ ${amountDep}` : '📱 Gerar PIX'}
+              <div>
+                <p className="text-xs text-muted-foreground mb-1.5">Ou digite outro valor:</p>
+                <input 
+                  type="text" 
+                  inputMode="numeric"
+                  value={amountDep} 
+                  onChange={e => { setAmountDep(e.target.value.replace(/[^0-9]/g, '')); setErrDep('') }}
+                  placeholder="Ex: 150"
+                  className="w-full h-12 rounded-xl border border-border bg-background px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40" 
+                />
+              </div>
+              {amountDep && (
+                <div className="rounded-xl bg-primary/10 border border-primary/20 px-4 py-3 text-center">
+                  <p className="text-sm text-muted-foreground">Você vai depositar:</p>
+                  <p className="text-2xl font-black text-primary">R$ {amountDep},00</p>
+                </div>
+              )}
+              <button 
+                onClick={depositar} 
+                disabled={processing || !amountDep}
+                className="w-full h-14 rounded-xl bg-primary text-primary-foreground font-bold text-base hover:bg-primary/90 disabled:opacity-40 transition-colors">
+                {processing ? '⏳ Gerando PIX...' : !amountDep ? 'Selecione um valor acima' : `📱 Confirmar PIX de R$ ${amountDep},00`}
               </button>
             </div>
           )}
