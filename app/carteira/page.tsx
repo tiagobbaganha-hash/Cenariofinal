@@ -30,20 +30,20 @@ export default function CarteiraPage() {
       const { data: w } = await supabase.from('wallets')
         .select('available_balance')
         .eq('user_id', user.id)
-        .single()
+        .maybeSingle()
       setSaldo(parseFloat(w?.available_balance || '0'))
+      setLoading(false) // Mostrar botões imediatamente após saldo
 
-      // Histórico
-      const { data: t } = await supabase.from('wallet_ledger')
+      // Histórico (carrega em background, não bloqueia)
+      supabase.from('wallet_ledger')
         .select('id, entry_type, direction, amount, description, created_at')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(20)
-      setTxs(t || [])
-
-      setLoading(false)
+        .then(({ data: t }) => setTxs(t || []))
+        .catch(() => {})
     }
-    load()
+    load().catch(() => setLoading(false))
   }, [router])
 
   async function depositar() {
