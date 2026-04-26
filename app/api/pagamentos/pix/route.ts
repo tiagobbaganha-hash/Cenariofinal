@@ -102,29 +102,38 @@ export async function POST(req: NextRequest) {
 }
 
 function generatePixPayload(key: string, amount: number, txId: string): string {
-  const merchantName = 'CENARIOX'
-  const city = 'ALTA FLORESTA'
-  const amountStr = amount.toFixed(2)
-
-  function tlv(id: string, value: string) {
-    const len = value.length.toString().padStart(2, '0')
-    return `${id}${len}${value}`
+  function tlv(id: string, value: string): string {
+    return `${id}${value.length.toString().padStart(2, '0')}${value}`
   }
-  const pixKey = tlv('01', key)
-  const addInfo = tlv('05', txId.toUpperCase().replace(/-/g,'').slice(0,25))
-  const merchantAccountInfo = tlv('00', 'BR.GOV.BCB.PIX') + pixKey + addInfo
-  const mInfo = tlv('26', merchantAccountInfo)
-  const payload = '000201' + mInfo + '52040000' + '5303986' +
-    tlv('54', amountStr) + '5802BR' +
-    tlv('59', merchantName) + tlv('60', city) +
-    tlv('62', tlv('05', txId.slice(0,25))) + '6304'
 
-  // CRC16 simplificado
+  // Merchant Account Info (ID 26)
+  const merchantAccount = tlv('00', 'BR.GOV.BCB.PIX') + tlv('01', key)
+  
+  // Additional Data Field (ID 62) - txid limpo
+  const cleanTxId = (txId || 'CENARIOX').replace(/[^A-Za-z0-9]/g, '').slice(0, 25) || 'CENARIOX'
+  const additionalData = tlv('62', tlv('05', cleanTxId))
+
+  // Montar payload sem CRC
+  const payload = [
+    '000201',                                    // Payload Format Indicator
+    tlv('26', merchantAccount),                  // Merchant Account
+    '52040000',                                  // MCC
+    '5303986',                                   // Moeda BRL
+    amount > 0 ? tlv('54', amount.toFixed(2)) : '', // Valor
+    '5802BR',                                    // País
+    tlv('59', 'CENARIOX'),                       // Nome do recebedor
+    tlv('60', 'ALTA FLORESTA'),                  // Cidade
+    additionalData,                              // Dados adicionais
+    '6304',                                      // CRC placeholder
+  ].join('')
+
+  // CRC16-CCITT calculado sobre TODO o payload incluindo '6304'
   let crc = 0xFFFF
-  for (const char of payload + '6304') {
-    crc ^= char.charCodeAt(0) << 8
-    for (let i = 0; i < 8; i++) crc = crc & 0x8000 ? (crc << 1) ^ 0x1021 : crc << 1
-    crc &= 0xFFFF
+  for (let i = 0; i < payload.length; i++) {
+    crc ^= payload.charCodeAt(i) << 8
+    for (let j = 0; j < 8; j++) {
+      crc = (crc & 0x8000) ? ((crc << 1) ^ 0x1021) & 0xFFFF : (crc << 1) & 0xFFFF
+    }
   }
   return payload + crc.toString(16).toUpperCase().padStart(4, '0')
 }
