@@ -102,6 +102,7 @@ export default function CarteiraPage() {
       } else {
         // Create wallet if not exists
         await supabase.from('wallets').insert({ user_id: user.id, available_balance: 0, locked_balance: 0 })
+        setWallet({ available_balance: 0, locked_balance: 0, pendingDeposits: 0, pendingWithdrawals: 0 })
       }
 
       // Load transactions com dados completos
@@ -216,12 +217,20 @@ export default function CarteiraPage() {
       setMessage({ type: 'error', text: 'Valor mínimo: R$ 10,00' })
       return
     }
+    if (!user) {
+      router.push('/login')
+      return
+    }
     setProcessing(true)
     try {
+      const supabase2 = createClient()
+      const { data: { user: currentUser } } = await supabase2.auth.getUser()
+      if (!currentUser) { router.push('/login'); return }
+      
       const res = await fetch('/api/pagamentos/pix', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: user.id, amount: value, email: user.email })
+        body: JSON.stringify({ user_id: currentUser.id, amount: value, email: user.email })
       })
       const data = await res.json()
       if (data.error) throw new Error(data.error)
@@ -293,7 +302,7 @@ export default function CarteiraPage() {
           <div className="relative">
             <p className="text-sm text-muted-foreground mb-1">Saldo Disponível</p>
             <p className="text-4xl font-black text-gradient">
-              R$ {wallet?.available_balance.toFixed(2) || '0,00'}
+              R$ {(wallet?.available_balance ?? 0).toFixed(2)}
             </p>
             {(wallet?.locked_balance || 0) > 0 && (
               <p className="text-sm text-blue-400 mt-1">
