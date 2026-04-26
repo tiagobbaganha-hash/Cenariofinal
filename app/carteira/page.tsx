@@ -37,17 +37,14 @@ export default function CarteiraPage() {
 
   async function depositar() {
     setErrDep(''); setMsgDep('')
-    const val = parseInt(amountDep || '0', 10)
-    if (!val || val < 10) { 
-      setErrDep('Selecione ou digite um valor mínimo de R$ 10,00')
-      return 
-    }
+    const val = parseInt(String(amountDep).replace(/[^0-9]/g, '') || '0', 10)
+    console.log('Depositando valor:', val, 'amountDep:', amountDep)
     setProcessing(true)
     try {
       const res = await fetch('/api/pagamentos/pix', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: userId, amount: Number(val), email: userEmail })
+        body: JSON.stringify({ user_id: userId, amount: val || 10, email: userEmail })
       })
       const data = await res.json()
       if (data.error) { setErrDep(data.error); setProcessing(false); return }
