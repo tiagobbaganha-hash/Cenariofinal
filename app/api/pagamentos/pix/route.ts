@@ -53,7 +53,8 @@ export async function POST(req: NextRequest) {
         description: `Depósito CenárioX`,
         payment_method_id: 'pix',
         payer: { email: email || 'usuario@cenariox.com.br' },
-        notification_url: `${process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://cenariox.com.br'}/api/pagamentos/webhook`,
+        external_reference: user_id,
+        notification_url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://cenariox.com.br'}/api/pagamentos/webhook`,
       })
     })
 

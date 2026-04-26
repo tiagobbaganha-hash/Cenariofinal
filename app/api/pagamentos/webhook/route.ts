@@ -11,79 +11,98 @@ const supabase = createClient(
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { type, data } = body
 
-    // Apenas processar pagamentos aprovados
-    if (type !== 'payment' || !data?.id) {
+    // MP envia: { action, type, data: { id } } ou { topic, resource }
+    const paymentId = body?.data?.id || body?.id
+    const topic = body?.type || body?.topic
+
+    // Ignorar se não for pagamento
+    if (!paymentId || (topic && topic !== 'payment')) {
       return NextResponse.json({ ok: true })
     }
 
     const MP_ACCESS_TOKEN = process.env.MERCADOPAGO_ACCESS_TOKEN || ''
     if (!MP_ACCESS_TOKEN) return NextResponse.json({ ok: true })
 
-    // Buscar detalhes do pagamento no Mercado Pago
-    const mpRes = await fetch(`https://api.mercadopago.com/v1/payments/${data.id}`, {
+    // Buscar pagamento no MP
+    const mpRes = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
       headers: { 'Authorization': `Bearer ${MP_ACCESS_TOKEN}` }
     })
     const payment = await mpRes.json()
 
-    if (payment.status !== 'approved') return NextResponse.json({ ok: true })
+    if (payment.status !== 'approved') {
+      return NextResponse.json({ ok: true, status: payment.status })
+    }
 
-    const amount = payment.transaction_amount
-    const paymentId = String(payment.id)
+    const amount = Number(payment.transaction_amount)
 
-    // Encontrar o deposit_request correspondente
-    const { data: deposit } = await supabase.from('deposit_requests')
-      .select('id, user_id, amount, status')
-      .eq('status', 'pending')
-      .contains('metadata', { mp_payment_id: data.id })
+    // Identificar usuário pelo external_reference (user_id que enviamos)
+    const userId = payment.external_reference
+
+    if (!userId) {
+      return NextResponse.json({ ok: true, msg: 'Sem external_reference' })
+    }
+
+    // Verificar se já creditou (idempotência)
+    const { data: existing } = await supabase.from('wallet_ledger')
+      .select('id')
+      .eq('reference_id', String(paymentId))
       .single()
 
-    if (!deposit || deposit.status === 'paid') {
-      return NextResponse.json({ ok: true, msg: 'Já processado' })
+    if (existing) {
+      return NextResponse.json({ ok: true, msg: 'Já creditado' })
     }
 
     // Creditar na carteira
-    await supabase.rpc('ensure_wallet_for', { p_user_id: deposit.user_id }).catch(() => {})
-
-    await supabase.from('wallets').update({
-      available_balance: supabase.rpc('available_balance + ' + amount) as any,
-      updated_at: new Date().toISOString()
-    }).eq('user_id', deposit.user_id)
-
-    // Usar SQL direto para incrementar saldo
-    const { error: walletErr } = await supabase.rpc('admin_credit_wallet', {
-      p_user_id: deposit.user_id,
+    const { error: creditErr } = await supabase.rpc('admin_credit_wallet', {
+      p_user_id: userId,
       p_amount: amount,
-      p_reference_id: deposit.id,
-      p_note: `Depósito PIX #${paymentId}`
-    }).catch(() => ({ error: null })) as any
+      p_note: `Depósito PIX MP #${paymentId}`
+    })
+
+    if (creditErr) {
+      // Fallback: UPDATE direto
+      await supabase.from('wallets')
+        .upsert({ user_id: userId, available_balance: amount }, { onConflict: 'user_id' })
+      
+      // Tentar incrementar
+      await supabase.rpc('increment_wallet', { p_user_id: userId, p_amount: amount }).catch(() => {})
+    }
 
     // Registrar no ledger
     await supabase.from('wallet_ledger').insert({
-      user_id: deposit.user_id,
+      user_id: userId,
       entry_type: 'deposit',
       direction: 'credit',
       amount,
-      reference_id: deposit.id,
+      description: `Depósito PIX R$ ${amount.toFixed(2)}`,
+      reference_id: String(paymentId),
     })
 
-    // Marcar como pago
-    await supabase.from('deposit_requests').update({
-      status: 'paid',
-      metadata: { mp_payment_id: paymentId, paid_at: new Date().toISOString() }
-    }).eq('id', deposit.id)
+    // Atualizar deposit_request se existir
+    await supabase.from('deposit_requests')
+      .update({ status: 'paid' })
+      .eq('user_id', userId)
+      .eq('amount', amount)
+      .eq('status', 'pending')
 
     // Notificar usuário
     await supabase.from('user_notifications').insert({
-      user_id: deposit.user_id,
+      user_id: userId,
       type: 'deposit_approved',
       title: '💰 Depósito confirmado!',
-      body: `R$ ${amount.toFixed(2)} creditados na sua carteira.`,
+      body: `R$ ${amount.toFixed(2)} foram creditados na sua carteira.`,
+      link: '/carteira',
     }).catch(() => {})
 
-    return NextResponse.json({ ok: true, credited: amount })
+    return NextResponse.json({ ok: true, credited: amount, user: userId })
+
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 })
   }
+}
+
+// MP também faz GET para verificar o endpoint
+export async function GET() {
+  return NextResponse.json({ ok: true, webhook: 'CenárioX PIX' })
 }
