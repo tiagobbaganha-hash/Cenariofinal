@@ -50,6 +50,16 @@ export default function FinanceiroAdminPage() {
         ;(profiles || []).forEach((p: any) => { pm[p.id] = p })
       }
       setDeposits((data || []).map((d: any) => ({ ...d, profile: pm[d.user_id] })))
+    } else if (tab === 'saques') {
+      const { data } = await supabase.from('withdrawal_requests')
+        .select('*').order('created_at', { ascending: false }).limit(100)
+      const userIds = [...new Set((data || []).map((d: any) => d.user_id))]
+      let pm: Record<string, any> = {}
+      if (userIds.length) {
+        const { data: profiles } = await supabase.from('profiles').select('id, full_name, email').in('id', userIds)
+        ;(profiles || []).forEach((p: any) => { pm[p.id] = p })
+      }
+      setDeposits((data || []).map((d: any) => ({ ...d, profile: pm[d.user_id] })))
     } else if (tab === 'extrato') {
       const { data } = await supabase.from('wallet_ledger')
         .select('*').order('created_at', { ascending: false }).limit(100)
