@@ -84,10 +84,20 @@ export default function CarteiraPage() {
         <div className="rounded-2xl bg-gradient-to-br from-primary/20 to-card border border-primary/20 p-6 text-center">
           <p className="text-sm text-muted-foreground mb-1">Saldo disponível</p>
           <p className="text-5xl font-black text-primary">R$ {saldo.toFixed(2)}</p>
+          <div className="flex gap-3 mt-5">
+            <button onClick={() => document.getElementById('depositar')?.scrollIntoView({ behavior: 'smooth' })}
+              className="flex-1 h-11 rounded-xl bg-primary text-primary-foreground font-bold text-sm hover:bg-primary/90 transition-colors">
+              ↓ Depositar
+            </button>
+            <button onClick={() => document.getElementById('sacar')?.scrollIntoView({ behavior: 'smooth' })}
+              className="flex-1 h-11 rounded-xl border border-border bg-card font-bold text-sm hover:border-primary/40 transition-colors">
+              ↓ Sacar
+            </button>
+          </div>
         </div>
 
         {/* Depositar */}
-        <div className="rounded-2xl border border-border bg-card p-5 space-y-4">
+        <div id="depositar" className="rounded-2xl border border-border bg-card p-5 space-y-4">
           <h2 className="font-bold text-lg flex items-center gap-2">💰 Depositar via PIX</h2>
           
           {errDep && <div className="rounded-xl bg-red-500/10 text-red-400 border border-red-500/20 px-4 py-3 text-sm">{errDep}</div>}
@@ -137,7 +147,7 @@ export default function CarteiraPage() {
         </div>
 
         {/* Sacar */}
-        <div className="rounded-2xl border border-border bg-card p-5 space-y-4">
+        <div id="sacar" className="rounded-2xl border border-border bg-card p-5 space-y-4">
           <h2 className="font-bold text-lg flex items-center gap-2">💸 Solicitar Saque</h2>
           
           {errSaq && <div className="rounded-xl bg-red-500/10 text-red-400 border border-red-500/20 px-4 py-3 text-sm">{errSaq}</div>}
