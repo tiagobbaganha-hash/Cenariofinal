@@ -90,15 +90,13 @@ export default function AccountPage() {
 
   if (loading) {
     return (
-
-        <main className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6">
-          <Skeleton className="h-10 w-64 mb-8" />
-          <div className="grid gap-6 lg:grid-cols-[380px_1fr]">
-            <Skeleton className="h-96" />
-            <Skeleton className="h-96" />
-          </div>
-        </main>
-
+      <main className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6">
+        <Skeleton className="h-10 w-64 mb-8" />
+        <div className="grid gap-6 lg:grid-cols-[380px_1fr]">
+          <Skeleton className="h-96" />
+          <Skeleton className="h-96" />
+        </div>
+      </main>
     )
   }
 
